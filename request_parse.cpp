@@ -1,6 +1,9 @@
 #include <iostream>
 #include <unordered_map>
 #include <sstream>
+#include <vector>
+#include <string.h>
+#include <regex>
 
 using namespace std;
 /*
@@ -28,6 +31,21 @@ class Request {
 		}
 
 		void	parseStartLine(const string& startLine) {
+			stringstream stream(startLine);
+			vector<string> startLineComps;
+			regex delimiter("\\s+");
+			sregex_token_iterator it(startLine.begin(), startLine.end(), delimiter, -1);
+    		sregex_token_iterator end;
 
+			for (; it != end; ++it) { //any white space dilimeter can be used
+				startLineComps.push_back(*it);
+			}
+			if (strncmp(startLineComps[2].c_str(), "HTTP/", 5)
+				|| !isdigit(startLineComps[2][5])
+					|| startLineComps[5][6] != '.'
+						|| !isdigit(startLineComps[2][7]))
+			{
+				throw("bad request");
+			}
 		}
 };
