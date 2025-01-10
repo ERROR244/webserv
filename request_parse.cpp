@@ -3,10 +3,10 @@
 #include <sstream>
 #include <vector>
 #include <string.h>
-#include <regex>
-// #include <boost/algorithm/string.hpp>
+#include "helper_functions/string_manipulation.cpp"
 
 using namespace std;
+//echo -e "GET / HTTP/1.1\r\n    Host: localhost\r\n\r\n" | nc localhost 8080 // cmd for manually writing requests
 /*
 	- any bare CR not followed by LF should be considerd invalid or repalced with SP.
 	- if whitespace if found in between the start-line and the first field it can either be ignored or removed and procede with your parsin.
@@ -19,17 +19,20 @@ using namespace std;
 	- server MUST respond with a 400(bad request) if the host field is not found or the there's multiple host fields
 */
 class Request {
-	string startLine;
-	unordered_map<string, string> headers;
-	string body;
+	string							startLine;
+	unordered_map<string, string>	headers;
+	string							body;
+
 	public:
 		Request(string message) {
 			parseMessage(message);
 		}
+
 	private:
 		void	parseMessage(const string& message) {
-			string line;
-			stringstream stream(message);
+			string			line;
+			stringstream	stream(message);
+
 			while (getline(stream, line) && (line == "\r\n" || line == "\n")); //skiping any empty lines proceding the start-line
 			startLine = line;
 			parseStartLine(startLine);
@@ -46,10 +49,10 @@ class Request {
 		bool isTarget(const string& target) {
 			// what form is the request-target
 			// reconstruct the full URI usin the components (scheme authority queries)
-			string scheme;
-			string authority;
-			string path;
-			string query;
+			string	scheme;
+			string	authority;
+			string	path;
+			string	query;
 
 			
 			return false;
@@ -60,15 +63,12 @@ class Request {
 		}
 
 		void	parseStartLine(const string& startLine) {
-			stringstream stream(startLine);
-			vector<string> startLineComps;
-			//idk how regex works
-			regex delimiter("\\s+");
-			sregex_token_iterator it(startLine.begin(), startLine.end(), delimiter, -1);
-    		sregex_token_iterator end;
+			stringstream	stream(startLine);
+			string			word;
+			vector<string>	startLineComps;
 
-			for (; it != end; ++it) { //any white space dilimeter can be used
-				startLineComps.push_back(*it);
+			while (stream >> word) {
+				startLineComps.push_back(word);
 			}
 			if (startLineComps.size() > 3 || !isProtocole(startLineComps[2]) || !isTarget(startLineComps[1]) || isMethod(startLineComps[0])) {
 				throw("bad request");
@@ -77,20 +77,31 @@ class Request {
 
 
 		void	parseFileds(stringstream& stream) {
-			string line;
-			while(getline(stream, line)) {
-				vector<string> fieldsComps;
-				regex delimiter("\\s+");
-				sregex_token_iterator it(line.begin(), line.end(), delimiter, -1);
-    			sregex_token_iterator end;
-				string fieldName;
-				string filedValue;
+			/*
+				if line starting with /t ot /sp that means its a continuation for a line foldin;
+			*/
+			string	line;
+			string prvsFieldName;
+			while(getline(stream, line) && line != "\r\n" && line != "\n") {
+				string	fieldName;
+				string	filedValue;//can be empty
 
-				for (; it != end; ++it) {
-					fieldsComps.push_back(*it);
+				if (!headers.empty() && (line[0] == ' ' || line[0] == '/t')) { //handle for line folding
+					headers[prvsFieldName] += " " + trim(line);
+					continue ;
 				}
-				fieldName = fieldsComps[0].substr(0, fieldsComps[0].size()-1);
-				// filedValue = trim()
+
+				size_t colonIndex = line.find(':');
+				fieldName = line.substr(0, colonIndex);
+				if (colonIndex != string::npos && colonIndex+1 < line.size()) { //checking there's a value
+					filedValue = line.substr(colonIndex+1);
+					filedValue = trim(filedValue); //trimin any OWS
+				}
+				if (/* filedName has any white space then throw bad request */) {
+					throw("bad request");
+				}
+				headers[fieldName] = filedValue;
+				prvsFieldName = fieldName;
 			}
 		}
 };
