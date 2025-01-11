@@ -6,6 +6,12 @@
 #include "helper_functions/string_manipulation.cpp"
 
 using namespace std;
+
+// typedef enum e_methods {
+// 	GET,
+// 	POST,
+// 	DELETE
+// } t_methods;
 //echo -e "GET / HTTP/1.1\r\n    Host: localhost\r\n\r\n" | nc localhost 8080 // cmd for manually writing requests
 /*
 	- any bare CR not followed by LF should be considerd invalid or repalced with SP.
@@ -34,31 +40,33 @@ class Request {
 			stringstream	stream(message);
 
 			while (getline(stream, line) && (line == "\r\n" || line == "\n")); //skiping any empty lines proceding the start-line
-			startLine = line;
-			parseStartLine(startLine);
+			// startLine = line;
+			parseStartLine(line);
 			parseFileds(stream);
+			// parseBody(stream);
+			// reconstruct the URI
 		}
 
 
-		bool	isProtocole(const string& httpVersion) {
-			if (!strncmp(httpVersion.c_str(), "HTTP/", 5) || isdigit(httpVersion[5]) || httpVersion[6] == '.' || isdigit(httpVersion[7]))
+		bool	isProtocole(const string& httpVersion) const {
+			//if the client is usin https reject the request
+			if (!strncmp(httpVersion.c_str(), "HTTP/", 5) && isdigit(httpVersion[5]) && httpVersion[6] == '.' && isdigit(httpVersion[7]))
 				return true;
 			return false;
 		}
 
-		bool isTarget(const string& target) {
-			// what form is the request-target
-			// reconstruct the full URI usin the components (scheme authority queries)
-			string	scheme;
-			string	authority;
-			string	path;
-			string	query;
+		bool isTarget(const string& str) const {
+			const string	validCharachters = "-._~:/?#[]@!$&'()*+,;="; // valid charachters that can be in a target request
 
-			
-			return false;
-		}
+			if (strncmp(str.c_str(), "http", 4) && str[0] != '/')	return false; //if not origin form || absolute form
+			for (const auto& c : str) {
+				if (!iswalnum(c) && validCharachters.find(c) == string::npos)	return false;
+			}
+			return true;
+ 		}
 
-		bool isMethod(const string& target) {
+		bool isMethod(const string& target) const {
+			if (target == "GET" || target == "POST" || target == "DELETE") return true;
 			return false;
 		}
 
@@ -70,18 +78,25 @@ class Request {
 			while (stream >> word) {
 				startLineComps.push_back(word);
 			}
-			if (startLineComps.size() > 3 || !isProtocole(startLineComps[2]) || !isTarget(startLineComps[1]) || isMethod(startLineComps[0])) {
+			if (startLineComps.size() != 3 || !isProtocole(startLineComps[2]) || !isTarget(startLineComps[1]) || isMethod(startLineComps[0])) {
 				throw("bad request");
 			}
+			this->startLine = startLine;
 		}
 
 
+		bool    validFieldName(const string& str) const {
+			for (const auto& c: str) {
+				if (!iswalnum(c) && c != '_' && c != '-')	return false;
+			}
+			return true;
+		}
+
 		void	parseFileds(stringstream& stream) {
-			/*
-				if line starting with /t ot /sp that means its a continuation for a line foldin;
-			*/
+			//if line starting with /t ot /sp that means its a continuation for a line foldin;
 			string	line;
-			string prvsFieldName;
+			string	prvsFieldName;
+
 			while(getline(stream, line) && line != "\r\n" && line != "\n") {
 				string	fieldName;
 				string	filedValue;//can be empty
@@ -97,11 +112,21 @@ class Request {
 					filedValue = line.substr(colonIndex+1);
 					filedValue = trim(filedValue); //trimin any OWS
 				}
-				if (/* filedName has any white space then throw bad request */) {
+				if (!validFieldName(fieldName)) { // a-z && 1-9 && -_
 					throw("bad request");
 				}
 				headers[fieldName] = filedValue;
 				prvsFieldName = fieldName;
 			}
 		}
+
+
+		// void	parseBody(stringstream& stream) {
+		// 	string	line;
+
+		// 	while(getline(stream, line)) {
+
+		// 	}
+
+		// }
 };
