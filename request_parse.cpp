@@ -32,6 +32,15 @@ class Request {
 	public:
 		Request(string message) {
 			parseMessage(message);
+			// reconstruct the URI
+
+			//DEBUG
+			cerr << startLine << endl;
+			for (const auto& h : headers) {
+				cerr << h.first << ": " << h.second << endl;
+			}
+			cerr << body << endl;
+			//DEBUG
 		}
 
 	private:
@@ -39,12 +48,10 @@ class Request {
 			string			line;
 			stringstream	stream(message);
 
-			while (getline(stream, line) && (line == "\r\n" || line == "\n")); //skiping any empty lines proceding the start-line
-			// startLine = line;
+			while (getline(stream, line) && (line == "\r" || line.size() == 0)); //skiping any empty lines proceding the start-line
 			parseStartLine(line);
 			parseFileds(stream);
-			// parseBody(stream);
-			// reconstruct the URI
+			parseBody(stream);
 		}
 
 
@@ -78,7 +85,7 @@ class Request {
 			while (stream >> word) {
 				startLineComps.push_back(word);
 			}
-			if (startLineComps.size() != 3 || !isProtocole(startLineComps[2]) || !isTarget(startLineComps[1]) || isMethod(startLineComps[0])) {
+			if (startLineComps.size() != 3 || !isProtocole(startLineComps[2]) || !isTarget(startLineComps[1]) || !isMethod(startLineComps[0])) {
 				throw("bad request");
 			}
 			this->startLine = startLine;
@@ -97,11 +104,11 @@ class Request {
 			string	line;
 			string	prvsFieldName;
 
-			while(getline(stream, line) && line != "\r\n" && line != "\n") {
+			while(getline(stream, line) && line != "\r" && line.size() != 0) {
 				string	fieldName;
 				string	filedValue;//can be empty
 
-				if (!headers.empty() && (line[0] == ' ' || line[0] == '/t')) { //handle for line folding
+				if (!headers.empty() && (line[0] == ' ' || line[0] == '\t')) { //handle for line folding
 					headers[prvsFieldName] += " " + trim(line);
 					continue ;
 				}
@@ -121,12 +128,14 @@ class Request {
 		}
 
 
-		// void	parseBody(stringstream& stream) {
-		// 	string	line;
+		void	parseBody(stringstream& stream) {
+			// amma assume that no content/transport encoding are applied on the body
+			// check for transer encoding
+			string	line;
 
-		// 	while(getline(stream, line)) {
-
-		// 	}
-
-		// }
+			while(getline(stream, line)) {
+				body += line;
+				body += "\n";
+			}
+		}
 };
