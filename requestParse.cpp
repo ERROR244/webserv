@@ -1,29 +1,29 @@
 #include "requestParse.hpp"
 
-Request::Request(string message) {
-	parseMessage(message);
-	if (target[0] == '/')
-		reconstructUri();
+Request::Request(stringstream& stream) {
+	parseMessage(stream);
 
-	// //DEBUG
-	// cerr << startLine << endl;
-	// cerr << method << " " << target << " " << httpVersion << endl;
-	// for (const auto& h : headers) {
-	// 	cerr << h.first << ": " << h.second << endl;
-	// }
-	// cerr << body << endl;
-	// //DEBUG
+
+	//DEBUG
+	cerr << startLine << endl;
+	cerr << method << " " << target << " " << httpVersion << endl;
+	for (const auto& h : headers) {
+		cerr << h.first << ": " << h.second << endl;
+	}
+	cerr << body << endl;
+	//DEBUG
 }
 
 
 
-void	Request::parseMessage(const string& message) {
+void	Request::parseMessage(stringstream& stream) {
 	string			line;
-	stringstream	stream(message);
 
 	while (getline(stream, line) && (line == "\r" || line.size() == 0)); //skiping any empty lines proceding the start-line
 	parseStartLine(line);
 	parseFileds(stream);
+	if (target[0] == '/')	reconstructUri();
+	isHeaderParsed = true;
 	if (method == "POST")	parseBody(stream);
 }
 
@@ -89,9 +89,9 @@ void	Request::parseFileds(stringstream& stream) {
 			headers[prvsFieldName] += " " + trim(line);
 			continue ;
 		}
-		
+
 		size_t colonIndex = line.find(':');
-		fieldName = line.substr(0, colonIndex);
+		fieldName = line.substr(0, colonIndex); // convert to lower case
 		if (colonIndex != string::npos && colonIndex+1 < line.size()) { //checking there's a value
 			filedValue = line.substr(colonIndex+1);
 			filedValue = trim(filedValue); //trimin any OWS
@@ -106,22 +106,47 @@ void	Request::parseFileds(stringstream& stream) {
 
 
 
-void	Request::parseBody(stringstream& stream) {
-	// check for transer encoding
-	string	line;
-	//read byte by byte based on the content-lenght or chunked lenght
-	while(getline(stream, line)) {
-		body += line;
-		body += "\n";
-	}
-}
-
-
-
 void	Request::reconstructUri() {
 
 	const string	scheme = "http://";
 	string			authority = headers["host"];
 	string			pathQuery = target;
 	target = scheme + authority + target;
+}
+
+
+
+void	Request::parseBody(stringstream& stream) {
+	string	line;
+	size_t	lenght;
+
+	if (headers.find("content-lenght") != headers.end())
+		lenght = stoi(headers["content-lenght"]);
+	else if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
+		while (1) {
+			getline(stream, line);
+			replace(line.begin(), line.end(), '\r', ' ');// i need to parse the line
+			line = trim(line);
+			lenght = stoi(line);
+			cerr << lenght << endl;
+			if (line == "0") { //read all body
+				readAllRequest = true;
+				body += '\0';
+				break ;
+			}
+			if (lenght == 0)	break ; //no  more content
+			char	buff[lenght+1] = {0};
+			stream.read(buff, lenght);
+			cerr << buff << endl;
+			body += buff;
+			getline(stream, line); // consume the \n(its not included n the lenght)
+		}
+		return ;
+	}
+	else
+		throw("unsoported tranfer-encoding");
+	char	buff[lenght];
+	stream.read(buff, lenght);
+	body += buff;
+	readAllRequest = true;
 }

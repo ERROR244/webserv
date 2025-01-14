@@ -1,9 +1,12 @@
+#pragma once
+
 #include <iostream>
 #include <unordered_map>
 #include <sstream>
 #include <vector>
 #include <string.h>
-#include "helper_functions/stringManipulation.cpp"
+#include "helperFunctions/stringManipulation__.cpp"
+#include <algorithm>
 
 using namespace std;
 
@@ -32,11 +35,14 @@ class Request {
 	unordered_map<string, string>	headers;
 	string							body;
 
+	bool							isHeaderParsed;
+	bool							readAllRequest;
+
 	public:
-		Request(string message);
+		Request(stringstream& stream);
 
 	private:
-		void	parseMessage(const string& message);
+		void	parseMessage(stringstream& stream);
 
 		bool	isProtocole(const string& httpVersion) const;
 		bool	isTarget(const string& str) const;
