@@ -7,6 +7,13 @@
 #include <string.h>
 #include "helperFunctions/stringManipulation__.cpp"
 #include <algorithm>
+#include <sys/socket.h>
+#include <sys/epoll.h>
+#include <netinet/in.h>  // For sockaddr_in, htons, etc.
+#include <arpa/inet.h>   // For inet_pton, inet_addr, etc.
+#include <sys/socket.h>  // For socket, AF_INET, etc.
+#include <unistd.h>      // For close()
+#define BUFFER_SIZE 8192 
 
 using namespace std;
 
@@ -35,19 +42,22 @@ class Request {
 	unordered_map<string, string>	headers;
 	string							body;
 
-	bool							isHeaderParsed;
 	bool							readAllRequest;
 
+	int								parseProgress;
+	void							(Request::*parser[3])(stringstream&);
+
+	string							remainingBuffer;
+
 	public:
-		Request(stringstream& stream);
+		Request();
+		void	parseMessage(const char *buffer);
 
 	private:
-		void	parseMessage(stringstream& stream);
-
-		bool	isProtocole(const string& httpVersion) const;
-		bool	isTarget(const string& str) const;
-		bool	isMethod(const string& target) const;
-		void	parseStartLine(const string& startLine);
+		void	isProtocole(const string& httpVersion) const;
+		void	isTarget(const string& str) const;
+		void	isMethod(const string& target) const;
+		void	parseStartLine(stringstream& stream);
 
 		bool    validFieldName(const string& str) const;
 		void	parseFileds(stringstream& stream);

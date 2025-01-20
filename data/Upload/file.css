@@ -1,0 +1,137 @@
+/* style.css*/
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(to right,
+                        #3494E6, #EC6EAD);
+    height: 100vh;
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background-color: #f4f4f4;
+}
+
+.card {
+    text-align: center;
+    padding: 20px;
+    border: 2px solid #faa301;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 100%;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.app-title {
+    color: #27ae60;
+}
+
+.app-subtitle {
+    color: #333;
+}
+
+.file-label {
+    cursor: pointer;
+    display: flexbox;
+    padding: 7px;
+    background-color: #c834db;
+    color: #fff;
+    border-radius: 8px;
+    margin-bottom: 60px;
+    transition: background-color 0.3s;
+}
+
+.file-label:hover {
+    background-color: #73ec10;
+}
+
+.file-input {
+    display: none;
+}
+
+.progress-container {
+    margin-top: 15px;
+    position: relative;
+    height: 20px;
+}
+
+.progress-bar {
+    width: 0;
+    height: 100%;
+    background-color: #2ecc71;
+    border-radius: 5px;
+    transition: width 0.3s;
+}
+
+.progress-text {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #333;
+    font-size: 14px;
+    display: none;
+}
+
+.file-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.file-name {
+    color: rgb(19, 2, 255);
+}
+
+.clear-button {
+    padding: 5px 12px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: none;
+}
+
+.clear-button:hover {
+    background-color: #c0392b;
+}
+
+.preview-container img {
+    max-width: 100%;
+    max-height: 150px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 80%;
+    max-height: 80%;
+}
+
+.close {
+    color: #fff;
+    font-size: 35px;
+    font-weight: bold;
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    cursor: pointer;
+}

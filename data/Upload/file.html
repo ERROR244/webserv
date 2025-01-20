@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
+    <link rel="stylesheet" href="file.css">
+    <title>File Upload with Progress Bar</title>
+</head>
+
+<body>
+    <div class="card">
+        <h1 class="app-title">
+            <i class="fas fa-file-upload"></i>
+            GeeksforGeeks
+        </h1>
+        <h3 class="app-subtitle">
+              File Upload with Progress Bar
+          </h3>
+        <label for="fileInput" class="file-label">
+            <i class="fas fa-cloud-upload-alt"></i> 
+          Choose a file
+        </label>
+        <input type="file" id="fileInput" class="file-input" />
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-text" id="progressText"></div>
+        </div>
+        <div class="file-details">
+            <div class="file-name" id="fileName"></div>
+            <button class="clear-button" id="clearButton">
+                <i class="fas fa-times"></i>
+                Clear
+            </button>
+        </div>
+        <div class="preview-container" id="previewContainer"></div>
+    </div>
+    <div class="modal" id="myModal">
+        <span class="close" id="closeModal">&times;</span>
+        <img class="modal-content" id="uploadedImageModal">
+    </div>
+    <script src="file.js"></script>
+</body>
+
+</html>

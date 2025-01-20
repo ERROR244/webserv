@@ -1,71 +1,97 @@
 #include "requestParse.hpp"
 
-Request::Request(stringstream& stream) {
-	parseMessage(stream);
+Request::Request() : parseProgress(0), parser{&Request::parseStartLine, &Request::parseFileds, &Request::parseBody} {}
 
 
-	//DEBUG
-	cerr << startLine << endl;
-	cerr << method << " " << target << " " << httpVersion << endl;
-	for (const auto& h : headers) {
-		cerr << h.first << ": " << h.second << endl;
+void	Request::parseMessage(const char *buffer) {
+	if (readAllRequest == true) {
+		cerr << method << endl;
+		cerr << target << endl;
+		cerr << httpVersion << endl;
+		for (const auto& it : headers)	cerr << it.first << ": " << it.second << endl;
+		cerr << body << endl;
+		exit(0);
 	}
-	cerr << body << endl;
-	//DEBUG
+	// char	buffer[BUFFER_SIZE+1];
+	// int		byteRead;
+	// if ((byteRead = recv(clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT)) < 0) {
+	// 	perror("recv syscall failed");
+	// 	exit(-1);
+	// }
+
+	remainingBuffer += buffer; // appendind the new data to remaining old one;
+	stringstream	stream(remainingBuffer);
+	(this->*parser[parseProgress])(stream);
 }
 
 
 
-void	Request::parseMessage(stringstream& stream) {
-	string			line;
-
-	while (getline(stream, line) && (line == "\r" || line.size() == 0)); //skiping any empty lines proceding the start-line
-	parseStartLine(line);
-	parseFileds(stream);
-	if (target[0] == '/')	reconstructUri();
-	isHeaderParsed = true;
-	if (method == "POST")	parseBody(stream);
-}
-
-
-
-bool	Request::isProtocole(const string& httpVersion) const {
+void	Request::isProtocole(const string& httpVersion) const {
 	//if the client is usin https reject the request
 	if (!strncmp(httpVersion.c_str(), "HTTP/", 5) && isdigit(httpVersion[5]) && httpVersion[6] == '.' && isdigit(httpVersion[7]))
-		return true;
-	return false;
+		return ;
+	throw("bad requst");;
 }
 
-bool	Request::isTarget(const string& str) const {
+void	Request::isTarget(const string& str) const {
 	const string	validCharachters = "-._~:/?#[]@!$&'()*+,;="; // valid charachters that can be in a target reques
 
-	if (strncmp(str.c_str(), "http://", 7) && str[0] != '/')	return false; //if not origin form || absolute form
+	if (strncmp(str.c_str(), "http://", 7) && str[0] != '/')	throw("bad requst");; //if not origin form || absolute form
 	for (const auto& c : str) {
-		if (!iswalnum(c) && validCharachters.find(c) == string::npos)	return false;
+		if (!iswalnum(c) && validCharachters.find(c) == string::npos)	throw("bad requst");;
 	}
-	return true;
 }
 
-bool	Request::isMethod(const string& target) const {
-	if (target == "GET" || target == "POST" || target == "DELETE") return true;
-	return false;
+void	Request::isMethod(const string& target) const {
+	if (target == "GET" || target == "POST" || target == "DELETE") return ;
+	throw("bad requst");
 }
 
-void	Request::parseStartLine(const string& startLine) {
-	stringstream	stream(startLine);
-	string			word;
-	vector<string>	startLineComps;
+void	Request::parseStartLine(stringstream& stream) {
+	static int					startLineParseProgress;
+	bool						lineEndedWithLF = false;
+	string						line;
+	vector<string>				startLineComps;
+	vector<string>::iterator	startLineCompsIt;
 
-	while (stream >> word) {
-		startLineComps.push_back(word);
+	getline(stream, line);
+	if (!stream.eof()) {
+		line += '\n';
+		lineEndedWithLF = true;
 	}
-	if (startLineComps.size() != 3 || !isProtocole(startLineComps[2]) || !isTarget(startLineComps[1]) || !isMethod(startLineComps[0])) {
+	startLineComps = split_ws(line);
+	if (startLineComps.empty()) return ;
+	if (!lineEndedWithLF)	remainingBuffer = line; // adding the left overs if the line didn't end with LF
+	startLineCompsIt = startLineComps.begin();
+	switch (startLineParseProgress)
+	{
+	case 0: {
+		isMethod(*startLineCompsIt);
+		method = *startLineCompsIt;
+		++startLineParseProgress;
+		if (++startLineCompsIt == startLineComps.end())	break;
+	}
+	case 1: {
+		isTarget(*startLineCompsIt);
+		target = *startLineCompsIt;
+		++startLineParseProgress;
+		if (++startLineCompsIt == startLineComps.end())	break;
+	}
+	case 2: {
+		isProtocole(*startLineCompsIt);
+		httpVersion = *startLineCompsIt;
+		++startLineParseProgress;
+		break;
+	}
+	case 3:
+		if (++startLineCompsIt != startLineComps.end())	throw("bad request");
+	}
+	if (lineEndedWithLF && startLineParseProgress != 3)
 		throw("bad request");
+	else if (startLineParseProgress == 3) {
+		++parseProgress;
+		parseFileds(stream);
 	}
-	this->startLine = startLine;
-	method = startLineComps[0];
-	target = startLineComps[1];
-	httpVersion = startLineComps[2];
 }
 
 
@@ -81,7 +107,8 @@ void	Request::parseFileds(stringstream& stream) {
 	//if line starting with /t ot /sp that means its a continuation for a line foldin;
 	string	line;
 	string	prvsFieldName;
-	while(getline(stream, line) && line != "\r" && line.size() != 0) {
+
+	while(getline(stream, line) && line.size()) {
 		string	fieldName;
 		string	filedValue;//can be empty
 
@@ -102,8 +129,14 @@ void	Request::parseFileds(stringstream& stream) {
 		headers[fieldName] = filedValue;
 		prvsFieldName = fieldName;
 	}
+	if (stream.eof()) {
+		remainingBuffer = line;
+		return ;
+	}
+	++parseProgress;
+	if (method == "POST")	parseBody(stream);
+	else	readAllRequest = true;
 }
-
 
 
 void	Request::reconstructUri() {
@@ -117,36 +150,46 @@ void	Request::reconstructUri() {
 
 
 void	Request::parseBody(stringstream& stream) {
+	static size_t	lenght;
+	// static bool		startBodyParsin;
 	string	line;
-	size_t	lenght;
+	// size_t	lenght;
 
-	if (headers.find("content-lenght") != headers.end())
-		lenght = stoi(headers["content-lenght"]);
+	// if (!startBodyParsin) {
+	// 	getline(stream, line);
+	// 	if (stream.eof())
+	// 		return ;
+	// 	startBodyParsin = true;
+	// }
+	cerr << "here" << endl;
+	if (headers.find("content-lenght") != headers.end() && lenght <= 0)
+		lenght = stoi(headers["content-lenght"]) + 1;
 	else if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
 		while (1) {
-			getline(stream, line);
-			replace(line.begin(), line.end(), '\r', ' ');// i need to parse the line
-			line = trim(line);
-			lenght = stoi(line);
-			cerr << lenght << endl;
-			if (line == "0") { //read all body
-				readAllRequest = true;
-				body += '\0';
-				break ;
+			if (lenght <= 0) {
+				getline(stream, line);
+				lenght = stoi(line); //in hex
+				if (line == "0") { //read all body
+					body += '\0';
+					readAllRequest = true;
+					break ;
+				}
 			}
-			if (lenght == 0)	break ; //no  more content
+			if (line.size() == 0)	break ; //no  more content
 			char	buff[lenght+1] = {0};
 			stream.read(buff, lenght);
-			cerr << buff << endl;
+			lenght -= strlen(buff);
 			body += buff;
 			getline(stream, line); // consume the \n(its not included n the lenght)
 		}
 		return ;
 	}
-	else
+	else if (lenght <= 0)
 		throw("unsoported tranfer-encoding");
-	char	buff[lenght];
+	char	buff[lenght+1] = {0};
 	stream.read(buff, lenght);
+	lenght -= stream.gcount();
 	body += buff;
-	readAllRequest = true;
+	if (lenght <= 0) readAllRequest = true;
 }
+
