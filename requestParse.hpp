@@ -1,12 +1,13 @@
 #pragma once
 
 #include <iostream>
-#include <unordered_map>
-#include <sstream>
-#include <vector>
 #include <string.h>
-#include "helperFunctions/stringManipulation__.cpp"
+#include <unordered_map>
+#include <vector>
+#include <stack>
+#include <sstream>
 #include <algorithm>
+#include "helperFunctions/stringManipulation__.cpp"
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>  // For sockaddr_in, htons, etc.
@@ -35,19 +36,17 @@ using namespace std;
 	- server MUST respond with a 400(bad request) if the host field is not found or the there's multiple host fields
 */
 class Request {
-	string							startLine;
-	string							method;
-	string							target;
-	string							httpVersion;
-	unordered_map<string, string>	headers;
-	string							body;
+	string											startLine;
+	string											method;
+	string											target;
+	string											httpVersion;
+	unordered_map<string, string>					headers;
+	string											body;
 
-	bool							readAllRequest;
+	stack<bool (Request::*)(stringstream&)>			parseFunctions;
+	stack<void (Request::*)(const string&) const>	parseFunctionsStarterLine;
 
-	int								parseProgress;
-	void							(Request::*parser[3])(stringstream&);
-
-	string							remainingBuffer;
+	string											remainingBuffer;
 
 	public:
 		Request();
@@ -57,12 +56,12 @@ class Request {
 		void	isProtocole(const string& httpVersion) const;
 		void	isTarget(const string& str) const;
 		void	isMethod(const string& target) const;
-		void	parseStartLine(stringstream& stream);
+		bool	parseStartLine(stringstream& stream);
 
 		bool    validFieldName(const string& str) const;
-		void	parseFileds(stringstream& stream);
+		bool	parseFileds(stringstream& stream);
 
-		void	parseBody(stringstream& stream);
+		bool	parseBody(stringstream& stream);
 
 		void	reconstructUri();
 };

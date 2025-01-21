@@ -15,15 +15,16 @@ string  trim(const string& str) {
 vector<string>	split_ws(string& str) {
 	const string	whiteSpace = " \t\n\r\f\v";
 	string			remainingStr;
-	int				pos = 0;
+	int				pos = 0, i = 0;
 	vector<string>	strings;
 
-	for (int i = 0; str[i]; ++i) {
+	while (str[i]) {
 		if (whiteSpace.find(str[i]) != string::npos) {
 			strings.push_back(str.substr(pos, i - pos));
 			while (str[i] && whiteSpace.find(str[i]) != string::npos)	++i;
 			pos = i;
 		}
+		else ++i;
 	}
 	while (str.begin()+pos != str.end()) {
 		remainingStr += *(str.begin()+pos); //movin the string to point to what i ll add to the remaining buffer;

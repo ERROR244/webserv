@@ -1,44 +1,53 @@
 #include "requestParse.hpp"
 
-Request::Request() : parseProgress(0), parser{&Request::parseStartLine, &Request::parseFileds, &Request::parseBody} {}
+Request::Request() {
+	parseFunctions.push(&Request::parseBody);
+	parseFunctions.push(&Request::parseFileds);
+	parseFunctions.push(&Request::parseStartLine);
+
+	parseFunctionsStarterLine.push(&Request::isProtocole);
+	parseFunctionsStarterLine.push(&Request::isTarget);
+	parseFunctionsStarterLine.push(&Request::isMethod);
+}
 
 
 void	Request::parseMessage(const char *buffer) {
-	if (readAllRequest == true) {
-		cerr << method << endl;
-		cerr << target << endl;
-		cerr << httpVersion << endl;
-		for (const auto& it : headers)	cerr << it.first << ": " << it.second << endl;
-		cerr << body << endl;
-		exit(0);
-	}
-	// char	buffer[BUFFER_SIZE+1];
+	// char	buffer[BUFFER_SIZE+1] = {0};
 	// int		byteRead;
 	// if ((byteRead = recv(clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT)) < 0) {
 	// 	perror("recv syscall failed");
 	// 	exit(-1);
 	// }
 
-	remainingBuffer += buffer; // appendind the new data to remaining old one;
+	remainingBuffer += buffer;
 	stringstream	stream(remainingBuffer);
-	(this->*parser[parseProgress])(stream);
+	while(!parseFunctions.empty()) {
+		const auto& func = parseFunctions.top();
+		if (!(this->*func)(stream))	return;
+		parseFunctions.pop();
+	}
+	cerr << method << endl;
+	cerr << target << endl;
+	cerr << httpVersion << endl;
+	for (const auto& it : headers)	cerr << it.first << ": " << it.second << endl;
+	cerr << body << endl;
+	exit(0);
 }
 
 
 
-void	Request::isProtocole(const string& httpVersion) const {
-	//if the client is usin https reject the request
-	if (!strncmp(httpVersion.c_str(), "HTTP/", 5) && isdigit(httpVersion[5]) && httpVersion[6] == '.' && isdigit(httpVersion[7]))
+void	Request::isProtocole(const string& http) const {
+	if (http.size() == 8 && !strncmp(http.c_str(), "HTTP/", 5) && isdigit(http[5]) && http[6] == '.' && isdigit(http[7]))
 		return ;
-	throw("bad requst");;
+	throw("bad requst");
 }
 
 void	Request::isTarget(const string& str) const {
-	const string	validCharachters = "-._~:/?#[]@!$&'()*+,;="; // valid charachters that can be in a target reques
+	const string	validCharachters = "-._~:/?#[]@!$&'()*+,;=";
 
-	if (strncmp(str.c_str(), "http://", 7) && str[0] != '/')	throw("bad requst");; //if not origin form || absolute form
+	if (strncmp(str.c_str(), "http://", 7) && str[0] != '/')	throw("bad requst");
 	for (const auto& c : str) {
-		if (!iswalnum(c) && validCharachters.find(c) == string::npos)	throw("bad requst");;
+		if (!iswalnum(c) && validCharachters.find(c) == string::npos)	throw("bad requst");
 	}
 }
 
@@ -47,8 +56,7 @@ void	Request::isMethod(const string& target) const {
 	throw("bad requst");
 }
 
-void	Request::parseStartLine(stringstream& stream) {
-	static int					startLineParseProgress;
+bool	Request::parseStartLine(stringstream& stream) {
 	bool						lineEndedWithLF = false;
 	string						line;
 	vector<string>				startLineComps;
@@ -60,38 +68,19 @@ void	Request::parseStartLine(stringstream& stream) {
 		lineEndedWithLF = true;
 	}
 	startLineComps = split_ws(line);
-	if (startLineComps.empty()) return ;
-	if (!lineEndedWithLF)	remainingBuffer = line; // adding the left overs if the line didn't end with LF
+	if (startLineComps.empty()) return false;
+	if (!lineEndedWithLF)	remainingBuffer = line;
 	startLineCompsIt = startLineComps.begin();
-	switch (startLineParseProgress)
-	{
-	case 0: {
-		isMethod(*startLineCompsIt);
-		method = *startLineCompsIt;
-		++startLineParseProgress;
-		if (++startLineCompsIt == startLineComps.end())	break;
+	while(!parseFunctionsStarterLine.empty()) {
+		const auto& func = parseFunctionsStarterLine.top();
+		(this->*func)(*startLineCompsIt);
+		//store data
+		parseFunctionsStarterLine.pop();
+		if (parseFunctionsStarterLine.empty())	break;
+		if (++startLineCompsIt == startLineComps.end())	return false;
 	}
-	case 1: {
-		isTarget(*startLineCompsIt);
-		target = *startLineCompsIt;
-		++startLineParseProgress;
-		if (++startLineCompsIt == startLineComps.end())	break;
-	}
-	case 2: {
-		isProtocole(*startLineCompsIt);
-		httpVersion = *startLineCompsIt;
-		++startLineParseProgress;
-		break;
-	}
-	case 3:
-		if (++startLineCompsIt != startLineComps.end())	throw("bad request");
-	}
-	if (lineEndedWithLF && startLineParseProgress != 3)
-		throw("bad request");
-	else if (startLineParseProgress == 3) {
-		++parseProgress;
-		parseFileds(stream);
-	}
+	if (++startLineCompsIt != startLineComps.end() || !lineEndedWithLF)	throw("bad request");
+	return true;
 }
 
 
@@ -103,27 +92,26 @@ bool    Request::validFieldName(const string& str) const {
 	return true;
 }
 
-void	Request::parseFileds(stringstream& stream) {
-	//if line starting with /t ot /sp that means its a continuation for a line foldin;
-	string	line;
-	string	prvsFieldName;
+bool	Request::parseFileds(stringstream& stream) {
+	string			line;
+	static string	prvsFieldName;
 
 	while(getline(stream, line) && line.size()) {
 		string	fieldName;
 		string	filedValue;//can be empty
 
-		if (!headers.empty() && (line[0] == ' ' || line[0] == '\t')) { //handle for line folding
+		if (!headers.empty() && (line[0] == ' ' || line[0] == '\t')) {
 			headers[prvsFieldName] += " " + trim(line);
 			continue ;
 		}
 
 		size_t colonIndex = line.find(':');
 		fieldName = line.substr(0, colonIndex); // convert to lower case
-		if (colonIndex != string::npos && colonIndex+1 < line.size()) { //checking there's a value
+		if (colonIndex != string::npos && colonIndex+1 < line.size()) {
 			filedValue = line.substr(colonIndex+1);
 			filedValue = trim(filedValue); //trimin any OWS
 		}
-		if (!validFieldName(fieldName)) { // a-z && 1-9 && -_
+		if (colonIndex == string::npos || !validFieldName(fieldName)) {
 			throw("bad request");
 		}
 		headers[fieldName] = filedValue;
@@ -131,11 +119,9 @@ void	Request::parseFileds(stringstream& stream) {
 	}
 	if (stream.eof()) {
 		remainingBuffer = line;
-		return ;
+		return false;
 	}
-	++parseProgress;
-	if (method == "POST")	parseBody(stream);
-	else	readAllRequest = true;
+	return true;
 }
 
 
@@ -149,7 +135,7 @@ void	Request::reconstructUri() {
 
 
 
-void	Request::parseBody(stringstream& stream) {
+bool	Request::parseBody(stringstream& stream) {
 	static size_t	lenght;
 	// static bool		startBodyParsin;
 	string	line;
@@ -161,7 +147,7 @@ void	Request::parseBody(stringstream& stream) {
 	// 		return ;
 	// 	startBodyParsin = true;
 	// }
-	cerr << "here" << endl;
+	if (method != "POST") return true;
 	if (headers.find("content-lenght") != headers.end() && lenght <= 0)
 		lenght = stoi(headers["content-lenght"]) + 1;
 	else if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
@@ -171,7 +157,6 @@ void	Request::parseBody(stringstream& stream) {
 				lenght = stoi(line); //in hex
 				if (line == "0") { //read all body
 					body += '\0';
-					readAllRequest = true;
 					break ;
 				}
 			}
@@ -182,7 +167,7 @@ void	Request::parseBody(stringstream& stream) {
 			body += buff;
 			getline(stream, line); // consume the \n(its not included n the lenght)
 		}
-		return ;
+		return false;
 	}
 	else if (lenght <= 0)
 		throw("unsoported tranfer-encoding");
@@ -190,6 +175,6 @@ void	Request::parseBody(stringstream& stream) {
 	stream.read(buff, lenght);
 	lenght -= stream.gcount();
 	body += buff;
-	if (lenght <= 0) readAllRequest = true;
+	return true;
 }
 
