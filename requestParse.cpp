@@ -138,48 +138,44 @@ bool	Request::parseFileds(stringstream& stream) {
 
 
 bool	Request::parseBody(stringstream& stream) {
-	static size_t	lenght;
+	static int	length;
 	string	line;
 
 	if (startLineComponents[0] != "POST") return true;
-	if (headers.find("content-lenght") != headers.end() && lenght <= 0)
-		lenght = stoi(headers["content-lenght"]) + 1;
+	remainingBuffer.clear();
+	if (headers.find("content-length") != headers.end() && length <= 0)
+		length = stoi(headers["content-length"]);
 	else if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
 		while (1) {
-			if (lenght <= 0) {
+			if (length <= 0) {
 				getline(stream, line);
 				if (stream.eof()) {
-					remainingBuffer = "";
+					remainingBuffer = line;
 					return false;
 				}
-				lenght = stoi(line) + 1; //in hex
-				if (lenght == 1) {
-					body += '\0';
-					return true;
-				}
+				length = stoi(line);
+				if (line == "0")	return true;
 			}
-			cerr << "b lenght:  " << lenght << endl;
-			char *buff = new char[lenght];
-			bzero(buff, lenght);
-			stream.read(buff, lenght);
+			char *buff = new char[length+1];
+			memset(buff, 0, length+1);
+			stream.read(buff, length);
 			if (stream.gcount() == 0) return false;
-			lenght -= strlen(buff);
-			cerr << "a lenght:  " << lenght << endl;
+			length -= stream.gcount();
 			body += buff;
 			delete []buff;
-			getline(stream, line); // consume the \n(its not included n the lenght)
+			getline(stream, line); // consume the \n(its not included n the length)
 		}
 		return false;
 	}
-	else if (lenght <= 0)
+	else if (length <= 0)
 		throw("unsoported tranfer-encoding");
-	char *buff = new char[lenght];
-	bzero(buff, lenght);
-	stream.read(buff, lenght);
-	lenght -= stream.gcount();
+	char *buff = new char[length+1];
+	memset(buff, 0, length+1);
+	stream.read(buff, length);
+	length -= stream.gcount();
 	body += buff;
 	delete []buff;
-	if (lenght > 0)	return false;
+	if (length > 0)	return false;
 	return true;
 }
 
