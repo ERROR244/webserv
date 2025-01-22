@@ -26,9 +26,7 @@ void	Request::parseMessage(const char *buffer) {
 		if (!(this->*func)(stream))	return;
 		parseFunctions.pop();
 	}
-	cerr << method << endl;
-	cerr << target << endl;
-	cerr << httpVersion << endl;
+	for (const auto& it: startLineComponents)	cerr << it << endl;
 	for (const auto& it : headers)	cerr << it.first << ": " << it.second << endl;
 	cerr << body << endl;
 	exit(0);
@@ -68,16 +66,19 @@ bool	Request::parseStartLine(stringstream& stream) {
 		lineEndedWithLF = true;
 	}
 	startLineComps = split_ws(line);
-	if (startLineComps.empty()) return false;
+	if (startLineComps.empty())
+		return false;
 	if (!lineEndedWithLF)	remainingBuffer = line;
 	startLineCompsIt = startLineComps.begin();
 	while(!parseFunctionsStarterLine.empty()) {
 		const auto& func = parseFunctionsStarterLine.top();
 		(this->*func)(*startLineCompsIt);
-		//store data
+		startLineComponents.push_back(*startLineCompsIt);
 		parseFunctionsStarterLine.pop();
-		if (parseFunctionsStarterLine.empty())	break;
-		if (++startLineCompsIt == startLineComps.end())	return false;
+		if (parseFunctionsStarterLine.empty())
+			break;
+		if (++startLineCompsIt == startLineComps.end())
+			return false;
 	}
 	if (++startLineCompsIt != startLineComps.end() || !lineEndedWithLF)	throw("bad request");
 	return true;
@@ -85,9 +86,10 @@ bool	Request::parseStartLine(stringstream& stream) {
 
 
 
-bool    Request::validFieldName(const string& str) const {
-	for (const auto& c: str) {
+bool    Request::validFieldName(string& str) const {
+	for (auto& c: str) {
 		if (!iswalnum(c) && c != '_' && c != '-')	return false;
+		c = tolower(c);
 	}
 	return true;
 }
@@ -98,7 +100,7 @@ bool	Request::parseFileds(stringstream& stream) {
 
 	while(getline(stream, line) && line.size()) {
 		string	fieldName;
-		string	filedValue;//can be empty
+		string	filedValue;
 
 		if (!headers.empty() && (line[0] == ' ' || line[0] == '\t')) {
 			headers[prvsFieldName] += " " + trim(line);
@@ -106,10 +108,10 @@ bool	Request::parseFileds(stringstream& stream) {
 		}
 
 		size_t colonIndex = line.find(':');
-		fieldName = line.substr(0, colonIndex); // convert to lower case
+		fieldName = line.substr(0, colonIndex);
 		if (colonIndex != string::npos && colonIndex+1 < line.size()) {
 			filedValue = line.substr(colonIndex+1);
-			filedValue = trim(filedValue); //trimin any OWS
+			filedValue = trim(filedValue);
 		}
 		if (colonIndex == string::npos || !validFieldName(fieldName)) {
 			throw("bad request");
@@ -125,56 +127,52 @@ bool	Request::parseFileds(stringstream& stream) {
 }
 
 
-void	Request::reconstructUri() {
+// void	Request::reconstructUri() {
 
-	const string	scheme = "http://";
-	string			authority = headers["host"];
-	string			pathQuery = target;
-	target = scheme + authority + target;
-}
+// 	const string	scheme = "http://";
+// 	string			authority = headers["host"];
+// 	string			pathQuery = target;
+// 	target = scheme + authority + target;
+// }
 
 
 
 bool	Request::parseBody(stringstream& stream) {
 	static size_t	lenght;
-	// static bool		startBodyParsin;
 	string	line;
-	// size_t	lenght;
 
-	// if (!startBodyParsin) {
-	// 	getline(stream, line);
-	// 	if (stream.eof())
-	// 		return ;
-	// 	startBodyParsin = true;
-	// }
-	if (method != "POST") return true;
+	if (startLineComponents[0] != "POST") return true;
 	if (headers.find("content-lenght") != headers.end() && lenght <= 0)
 		lenght = stoi(headers["content-lenght"]) + 1;
 	else if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
 		while (1) {
 			if (lenght <= 0) {
 				getline(stream, line);
-				lenght = stoi(line); //in hex
+				lenght = stoi(line) + 1; //in hex
 				if (line == "0") { //read all body
 					body += '\0';
 					break ;
 				}
 			}
 			if (line.size() == 0)	break ; //no  more content
-			char	buff[lenght+1] = {0};
+			char *buff = new char[lenght];
+			bzero(buff, lenght);
 			stream.read(buff, lenght);
 			lenght -= strlen(buff);
 			body += buff;
+			delete []buff;
 			getline(stream, line); // consume the \n(its not included n the lenght)
 		}
 		return false;
 	}
 	else if (lenght <= 0)
 		throw("unsoported tranfer-encoding");
-	char	buff[lenght+1] = {0};
+	char *buff = new char[lenght];
+	bzero(buff, lenght);
 	stream.read(buff, lenght);
 	lenght -= stream.gcount();
 	body += buff;
+	delete []buff;
 	return true;
 }
 
