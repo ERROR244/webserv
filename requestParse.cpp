@@ -148,17 +148,23 @@ bool	Request::parseBody(stringstream& stream) {
 		while (1) {
 			if (lenght <= 0) {
 				getline(stream, line);
+				if (stream.eof()) {
+					remainingBuffer = "";
+					return false;
+				}
 				lenght = stoi(line) + 1; //in hex
-				if (line == "0") { //read all body
+				if (lenght == 1) {
 					body += '\0';
-					break ;
+					return true;
 				}
 			}
-			if (line.size() == 0)	break ; //no  more content
+			cerr << "b lenght:  " << lenght << endl;
 			char *buff = new char[lenght];
 			bzero(buff, lenght);
 			stream.read(buff, lenght);
+			if (stream.gcount() == 0) return false;
 			lenght -= strlen(buff);
+			cerr << "a lenght:  " << lenght << endl;
 			body += buff;
 			delete []buff;
 			getline(stream, line); // consume the \n(its not included n the lenght)
@@ -173,6 +179,7 @@ bool	Request::parseBody(stringstream& stream) {
 	lenght -= stream.gcount();
 	body += buff;
 	delete []buff;
+	if (lenght > 0)	return false;
 	return true;
 }
 
