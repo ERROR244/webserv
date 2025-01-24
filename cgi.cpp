@@ -7,22 +7,27 @@
 
 #include "requestParse.hpp"
 
-void    prepearingCgiEnvVars() {
+void    prepearingCgiEnvVars(Request req) {
     unordered_map<string, string> env;
-    env["AUTH_TYPE"] = "";
-    env["CONTENT_LENGTH"] = -1;//content-length || the total length of the chunks;
-    env["CONTENT_TYPE"] = "";//content-type;
     env["GATEWAY_INTERFACE"] = "CGI/1.1";//idk
-    env["HTTP_ACCEPT"] = "";//idk
-    env["HTTP_ACCEPT_CHARSET"] = "";//For example, utf-8;q=0.5.
-    env["HTTP_ACCEPT_ENCODING"] = "";//For example, compress;q=0.5.
-    env["HTTP_ACCEPT_LANGUAGE"] = "";//For example, en;q=0.5.
-    env["HTTP_FORWARDED"] = "";//shows the address and port through of the proxy server.
+    env["SERVER_PROTOCOL"] = "http/1.1";
+    env["REMOTE_METHODE"] = req.getMethod();
+    env["CONTENT_LENGTH"] = req.getHeader("content-length");
+    env["CONTENT_TYPE"] = req.getHeader("content-type");
+    env["HTTP_ACCEPT"] = req.getHeader("accept");
+    env["HTTP_ACCEPT_CHARSET"] = req.getHeader("accept-charset");
+    env["HTTP_ACCEPT_ENCODING"] = req.getHeader("accept-encoding");
+    env["HTTP_ACCEPT_LANGUAGE"] = req.getHeader("accept-language");
+    env["HTTP_USER_AGENT"] = req.getHeader("user-agent");
     env["HTTP_HOST"] = "";//idk
-    env["HTTP_PROXY_AUTHORIZATION"] = "";//idk
-    env["HTTP_USER_AGENT"] = "Google chroome";
-    env["PATH_INFO"] = "";//optionally URI contains extra infos after the scripts name;
+    env["PATH_INFO"] = "";//extract it manually from the target uri
     env["PATH_TRANSLATED"] = "";//idk
     env["QUERY_STRING"] = "";//?->
     env["REMOTE_ADDR"] = "";//idk
+    env["REMOTE_HOST"] = "";
+    env["REMOTE_USER"] = "";
+    env["SCRIPT_NAME"] = "";
+    env["SERVER_NAME"] = "";
+    env["SERVER_PORT"] = "";
+    env["WEBTOP_USER"] = "";
 }

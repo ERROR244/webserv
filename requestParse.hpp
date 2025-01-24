@@ -18,32 +18,38 @@
 
 using namespace std;
 
+typedef enum e_methods{
+	GET,
+	POST,
+	DELETE
+}	t_methods;
+
 //echo -e "GET / HTTP/1.1\r\n    Host: localhost\r\n\r\n" | nc localhost 8080 // cmd for manually writing requests
 
 class Request {
-	vector<string>									startLineComponents;
-	unordered_map<string, string>					headers;
-	string											body;
-
-	stack<bool (Request::*)(stringstream&)>			parseFunctions;
-	stack<void (Request::*)(const string&) const>	parseFunctionsStarterLine;
-
-	string											remainingBuffer;
-
 	public:
 		Request();
-		void	parseMessage(const char *buffer);
-
+		void											parseMessage(const int clientFd);
+		const string&									getMethod()	const;
+		const string&									getTarget()	const;
+		const string&									getHttpProtocole()	const;
+		const string&									getHeader(const string&);
+		const bool&										getRequestStatus() const;
 	private:
-		void	isProtocole(const string& httpVersion) const;
-		void	isTarget(const string& str) const;
-		void	isMethod(const string& target) const;
-		bool	parseStartLine(stringstream& stream);
+		vector<string>									startLineComponents;
+		unordered_map<string, string>					headers;
+		string											body;
+		stack<bool (Request::*)(stringstream&)>			parseFunctions;
+		stack<void (Request::*)(const string&) const>	parseFunctionsStarterLine;
+		string											remainingBuffer;
+		bool											readAllRequest;
 
-		bool    validFieldName(string& str) const;
-		bool	parseFileds(stringstream& stream);
-
-		bool	parseBody(stringstream& stream);
-
-		void	reconstructUri();
+		void											isProtocole(const string& httpVersion) const;
+		void											isTarget(const string& str) const;
+		void											isMethod(const string& target) const;
+		bool											parseStartLine(stringstream& stream);
+		bool											validFieldName(string& str) const;
+		bool											parseFileds(stringstream& stream);
+		bool											parseBody(stringstream& stream);
+		void											reconstructUri();
 };

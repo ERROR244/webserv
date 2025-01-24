@@ -11,13 +11,13 @@ Request::Request() {
 }
 
 
-void	Request::parseMessage(const char *buffer) {
-	// char	buffer[BUFFER_SIZE+1] = {0};
-	// int		byteRead;
-	// if ((byteRead = recv(clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT)) < 0) {
-	// 	perror("recv syscall failed");
-	// 	exit(-1);
-	// }
+void	Request::parseMessage(const int clientFd) {
+	char	buffer[BUFFER_SIZE+1] = {0};
+	int		byteRead;
+	if ((byteRead = recv(clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT)) < 0) {
+		perror("recv syscall failed");
+		exit(-1);
+	}
 
 	remainingBuffer += buffer;
 	stringstream	stream(remainingBuffer);
@@ -29,7 +29,7 @@ void	Request::parseMessage(const char *buffer) {
 	for (const auto& it: startLineComponents)	cerr << it << endl;
 	for (const auto& it : headers)	cerr << it.first << ": " << it.second << endl;
 	cerr << body << endl;
-	exit(0);
+	readAllRequest = true;
 }
 
 
@@ -138,6 +138,7 @@ bool	Request::parseFileds(stringstream& stream) {
 
 
 bool	Request::parseBody(stringstream& stream) {
+	//sending the respons here
 	static int	length;
 	string	line;
 
@@ -177,5 +178,29 @@ bool	Request::parseBody(stringstream& stream) {
 	delete []buff;
 	if (length > 0)	return false;
 	return true;
+}
+
+
+
+const string&	Request::getMethod()	const {
+	return (startLineComponents[0]);
+}
+
+const string&	Request::getTarget()	const {
+	return (startLineComponents[1]);
+}
+
+const string&	Request::getHttpProtocole()	const {
+	return (startLineComponents[2]);
+}
+
+const string&	Request::getHeader(const string& header) {
+	if (headers.find(header) != headers.end())
+		return (headers[header]);
+	return "";
+}
+
+const bool&	Request::getRequestStatus() const {
+	return readAllRequest;
 }
 
