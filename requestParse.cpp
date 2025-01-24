@@ -20,6 +20,7 @@ void	Request::parseMessage(const int clientFd) {
 	}
 
 	remainingBuffer += buffer;
+	replace(remainingBuffer.begin(), remainingBuffer.end(), '\r', ' ');
 	stringstream	stream(remainingBuffer);
 	while(!parseFunctions.empty()) {
 		const auto& func = parseFunctions.top();

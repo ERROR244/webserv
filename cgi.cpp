@@ -11,6 +11,7 @@ void    prepearingCgiEnvVars(Request req) {
     unordered_map<string, string> env;
     env["GATEWAY_INTERFACE"] = "CGI/1.1";//idk
     env["SERVER_PROTOCOL"] = "http/1.1";
+    env["SERVER_NAME"] = "localhost";
     env["REMOTE_METHODE"] = req.getMethod();
     env["CONTENT_LENGTH"] = req.getHeader("content-length");
     env["CONTENT_TYPE"] = req.getHeader("content-type");
@@ -27,7 +28,6 @@ void    prepearingCgiEnvVars(Request req) {
     env["REMOTE_HOST"] = "";
     env["REMOTE_USER"] = "";
     env["SCRIPT_NAME"] = "";
-    env["SERVER_NAME"] = "";
     env["SERVER_PORT"] = "";
     env["WEBTOP_USER"] = "";
 }
