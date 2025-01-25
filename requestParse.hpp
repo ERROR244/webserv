@@ -27,14 +27,6 @@ typedef enum e_methods{
 //echo -e "GET / HTTP/1.1\r\n    Host: localhost\r\n\r\n" | nc localhost 8080 // cmd for manually writing requests
 
 class Request {
-	public:
-		Request();
-		void											parseMessage(const int clientFd);
-		const string&									getMethod()	const;
-		const string&									getTarget()	const;
-		const string&									getHttpProtocole()	const;
-		const string&									getHeader(const string&);
-		const bool&										getRequestStatus() const;
 	private:
 		vector<string>									startLineComponents;
 		unordered_map<string, string>					headers;
@@ -52,4 +44,12 @@ class Request {
 		bool											parseFileds(stringstream& stream);
 		bool											parseBody(stringstream& stream);
 		void											reconstructUri();
+	public:
+		Request();
+		void											parseMessage(const int clientFd);
+		const string&									getMethod()	const;
+		const string&									getTarget()	const;
+		const string&									getHttpProtocole()	const;
+		const string&									getHeader(const string&);
+		const bool&										getRequestStatus() const;
 };
