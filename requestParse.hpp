@@ -7,7 +7,7 @@
 #include <stack>
 #include <sstream>
 #include <algorithm>
-#include "helperFunctions/stringManipulation__.cpp"
+// #include "helperFunctions/stringManipulation__.cpp"
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>  // For sockaddr_in, htons, etc.
@@ -17,7 +17,8 @@
 #define BUFFER_SIZE 8192 
 
 using namespace std;
-
+string  trim(const string& str);
+vector<string>	split_ws(string& str);
 typedef enum e_methods{
 	GET,
 	POST,
@@ -50,6 +51,6 @@ class Request {
 		const string&									getMethod()	const;
 		const string&									getTarget()	const;
 		const string&									getHttpProtocole()	const;
-		const string&									getHeader(const string&);
+		const string									getHeader(const string&);
 		const bool&										getRequestStatus() const;
 };

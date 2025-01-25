@@ -7,7 +7,9 @@
 
 #include "Cgi.hpp"
 
-Cgi::Cgi(char** shellEnvp) : shellEnvp(shellEnvp) {}
+Cgi::Cgi(char** ncHomeEnvp) : ncHomeEnvp(ncHomeEnvp) {
+	setupCGIProcess();
+}
 
 void	Cgi::prepearingCgiEnvVars(Request req) {
 	mapEnv["GATEWAY_INTERFACE"] = "CGI/1.1";//idk
@@ -49,17 +51,22 @@ void	Cgi::setupCGIProcess() {
 		close(pipe1[1]);
 		close(pipe2[0]);
 		executeScript();
-	} else {
-		char buff[1024] = {0};
-		close(pipe1[1]);//close write end
-		close(pipe2[0]);//close read end
-		while (read(pipe1[0], buff, 1024) >= 0) {
-			
-		}
-		//read from pipe1[0]
-		//write to pipe2[1] //in case of POST methode
-		//close after finishin the operation
 	}
+	//write to pipe2[1] //in case of POST methode
+	wait(0);//wait until the process finishes
+	string response;
+	close(pipe1[1]);//close write end
+	close(pipe2[0]);//close read end
+	//read from pipe1[0]
+	while (true) {
+		char buff[1024] = {0};
+		if(read(pipe1[0], buff, 1024) <= 0)	break;
+		response += buff;
+	}
+	cerr << "----: " << response << endl;
+	//close after finishin the operation
+	close(pipe1[0]);
+	close(pipe2[1]);
 }
 
 void	Cgi::transformVectorToChar(vector<string>& vec) {
@@ -74,13 +81,13 @@ void	Cgi::transformVectorToChar(vector<string>& vec) {
 
 void	Cgi::executeScript() {
 	vector<string> envs;
-	for(const auto& it: mapEnv) {
-		if (!it.second.empty())
-			envs.push_back(it.second);
-	}
-	while(*shellEnvp) {
-		envs.push_back(*shellEnvp);
-		++shellEnvp;
+	// for(const auto& it: mapEnv) {
+	// 	if (!it.second.empty())
+	// 		envs.push_back(it.first + "=" + it.second);
+	// }
+	while(*ncHomeEnvp) {
+		envs.push_back(*ncHomeEnvp);
+		++ncHomeEnvp;
 	}
 	transformVectorToChar(envs);
 	//exec

@@ -165,6 +165,7 @@ bool	Request::parseBody(stringstream& stream) {
 			length -= stream.gcount();
 			body += buff;
 			delete []buff;
+			//write to the file here
 			getline(stream, line); // consume the \n(its not included n the length)
 		}
 		return false;
@@ -177,6 +178,7 @@ bool	Request::parseBody(stringstream& stream) {
 	length -= stream.gcount();
 	body += buff;
 	delete []buff;
+	//write to the file here
 	if (length > 0)	return false;
 	return true;
 }
@@ -195,11 +197,10 @@ const string&	Request::getHttpProtocole()	const {
 	return (startLineComponents[2]);
 }
 
-const string&	Request::getHeader(const string& header) {
+const string	Request::getHeader(const string& header) {
 	if (headers.find(header) != headers.end())
 		return (headers[header]);
-	const string tmp = "";
-	return tmp;
+	return "";
 }
 
 const bool&	Request::getRequestStatus() const {
