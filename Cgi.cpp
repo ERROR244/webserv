@@ -7,28 +7,83 @@
 
 #include "Cgi.hpp"
 
-void	Cgi::prepearingCgiEnvVars(Request req) {
-	unordered_map<string, string> env;
+Cgi::Cgi(char** shellEnvp) : shellEnvp(shellEnvp) {}
 
-	env["GATEWAY_INTERFACE"] = "CGI/1.1";//idk
-	env["SERVER_PROTOCOL"] = "http/1.1";
-	env["SERVER_NAME"] = "localhost";
-	env["REMOTE_METHODE"] = req.getMethod();
-	env["CONTENT_LENGTH"] = req.getHeader("content-length");
-	env["CONTENT_TYPE"] = req.getHeader("content-type");
-	env["HTTP_ACCEPT"] = req.getHeader("accept");
-	env["HTTP_ACCEPT_CHARSET"] = req.getHeader("accept-charset");
-	env["HTTP_ACCEPT_ENCODING"] = req.getHeader("accept-encoding");
-	env["HTTP_ACCEPT_LANGUAGE"] = req.getHeader("accept-language");
-	env["HTTP_USER_AGENT"] = req.getHeader("user-agent");
-	env["HTTP_HOST"] = "";//idk
-	env["PATH_INFO"] = "";//extract it manually from the target uri
-	env["PATH_TRANSLATED"] = "";//idk
-	env["QUERY_STRING"] = "";//?->
-	env["REMOTE_ADDR"] = "";//idk
-	env["REMOTE_HOST"] = "";
-	env["REMOTE_USER"] = "";
-	env["SCRIPT_NAME"] = "";
-	env["SERVER_PORT"] = "";
-	env["WEBTOP_USER"] = "";
+void	Cgi::prepearingCgiEnvVars(Request req) {
+	mapEnv["GATEWAY_INTERFACE"] = "CGI/1.1";//idk
+	mapEnv["SERVER_PROTOCOL"] = "http/1.1";
+	mapEnv["SERVER_NAME"] = "localhost";
+	mapEnv["REMOTE_METHODE"] = req.getMethod();
+	mapEnv["CONTENT_LENGTH"] = req.getHeader("content-length");
+	mapEnv["CONTENT_TYPE"] = req.getHeader("content-type");
+	mapEnv["HTTP_ACCEPT"] = req.getHeader("accept");
+	mapEnv["HTTP_ACCEPT_CHARSET"] = req.getHeader("accept-charset");
+	mapEnv["HTTP_ACCEPT_ENCODING"] = req.getHeader("accept-encoding");
+	mapEnv["HTTP_ACCEPT_LANGUAGE"] = req.getHeader("accept-language");
+	mapEnv["HTTP_USER_AGENT"] = req.getHeader("user-agent");
+	mapEnv["HTTP_HOST"] = "";//idk
+	mapEnv["PATH_INFO"] = "";//extract it manually from the target uri
+	mapEnv["PATH_TRANSLATED"] = "";//idk
+	mapEnv["QUERY_STRING"] = "";//?->
+	mapEnv["REMOTE_ADDR"] = "";//idk
+	mapEnv["REMOTE_HOST"] = "";
+	mapEnv["REMOTE_USER"] = "";
+	mapEnv["SCRIPT_NAME"] = "";
+	mapEnv["SERVER_PORT"] = "";
+	mapEnv["WEBTOP_USER"] = "";
+}
+
+void	Cgi::setupCGIProcess() {
+	int pipe1[2];//child->parent
+	int pipe2[2];//parent->child //POST methode
+	//fd[1] // write end;
+	//fd[0] // read end;
+
+	pipe(pipe1);pipe(pipe2);//communication channel
+	if(!fork()) {
+		close(pipe1[0]); //close read end
+		close(pipe2[1]); //close write end
+
+		dup2(pipe1[1], STDOUT_FILENO);//write the stdout in the pipe1[1];
+		dup2(pipe2[0], STDIN_FILENO);//instead of reading from the stdin read from the pipe2[0];
+		close(pipe1[1]);
+		close(pipe2[0]);
+		executeScript();
+	} else {
+		char buff[1024] = {0};
+		close(pipe1[1]);//close write end
+		close(pipe2[0]);//close read end
+		while (read(pipe1[0], buff, 1024) >= 0) {
+			
+		}
+		//read from pipe1[0]
+		//write to pipe2[1] //in case of POST methode
+		//close after finishin the operation
+	}
+}
+
+void	Cgi::transformVectorToChar(vector<string>& vec) {
+	scriptEnvp = new char*[vec.size() + 1];
+
+	for (int i = 0; i < vec.size(); ++i) {
+		scriptEnvp[i] = new char[vec[i].size()+1];
+		strcpy(scriptEnvp[i], vec[i].c_str());
+	}
+	scriptEnvp[vec.size()] = NULL;
+}
+
+void	Cgi::executeScript() {
+	vector<string> envs;
+	for(const auto& it: mapEnv) {
+		if (!it.second.empty())
+			envs.push_back(it.second);
+	}
+	while(*shellEnvp) {
+		envs.push_back(*shellEnvp);
+		++shellEnvp;
+	}
+	transformVectorToChar(envs);
+	//exec
+	char *argv[] = {"script1.cgi", NULL};
+	execve("/bin/script1.cgi", argv, scriptEnvp);
 }

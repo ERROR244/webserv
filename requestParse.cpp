@@ -198,7 +198,8 @@ const string&	Request::getHttpProtocole()	const {
 const string&	Request::getHeader(const string& header) {
 	if (headers.find(header) != headers.end())
 		return (headers[header]);
-	return "";
+	const string tmp = "";
+	return tmp;
 }
 
 const bool&	Request::getRequestStatus() const {
