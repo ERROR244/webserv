@@ -7,90 +7,98 @@
 
 #include "Cgi.hpp"
 
-Cgi::Cgi(char** ncHomeEnvp) : ncHomeEnvp(ncHomeEnvp) {
-	setupCGIProcess();
+void	prepearingCgiEnvVars(Request req, unordered_map<string, string>& mapEnvp) {
+	mapEnvp["GATEWAY_INTERFACE"] = "CGI/1.1";//idk
+	mapEnvp["SERVER_PROTOCOL"] = "http/1.1";
+	mapEnvp["SERVER_NAME"] = "localhost";
+	mapEnvp["REMOTE_METHODE"] = req.getMethod();
+	mapEnvp["CONTENT_LENGTH"] = req.getHeader("content-length");
+	mapEnvp["CONTENT_TYPE"] = req.getHeader("content-type");
+	mapEnvp["HTTP_ACCEPT"] = req.getHeader("accept");
+	mapEnvp["HTTP_ACCEPT_CHARSET"] = req.getHeader("accept-charset");
+	mapEnvp["HTTP_ACCEPT_ENCODING"] = req.getHeader("accept-encoding");
+	mapEnvp["HTTP_ACCEPT_LANGUAGE"] = req.getHeader("accept-language");
+	mapEnvp["HTTP_USER_AGENT"] = req.getHeader("user-agent");
+	mapEnvp["HTTP_HOST"] = "";//idk
+	mapEnvp["PATH_INFO"] = "";//extract it manually from the target uri
+	mapEnvp["PATH_TRANSLATED"] = "";//idk
+	mapEnvp["QUERY_STRING"] = "";//?->
+	mapEnvp["REMOTE_ADDR"] = "";//idk
+	mapEnvp["REMOTE_HOST"] = "";
+	mapEnvp["REMOTE_USER"] = "";
+	mapEnvp["SCRIPT_NAME"] = "";
+	mapEnvp["SERVER_PORT"] = "";
+	mapEnvp["WEBTOP_USER"] = "";
 }
 
-void	Cgi::prepearingCgiEnvVars(Request req) {
-	mapEnv["GATEWAY_INTERFACE"] = "CGI/1.1";//idk
-	mapEnv["SERVER_PROTOCOL"] = "http/1.1";
-	mapEnv["SERVER_NAME"] = "localhost";
-	mapEnv["REMOTE_METHODE"] = req.getMethod();
-	mapEnv["CONTENT_LENGTH"] = req.getHeader("content-length");
-	mapEnv["CONTENT_TYPE"] = req.getHeader("content-type");
-	mapEnv["HTTP_ACCEPT"] = req.getHeader("accept");
-	mapEnv["HTTP_ACCEPT_CHARSET"] = req.getHeader("accept-charset");
-	mapEnv["HTTP_ACCEPT_ENCODING"] = req.getHeader("accept-encoding");
-	mapEnv["HTTP_ACCEPT_LANGUAGE"] = req.getHeader("accept-language");
-	mapEnv["HTTP_USER_AGENT"] = req.getHeader("user-agent");
-	mapEnv["HTTP_HOST"] = "";//idk
-	mapEnv["PATH_INFO"] = "";//extract it manually from the target uri
-	mapEnv["PATH_TRANSLATED"] = "";//idk
-	mapEnv["QUERY_STRING"] = "";//?->
-	mapEnv["REMOTE_ADDR"] = "";//idk
-	mapEnv["REMOTE_HOST"] = "";
-	mapEnv["REMOTE_USER"] = "";
-	mapEnv["SCRIPT_NAME"] = "";
-	mapEnv["SERVER_PORT"] = "";
-	mapEnv["WEBTOP_USER"] = "";
+void	writeBodyToCGI(int pipe, const string& buff) {
+	write(pipe, buff.c_str(), BUFFER_SIZE);
 }
 
-void	Cgi::setupCGIProcess() {
+// void	readResponseFromCGI(int pipe) {
+// 	while (true) {
+// 		char buff[BUFFER_SIZE+1] = {0};
+// 		if(read(pipe, buff, BUFFER_SIZE) <= 0)	break;
+// 		// response += buff;
+// 	}
+// }
+
+
+char**	transformVectorToChar(vector<string>& vec) {
+	char** 	CGIEnvp = new char*[vec.size() + 1];
+
+	for (int i = 0; i < vec.size(); ++i) {
+		CGIEnvp[i] = new char[vec[i].size()+1];
+		strcpy(CGIEnvp[i], vec[i].c_str());
+	}
+	CGIEnvp[vec.size()] = NULL;
+	return (CGIEnvp);
+}
+
+void	executeScript(char** ncHomeEnvp, Request& req) {
+	char** 							CGIEnvp;
+	vector<string> 					vecEnvp;
+	unordered_map<string, string>	mapEnvp;
+	prepearingCgiEnvVars(req, mapEnvp);
+	for(const auto& it: mapEnvp) {
+		if (!it.second.empty())
+			vecEnvp.push_back(it.first + "=" + it.second);
+	}
+	while(*ncHomeEnvp) {
+		vecEnvp.push_back(*ncHomeEnvp);
+		++ncHomeEnvp;
+	}
+	CGIEnvp = transformVectorToChar(vecEnvp);
+	//exec
+	char *argv[] = {"script1.cgi", NULL};
+	execve("/bin/script1.cgi", argv, CGIEnvp);
+}
+
+pair<int, int>	setupCGIProcess(char** ncHomeEnvp, Request& req) {
 	int pipe1[2];//child->parent
 	int pipe2[2];//parent->child //POST methode
 	//fd[1] // write end;
 	//fd[0] // read end;
 
-	pipe(pipe1);pipe(pipe2);//communication channel
-	if(!fork()) {
+	if (pipe(pipe1) < 0 || pipe(pipe2) < 0) {//communication channel
+		perror("pipe failed"); exit(-1);
+	}
+	pid_t pid = fork();
+	if (pid < 0) {
+		perror("fork failed"); exit(-1);
+	}
+	else if(pid == 0) {
 		close(pipe1[0]); //close read end
 		close(pipe2[1]); //close write end
 
-		dup2(pipe1[1], STDOUT_FILENO);//write the stdout in the pipe1[1];
-		dup2(pipe2[0], STDIN_FILENO);//instead of reading from the stdin read from the pipe2[0];
+		if (dup2(pipe1[1], STDOUT_FILENO) < 0 || dup2(pipe2[0], STDIN_FILENO) < 0) {//write the stdout in the pipe1[1];//instead of reading from the stdin read from the pipe2[0];
+			perror("dup2 failed"); exit(-1);
+		}
 		close(pipe1[1]);
 		close(pipe2[0]);
-		executeScript();
+		executeScript(ncHomeEnvp, req);
 	}
-	//write to pipe2[1] //in case of POST methode
-	wait(0);//wait until the process finishes
-	string response;
 	close(pipe1[1]);//close write end
 	close(pipe2[0]);//close read end
-	//read from pipe1[0]
-	while (true) {
-		char buff[1024] = {0};
-		if(read(pipe1[0], buff, 1024) <= 0)	break;
-		response += buff;
-	}
-	cerr << "----: " << response << endl;
-	//close after finishin the operation
-	close(pipe1[0]);
-	close(pipe2[1]);
-}
-
-void	Cgi::transformVectorToChar(vector<string>& vec) {
-	scriptEnvp = new char*[vec.size() + 1];
-
-	for (int i = 0; i < vec.size(); ++i) {
-		scriptEnvp[i] = new char[vec[i].size()+1];
-		strcpy(scriptEnvp[i], vec[i].c_str());
-	}
-	scriptEnvp[vec.size()] = NULL;
-}
-
-void	Cgi::executeScript() {
-	vector<string> envs;
-	// for(const auto& it: mapEnv) {
-	// 	if (!it.second.empty())
-	// 		envs.push_back(it.first + "=" + it.second);
-	// }
-	while(*ncHomeEnvp) {
-		envs.push_back(*ncHomeEnvp);
-		++ncHomeEnvp;
-	}
-	transformVectorToChar(envs);
-	//exec
-	char *argv[] = {"script1.cgi", NULL};
-	execve("/bin/script1.cgi", argv, scriptEnvp);
+	return {pipe1[0], pipe2[1]};
 }

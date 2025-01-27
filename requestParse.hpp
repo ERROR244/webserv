@@ -7,18 +7,18 @@
 #include <stack>
 #include <sstream>
 #include <algorithm>
-// #include "helperFunctions/stringManipulation__.cpp"
-#include <sys/socket.h>
-#include <sys/epoll.h>
-#include <netinet/in.h>  // For sockaddr_in, htons, etc.
-#include <arpa/inet.h>   // For inet_pton, inet_addr, etc.
-#include <sys/socket.h>  // For socket, AF_INET, etc.
-#include <unistd.h>      // For close()
+#include <unistd.h>
+#include <arpa/inet.h>//for frecv
+
 #define BUFFER_SIZE 8192 
 
 using namespace std;
+
 string  trim(const string& str);
 vector<string>	split_ws(string& str);
+
+pair<int, int>	setupCGIProcess(char** ncHomeEnvp, Request& req);
+
 typedef enum e_methods{
 	GET,
 	POST,
@@ -29,28 +29,34 @@ typedef enum e_methods{
 
 class Request {
 	private:
-		vector<string>									startLineComponents;
-		unordered_map<string, string>					headers;
-		string											body;
-		stack<bool (Request::*)(stringstream&)>			parseFunctions;
-		stack<void (Request::*)(const string&) const>	parseFunctionsStarterLine;
-		string											remainingBuffer;
-		bool											readAllRequest;
+		string									method;
+		string									target;
+		string									targetPath;
+		string									targetQuery;
+		string									httpVersion;
+		unordered_map<string, string>			headers;
+		string									body;
+		stack<bool (Request::*)(stringstream&)>	parseFunctions;
+		stack<void (Request::*)(string&)>	parseFunctionsStarterLine;
+		string									remainingBuffer;
+		pair<int, int>							pipes;
+		bool									readAllRequest;
 
-		void											isProtocole(const string& httpVersion) const;
-		void											isTarget(const string& str) const;
-		void											isMethod(const string& target) const;
-		bool											parseStartLine(stringstream& stream);
-		bool											validFieldName(string& str) const;
-		bool											parseFileds(stringstream& stream);
-		bool											parseBody(stringstream& stream);
-		void											reconstructUri();
+		void									isProtocole(string& httpVersion);
+		void									isTarget(string& target);
+		void									isMethod(string& method);
+		bool									parseStartLine(stringstream& stream);
+		bool									validFieldName(string& str) const;
+		bool									parseFileds(stringstream& stream);
+		bool									parseBody(stringstream& stream);
+		void									reconstructAndParseUri(string& uri);
+		vector<string>							splitStarterLine(string& str);
 	public:
 		Request();
-		void											parseMessage(const int clientFd);
-		const string&									getMethod()	const;
-		const string&									getTarget()	const;
-		const string&									getHttpProtocole()	const;
-		const string									getHeader(const string&);
-		const bool&										getRequestStatus() const;
+		void									parseMessage(const int clientFd);
+		const string&							getMethod()	const;
+		const string&							getTarget()	const;
+		const string&							getHttpProtocole()	const;
+		const string							getHeader(const string&);
+		const bool&								getRequestStatus() const;
 };
