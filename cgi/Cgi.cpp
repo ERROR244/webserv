@@ -12,6 +12,9 @@ void	prepearingCgiEnvVars(Request req, unordered_map<string, string>& mapEnvp) {
 	mapEnvp["SERVER_PROTOCOL"] = "http/1.1";
 	mapEnvp["SERVER_NAME"] = "localhost";
 	mapEnvp["REMOTE_METHODE"] = req.getMethod();
+	mapEnvp["PATH_INFO"] = req.getPath();
+	mapEnvp["QUERY_STRING"] = req.getQuery();
+	mapEnvp["SCRIPT_NAME"] = req.getScriptName();
 	mapEnvp["CONTENT_LENGTH"] = req.getHeader("content-length");
 	mapEnvp["CONTENT_TYPE"] = req.getHeader("content-type");
 	mapEnvp["HTTP_ACCEPT"] = req.getHeader("accept");
@@ -20,13 +23,10 @@ void	prepearingCgiEnvVars(Request req, unordered_map<string, string>& mapEnvp) {
 	mapEnvp["HTTP_ACCEPT_LANGUAGE"] = req.getHeader("accept-language");
 	mapEnvp["HTTP_USER_AGENT"] = req.getHeader("user-agent");
 	mapEnvp["HTTP_HOST"] = "";//idk
-	mapEnvp["PATH_INFO"] = "";//extract it manually from the target uri
 	mapEnvp["PATH_TRANSLATED"] = "";//idk
-	mapEnvp["QUERY_STRING"] = "";//?->
 	mapEnvp["REMOTE_ADDR"] = "";//idk
 	mapEnvp["REMOTE_HOST"] = "";
 	mapEnvp["REMOTE_USER"] = "";
-	mapEnvp["SCRIPT_NAME"] = "";
 	mapEnvp["SERVER_PORT"] = "";
 	mapEnvp["WEBTOP_USER"] = "";
 }

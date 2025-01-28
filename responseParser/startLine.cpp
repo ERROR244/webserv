@@ -36,7 +36,7 @@ void	Request::reconstructAndParseUri(string& uri) {
 	targetPath = uri.substr(0, pos);
 	if (pos != string::npos)
 		targetQuery = uri.substr(pos+1);
-	//append the path of the files to the path (eg: /where -> /usr/nabil/Desktop/webserv/www/where)
+	//append the path of the files to the path (eg: /where -> /usr/nabil/Desktop/webserv/www/where) // if path == "/" append to the default path
 	//file existence
 	if (access(targetPath.c_str(), F_OK))
 	{
@@ -45,8 +45,6 @@ void	Request::reconstructAndParseUri(string& uri) {
 		else
 			throw("access failed");
 	}
-	//cgi detection
-	// isCGIScript(path);
 }
 
 void	Request::isProtocole(string& http) {
@@ -60,20 +58,21 @@ void	Request::isProtocole(string& http) {
 void	Request::isTarget(string& target) {
 	const string	validCharachters = "-._~:/?#[]@!$&'()*+,;=";
 
-	if (strncmp(target.c_str(), "http://", 7) && target[0] != '/')	throw("bad requst:: unkown target form");
+	if (strncmp(target.c_str(), "http://", 7) && target[0] != '/')
+		throw("bad requst:: unkown target form");
 	for (const auto& c : target) {
-		if (!iswalnum(c) && validCharachters.find(c) == string::npos)	throw("bad requst:: malformed target");
+		if (!iswalnum(c) && validCharachters.find(c) == string::npos)
+			throw("bad requst:: malformed target");
 	}
 	reconstructAndParseUri(target);
 	this->target = target;
 }
 
 void	Request::isMethod(string& method) {
-	if (method == "GET" || method == "POST" || method == "DELETE") {
+	if (method == "GET" || method == "POST" || method == "DELETE")
 		this->method = method;
-		return ;
-	}
-	throw("bad requst");
+	else
+		throw("bad requst:: invalid method");
 }
 
 bool	Request::parseStartLine(stringstream& stream) {
@@ -101,7 +100,6 @@ bool	Request::parseStartLine(stringstream& stream) {
 		if (++startLineCompsIt == startLineComps.end())
 			return false;
 	}
-	if (++startLineCompsIt != startLineComps.end() || !lineEndedWithLF)	throw("bad request");
-	//GET / HTTP/1.1 \n // test this;
+	if (++startLineCompsIt != startLineComps.end() || !lineEndedWithLF)	throw("bad request:: invalid start line");
 	return true;
 }

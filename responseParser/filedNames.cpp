@@ -37,7 +37,6 @@ bool	Request::parseFileds(stringstream& stream) {
 		remainingBuffer = line;
 		return false;
 	}
-	// if (/*cgi*/)
-	// 	pipes = setupCGIProcess(ncHomeEnvp, *this);
+	isCGIScript();
 	return true;
 }

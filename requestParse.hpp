@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Cgi.hpp"
 #include <iostream>
 #include <string.h>
 #include <unordered_map>
@@ -15,7 +16,6 @@
 using namespace std;
 
 string  trim(const string& str);
-vector<string>	split_ws(string& str);
 
 pair<int, int>	setupCGIProcess(char** ncHomeEnvp, Request& req);
 
@@ -33,6 +33,7 @@ class Request {
 		string									target;
 		string									targetPath;
 		string									targetQuery;
+		string									scriptName;
 		string									httpVersion;
 		unordered_map<string, string>			headers;
 		string									body;
@@ -42,15 +43,19 @@ class Request {
 		pair<int, int>							pipes;
 		bool									readAllRequest;
 
+		Cgi*									cgi;//
+		
+
+		vector<string>							splitStarterLine(string& str);
 		void									isProtocole(string& httpVersion);
+		void									reconstructAndParseUri(string& uri);
 		void									isTarget(string& target);
 		void									isMethod(string& method);
 		bool									parseStartLine(stringstream& stream);
 		bool									validFieldName(string& str) const;
 		bool									parseFileds(stringstream& stream);
 		bool									parseBody(stringstream& stream);
-		void									reconstructAndParseUri(string& uri);
-		vector<string>							splitStarterLine(string& str);
+		bool									isCGIScript();
 	public:
 		Request();
 		void									parseMessage(const int clientFd);
@@ -58,5 +63,8 @@ class Request {
 		const string&							getTarget()	const;
 		const string&							getHttpProtocole()	const;
 		const string							getHeader(const string&);
+		const string&							getPath() const;
+		const string&							getQuery() const;
+		const string&							getScriptName() const;
 		const bool&								getRequestStatus() const;
 };
