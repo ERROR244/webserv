@@ -1,46 +1,77 @@
 #include "requestParse.hpp"
 
-bool	Request::parseBody(stringstream& stream) {
-	//sending the respons here
-	static int	length;
-	string	line;
+int	Request::openTargetFile() const {
+	int fd;
 
-	if (method != "POST") return true;
-	remainingBuffer.clear();
-	if (headers.find("content-length") != headers.end() && length <= 0)
-		length = stoi(headers["content-length"]);
-	else if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
-		while (1) {
-			if (length <= 0) {
-				getline(stream, line);
+	if (fd = open(target.c_str(), O_WRONLY | O_CREAT, 0644) < 0) {
+		perror("open failed: responseParser/body.cpp l: 7"); exit(-1);
+	}
+	return (fd);
+}
+
+bool	Request::contentLengthBased(stringstream& stream) {
+	static int	length;
+	static int	targetFileFD;
+
+	if (!targetFileFD)
+		targetFileFD = openTargetFile();
+	if (!length) {
+		try {
+			length = stoi(headers["content-length"]);
+		}
+		catch(...) {
+			perror("unvalid number in content length"); exit(-1);
+		}
+	}
+
+	char buff[length+1] = {0};
+	stream.read(buff, length);
+	length -= stream.gcount();
+	write(targetFileFD, buff, stream.gcount());
+	return (length > 0) ? false : true;
+}
+
+bool	Request::transferEncodingChunkedBased(stringstream& stream) {
+	static int	length;
+	static int	targetFileFD;
+
+	if (!targetFileFD)
+		targetFileFD = openTargetFile();
+	while (1) {
+		string	line;
+		if (length <= 0) {
+			if (getline(stream, line)) {
 				if (stream.eof()) {
 					remainingBuffer = line;
 					return false;
 				}
-				length = stoi(line);
-				if (line == "0")	return true;
+				perror("getline failed"); exit(-1);
 			}
-			char *buff = new char[length+1];
-			memset(buff, 0, length+1);
-			stream.read(buff, length);
-			if (stream.gcount() == 0) return false;
-			length -= stream.gcount();
-			body += buff;
-			delete []buff;
-			//write to the file here
-			getline(stream, line); // consume the \n(its not included n the length)
+			try {
+				length = stoi(line);
+			}
+			catch(...) {
+				perror("unvalid number in chunked length"); exit(-1);
+			}
+			if (line == "0")	return true;
 		}
-		return false;
+		char buff[length+1] = {0};
+		stream.read(buff, length);
+		if (stream.gcount() == 0) return false;
+		length -= stream.gcount();
+		write(targetFileFD, buff, stream.gcount());
+		getline(stream, line); // consume the \n(its not included n the length)
 	}
-	else if (length <= 0)
+}
+
+
+
+bool	Request::parseBody(stringstream& stream) {
+	if (headers.find("content-length") != headers.end())
+		parseFunctions.push(&Request::contentLengthBased);
+	else if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked")
+		parseFunctions.push(&Request::transferEncodingChunkedBased);
+	else
 		throw("unsoported tranfer-encoding");
-	char *buff = new char[length+1];
-	memset(buff, 0, length+1);
-	stream.read(buff, length);
-	length -= stream.gcount();
-	body += buff;
-	delete []buff;
-	//write to the file here
-	if (length > 0)	return false;
 	return true;
 }

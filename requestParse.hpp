@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <unistd.h>
 #include <arpa/inet.h>//for frecv
+#include <sys/stat.h>
 
 #define BUFFER_SIZE 8192 
 
@@ -38,7 +39,7 @@ class Request {
 		unordered_map<string, string>			headers;
 		string									body;
 		stack<bool (Request::*)(stringstream&)>	parseFunctions;
-		stack<void (Request::*)(string&)>	parseFunctionsStarterLine;
+		stack<void (Request::*)(string&)>		parseFunctionsStarterLine;
 		string									remainingBuffer;
 		pair<int, int>							pipes;
 		bool									readAllRequest;
@@ -54,6 +55,9 @@ class Request {
 		bool									parseStartLine(stringstream& stream);
 		bool									validFieldName(string& str) const;
 		bool									parseFileds(stringstream& stream);
+		int										openTargetFile() const;
+		bool									contentLengthBased(stringstream&);
+		bool									transferEncodingChunkedBased(stringstream&);
 		bool									parseBody(stringstream& stream);
 		bool									isCGIScript();
 	public:
