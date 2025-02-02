@@ -3,7 +3,11 @@
 confiClass::confiClass(string _file) {
     file = _file;
 }
-confiClass::~confiClass() {}
+confiClass::~confiClass() {
+    for (int i = 0; i < kValue.size(); ++i) {
+        freeaddrinfo(kValue[i].addInfo);
+    }
+}
 
 keyValue confiClass::handleServer(ifstream& sFile) {
     void (*farr[])(string& line, int len, keyValue& kv, ifstream& sFile) = {handlePort, handlehost, handleSerNames, handleBodyLimit, handleError, handleCgi, handlelocs};
@@ -97,19 +101,9 @@ void confiClass::printKeyValue() {
         if (i != 0)
             cout << "\n\n                              ------------------------------------\n\n" << endl;
         cout << "------------------SERVER-" << i << "------------------" << endl;
-        cout << "---------> Ports:";
-        for (size_t j = 0; j < kValue[i].port.size(); ++j) {
-            cout << " " << kValue[i].port[j];
-            if (j + 1 < kValue[i].port.size())
-                cout << ",";
-        }
-        cout << endl << "---------> hosts:";
-        for (size_t j = 0; j < kValue[i].host.size(); ++j) {
-            cout << " " << kValue[i].host[j];
-            if (j + 1 < kValue[i].host.size())
-                cout << ",";
-        }
-        cout << endl << "---------> Server Names:";
+        cout << "---------> Ports: " << kValue[i].port << endl;
+        cout << "---------> hosts: " << kValue[i].host << endl;
+        cout << "---------> Server Names:";
         for (size_t j = 0; j < kValue[i].serNames.size(); ++j) {
             cout << " " << kValue[i].serNames[j];
             if (j + 1 < kValue[i].serNames.size())
@@ -139,6 +133,10 @@ void confiClass::printKeyValue() {
                     cout << ",";
             }
         }
+        cout << endl << "---------> ADDINFO:" << endl;
+        cout << "---------------------------> ai_addr:       " << kValue[i].addInfo->ai_addr << endl;
+        cout << "---------------------------> ai_protocol:   " << kValue[i].addInfo->ai_protocol << endl;
+        cout << "---------------------------> ai_flags:      " << kValue[i].addInfo->ai_flags << endl;
         cout << endl << "---------> ROOTS:" << endl;
         for (size_t j = 0; j < kValue[i].roots.size(); ++j) {
             cout << "------------------> ROOT:" << endl;

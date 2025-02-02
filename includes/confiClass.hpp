@@ -14,6 +14,7 @@ using namespace std;
 # include <limits.h>
 # include <cerrno>
 # include <arpa/inet.h>
+#include <netdb.h>
 
 struct root {
     vector<string>  methods;
@@ -25,12 +26,13 @@ struct root {
 
 struct keyValue {
     int                                         bodySize;
-    vector<int>                                 port;
-    vector<string>                              host;
+    string                                      port;
+    string                                      host;
     vector<string>                              serNames;
     vector<pair<int, string>>                   errorPages;
     map<string, vector<pair<string, string>>>   cgis;
     vector<root>                                roots;
+    struct addrinfo*                            addInfo;
 };
 
 

@@ -28,30 +28,37 @@ int ft_stoi(const std::string &__str) {
     }
 }
 
-void handlePort(string& line, int len, keyValue& kv, ifstream& sFile) {
-    int i = checkKey("port:", line);
-    string tmp;
-
-    line = trim(line.substr(i));
-    while (true) {
-        i = line.find_first_of(',');
-        kv.port.push_back(ft_stoi(trim(line)));
-        if (i == string::npos) { break; }
-        tmp = line.substr(0, i);
-        line = line.substr(i);
-        if (line[0] == ',')
-            line = line.substr(1);
+bool isNumber(const std::string& str) {  
+    for (char c : str) {
+        int v = c;
+        if (!(c >= 48 && c <= 57)) {
+            return false;
+        }
     }
+    if (65536 < ft_stoi(str)) {
+        throw "port bigger than 65536.";
+    }
+    return true;
 }
 
-string getCurrentHost(string line) {
-    string tmp = trim(line);
+void handlePort(string& line, int len, keyValue& kv, ifstream& sFile) {
+    int i = checkKey("port:", line);
 
-    if (tmp.empty())
+    line = trim(line.substr(i));
+    if (isNumber(line) == false) {
+        throw "invalid port.";
+    }
+    kv.port = line;
+}
+
+string getCurrentHost(keyValue& kv, string line) {
+    if (line.empty())
         throw "host can't be empty";
-    // to do
-    // check the ip provided
-    return tmp;
+    kv.addInfo = NULL;
+    getaddrinfo(line.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
+    if (kv.addInfo == NULL)
+        throw "kv.addInfo is NULL";
+    return line;
 }
 
 void handlehost(string& line, int len, keyValue& kv, ifstream& sFile) {
@@ -59,20 +66,7 @@ void handlehost(string& line, int len, keyValue& kv, ifstream& sFile) {
     string tmp;
 
     line = trim(line.substr(i));
-    while (true) {
-        i = line.find_first_of(',');
-        tmp = getCurrentHost(line.substr(0, i));
-        if (i == string::npos) {
-            if (!tmp.empty())
-                kv.host.push_back(tmp);
-            break;
-        }
-        if (!tmp.empty())
-            kv.host.push_back(tmp);
-        line = line.substr(i);
-        if (line[0] == ',')
-            line = line.substr(1);
-    }
+    kv.host = getCurrentHost(kv, line);
     if (kv.host.empty())
         throw "host can't be empty";
 }
@@ -252,4 +246,3 @@ void handlelocs(string& line, int len, keyValue& kv, ifstream& sFile) {
         }
     }
 }
-
