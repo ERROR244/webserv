@@ -39,10 +39,12 @@ struct keyValue {
 class confiClass {
     private:
         string              file;
-        map<int, keyValue>  kValue;
 
     
     public:
+        map<int, keyValue>  kValue;
+
+        confiClass();
         confiClass(string _file);
         ~confiClass();
 

@@ -1,8 +1,11 @@
 #include "webServ.hpp"
 
-webServ::webServ() {
+webServ::webServ(string av) {
+    confi = confiClass(av);
+    confi.parseFile();
     DOCUMENT_ROOT = "var/www";
-    MAX_PAYLOAD_SIZE = 50 * 1024 * 1024;     // 50 MB
+    cout << confi.kValue[0].bodySize << endl;
+    MAX_PAYLOAD_SIZE = confi.kValue[0].bodySize * 1024 * 1024;
 }
 webServ::~webServ() { }
 
@@ -35,6 +38,7 @@ void webServ::createSockets() {
     for (int port = 0; port < (int)ports.size(); ++port) {
         startSocket(ports[port]);
     }
+
 }
 
 // startEpoll and add server sockets to the epoll instance

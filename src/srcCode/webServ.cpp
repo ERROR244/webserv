@@ -5,9 +5,8 @@ int main(int ac, char **av) {
         cout << "invalid number of argument" << endl;
         return 1;
     }
-    (void)av;
 
-    webServ wServ;
+    webServ wServ(av[1]);
 
     try {
         wServ.createSockets();

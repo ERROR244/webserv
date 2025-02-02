@@ -16,6 +16,7 @@ using namespace std;
 # include <cerrno>
 # include "wrapperFunc.hpp"
 # include "requestParse.hpp"
+# include "confiClass.hpp"
 
 #define MAX_EVENTS  10
 #define T 5
@@ -36,13 +37,14 @@ typedef map<int, resReq>    r_map;
 
 class webServ {
     private:
-        // int                 file;      // the file passed as arguments
         std::vector<int>    serverFd;
         int                 epollFd;
 
         e_map               extensions;
         e_map               data;
         r_map               indexMap;
+
+        confiClass          confi;
 
         int                 statusCode;
         string              fileType;
@@ -54,7 +56,7 @@ class webServ {
         struct epoll_event  events[MAX_EVENTS];
 
     public:
-        webServ();
+        webServ(string av);
         ~webServ();
 
         // to do
