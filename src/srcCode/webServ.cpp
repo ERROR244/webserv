@@ -6,14 +6,18 @@ int main(int ac, char **av) {
         return 1;
     }
 
-    webServ wServ(av[1]);
-
     try {
+        webServ wServ(av[1]);
+
         wServ.createSockets();
         wServ.startEpoll();
         wServ.reqResp();
     }
     catch (const char *s) {
+        cerr << s << endl;
+        return -1;
+    }
+    catch (string s) {
         cerr << s << endl;
         return -1;
     }

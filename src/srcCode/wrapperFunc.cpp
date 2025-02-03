@@ -28,7 +28,7 @@ int ft_fcntl(int __fd, int __cmd1, int __cmd2) {
 int ft_bind(int __fd, const sockaddr *__addr, socklen_t __len) {
     if (bind(__fd, __addr, __len) < 0) {
         ft_close(__fd, "ft_bind");
-        throw "Bind failed";
+        throw "Bind failed: " + string(strerror(errno));
     }
     return 0;
 }

@@ -69,7 +69,7 @@ class webServ {
         e_map           getSupportedeExtensions();
 
         void createSockets();
-        void startSocket(const int& port);
+        void startSocket(const keyValue& kv);
         void startEpoll();
         void reqResp();
 
