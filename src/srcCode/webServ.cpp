@@ -21,6 +21,10 @@ int main(int ac, char **av) {
         cerr << s << endl;
         return -1;
     }
+    catch (exception& e) {
+        cerr << e.what() << endl;
+        return -1;
+    }
 
 
     return 0;

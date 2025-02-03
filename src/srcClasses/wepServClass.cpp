@@ -13,18 +13,16 @@ void webServ::startSocket(const keyValue& kv) {
     ft_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR);
     ft_fcntl(fd, F_SETFL, O_NONBLOCK);
 
-    ft_bind(fd, kv.addInfo->ai_addr, kv.addInfo->ai_addrlen);   // bind socket to its corresponding port.
-    ft_listen(fd, 3);                                           // the server waits for someone to connect (like a browser).
-    serverFd.push_back(fd);                                     // add that socket the serverFd
+    ft_bind(fd, kv.addInfo->ai_addr, kv.addInfo->ai_addrlen);
+    ft_listen(fd, 3);
+    serverFd.push_back(fd);
 }
 
 // initialize 1 socket for each port
 void webServ::createSockets() {
     extensions = getSupportedeExtensions();
-    // vector<int> ports = getPorts();
-    map<int, keyValue>  kValue = confi.kValue;
-    for (size_t s = 0; s < kValue.size(); ++s) {
-        startSocket(kValue[s]);
+    for (size_t s = 0; s < confi.kValue.size(); ++s) {
+        startSocket(confi.kValue[s]);
     }
 }
 
@@ -45,7 +43,6 @@ void webServ::reqResp() {
 
     cout << "Server listening on port XX..." << endl;
     while (true) {
-        // wait for events on the monitored sockets
         nfds = ft_epoll_wait(epollFd, events, MAX_EVENTS, 0, serverFd, epollFd);
 
         for (int i = 0; i < nfds; i++) {
