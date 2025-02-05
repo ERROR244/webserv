@@ -21,15 +21,17 @@ using namespace std;
 #define MAX_EVENTS  10
 #define T 5
 
+
 struct resReq {
     Request     req;
 
-    int         clientFd;
-    int         fileFd;
-    string      requestedFile;
-    bool        headerSended;
-    string      method;
-    time_t      lastRes;
+    int                 clientFd;
+    int                 fileFd;
+    string              requestedFile;
+    bool                headerSended;
+    string              method;
+    time_t              lastRes;
+    struct keyValue     KV;
 };
 
 typedef map<string, string> e_map;

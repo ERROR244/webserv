@@ -127,14 +127,13 @@ void handleCgi(string& line, int len, keyValue& kv, ifstream& sFile) {
 }
 
 void handleError(string& line, int len, keyValue& kv, ifstream& sFile) {
-    pair<int, string> holdValue;
+    map<int, string> holdValue;
     if (trim(line) != "[errors]") {
         throw "expected: `[errors]` got `" + line + "`";
     }
     while (getline(sFile, line)) {
         if (trim(line) == "[END]") { return ; }
-        holdValue.first = ft_stoi(trim(line).substr(0, 3));
-        holdValue.second = trim(line).substr(4);
+        holdValue[ft_stoi(trim(line).substr(0, 3))] = trim(line).substr(4);
         kv.errorPages.push_back(holdValue);
     }
 }
