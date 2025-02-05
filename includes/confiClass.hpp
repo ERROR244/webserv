@@ -29,7 +29,7 @@ struct keyValue {
     string                                      port;
     string                                      host;
     vector<string>                              serNames;
-    vector<map<int, string>>                   errorPages;
+    vector<map<int, string>>                    errorPages;
     map<string, vector<pair<string, string>>>   cgis;
     vector<root>                                roots;
     struct addrinfo*                            addInfo;
