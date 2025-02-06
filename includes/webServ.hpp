@@ -25,13 +25,13 @@ using namespace std;
 struct resReq {
     Request     req;
 
-    int                 clientFd;
-    int                 fileFd;
-    string              requestedFile;
-    bool                headerSended;
-    string              method;
-    time_t              lastRes;
-    struct keyValue     KV;
+    int                     clientFd;
+    int                     fileFd;
+    string                  requestedFile;
+    bool                    headerSended;
+    string                  method;
+    time_t                  lastRes;
+    struct keyValue         KV;
 };
 
 typedef map<string, string> e_map;

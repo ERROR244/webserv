@@ -127,14 +127,12 @@ void handleCgi(string& line, int len, keyValue& kv, ifstream& sFile) {
 }
 
 void handleError(string& line, int len, keyValue& kv, ifstream& sFile) {
-    map<int, string> holdValue;
     if (trim(line) != "[errors]") {
         throw "expected: `[errors]` got `" + line + "`";
     }
     while (getline(sFile, line)) {
         if (trim(line) == "[END]") { return ; }
-        holdValue[ft_stoi(trim(line).substr(0, 3))] = trim(line).substr(4);
-        kv.errorPages.push_back(holdValue);
+        kv.errorPages[ft_stoi(trim(line).substr(0, 3))] = trim(line).substr(4);
     }
 }
 
@@ -239,3 +237,70 @@ void handlelocs(string& line, int len, keyValue& kv, ifstream& sFile) {
         }
     }
 }
+
+
+
+void confiClass::printKeyValue() {
+    map<string, keyValue>::iterator it;
+    map<int, string>::iterator it_errorPages;
+    int i = 0;
+
+    for (it = kValue.begin(); it != kValue.end(); ++it) {
+        if (it != kValue.begin())
+            cout << "\n\n                              ------------------------------------\n\n" << endl;
+        cout << "------------------SERVER-" << i << "------------------" << endl;
+        cout << "---------> Ports: " << it->second.port << endl;
+        cout << "---------> hosts: " << it->second.host << endl;
+        cout << "---------> Server Names:";
+        for (size_t j = 0; j < it->second.serNames.size(); ++j) {
+            cout << " " << it->second.serNames[j];
+            if (j + 1 < it->second.serNames.size())
+                cout << ",";
+        }
+        cout << endl << "---------> Body Size: " << it->second.bodySize << "M";
+        cout << endl << "---------> Error Pages:" << endl;
+        for (it_errorPages = it->second.errorPages.begin(); it_errorPages != it->second.errorPages.end(); ++it_errorPages) {
+            cout << "------------------> " << it_errorPages->first << " | " << it_errorPages->second << endl;
+        }
+        cout << "---------> Cgi Scripts:" << endl;
+        if (it->second.cgis.find("alias-script") != it->second.cgis.end()) {
+            cout << "------------------> alias-script: ";
+            for (size_t j = 0; j < it->second.cgis["alias-script"].size(); ++j) {
+                cout << " " << it->second.cgis["alias-script"][j].first;
+                if (j + 1 < it->second.cgis["alias-script"].size())
+                    cout << ",";
+                else
+                    cout << endl;
+            }
+        }
+        if (it->second.cgis.find("add-handler") != it->second.cgis.end()) {
+            cout << "------------------> add-handler: ";
+            for (size_t j = 0; j < it->second.cgis["add-handler"].size(); ++j) {
+                cout << " " << it->second.cgis["add-handler"][j].first << " | " << it->second.cgis["add-handler"][j].second;
+                if (j + 1 < it->second.cgis["add-handler"].size())
+                    cout << ",";
+            }
+        }
+        cout << endl << "---------> ADDINFO:" << endl;
+        cout << "---------------------------> ai_addr:       " << it->second.addInfo->ai_addr << endl;
+        cout << "---------------------------> ai_protocol:   " << it->second.addInfo->ai_protocol << endl;
+        cout << "---------------------------> ai_flags:      " << it->second.addInfo->ai_flags << endl;
+        cout << endl << "---------> ROOTS:" << endl;
+        for (size_t j = 0; j < it->second.roots.size(); ++j) {
+            cout << "------------------> ROOT:" << endl;
+            cout << "---------------------------> url:       " << it->second.roots[j].url << endl;
+            cout << "---------------------------> alias:     " << it->second.roots[j].alias << endl;
+            cout << "---------------------------> Methods:   ";
+            for (size_t k = 0; k < it->second.roots[j].methods.size(); ++k) {
+                cout << it->second.roots[j].methods[k];
+                if (k + 1 < it->second.roots[j].methods.size())
+                    cout << ", ";
+            }
+            cout << endl;
+            cout << "---------------------------> index:     " << it->second.roots[j].index << endl;
+            cout << "---------------------------> autoIndex: " << (it->second.roots[j].autoIndex ? "True" : "False") << endl;
+        }
+        i++;
+    }
+}
+

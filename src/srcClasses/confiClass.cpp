@@ -6,8 +6,10 @@ confiClass::confiClass(string _file) {
     file = _file;
 }
 confiClass::~confiClass() {
-    for (int i = 0; i < kValue.size(); ++i) {
-        freeaddrinfo(kValue[i].addInfo);
+    map<string, keyValue>::iterator it;
+
+    for (it = kValue.begin(); it != kValue.end(); ++it) {
+        freeaddrinfo(it->second.addInfo);
     }
 }
 
@@ -32,10 +34,10 @@ keyValue confiClass::handleServer(ifstream& sFile) {
 }
 
 void confiClass::parseFile() {
-    ifstream sFile(file);
-    string line;
-    int i = 0;
-    keyValue kv;
+    ifstream    sFile(file);
+    keyValue    kv;
+    string      line;
+    string      key;
 
     if (!sFile) {
         throw "Unable to open file";
@@ -50,7 +52,9 @@ void confiClass::parseFile() {
         else {
             throw "parseFile::unknown keywords: `" + line + "`";
         }
-        kValue[i++] = kv;
+        key = kv.host + ":" + kv.port;
+        if (kValue.find(key) == kValue.end())
+            kValue[key] = kv;
     }
     sFile.close();
 }

@@ -3,8 +3,9 @@
 webServ::webServ(string av) {
     confi = confiClass(av);
     confi.parseFile();
+    confi.printKeyValue();
     DOCUMENT_ROOT = "var/www";
-    MAX_PAYLOAD_SIZE = confi.kValue[0].bodySize * 1024 * 1024;
+    MAX_PAYLOAD_SIZE = 50 * 1024 * 1024;
 }
 webServ::~webServ() { }
 
@@ -20,9 +21,11 @@ void webServ::startSocket(const keyValue& kv) {
 
 // initialize 1 socket for each port
 void webServ::createSockets() {
+    map<string, keyValue>::iterator it;
+
     extensions = getSupportedeExtensions();
-    for (size_t s = 0; s < confi.kValue.size(); ++s) {
-        startSocket(confi.kValue[s]);
+    for (it = confi.kValue.begin(); it != confi.kValue.end(); ++it) {
+        startSocket(it->second);
     }
 }
 

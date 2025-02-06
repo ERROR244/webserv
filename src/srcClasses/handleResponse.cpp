@@ -1,5 +1,18 @@
 #include "webServ.hpp"
 
+string getsockname(int clientFd) {
+    struct sockaddr_in addr;
+    socklen_t addrLen = sizeof(addr);
+    string res;
+
+    if (getsockname(clientFd, (struct sockaddr*)&addr, &addrLen) == 0) {
+        res = string(inet_ntoa(addr.sin_addr)) + ":" + toString(ntohs(addr.sin_port));
+        return res;
+    } else {
+        throw "getsockname failed";
+    }
+}
+
 void webServ::handelNewConnection(int eventFd) {
     int clientFd;
 
@@ -24,6 +37,7 @@ void webServ::handelNewConnection(int eventFd) {
         ft_close(clientFd, "clientFd");
         return ;
     }
+    indexMap[clientFd].KV = confi.kValue[getsockname(clientFd)];
     indexMap[clientFd].headerSended = false;
     indexMap[clientFd].clientFd = clientFd;
     indexMap[clientFd].fileFd = -1;
