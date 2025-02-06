@@ -48,7 +48,6 @@ class webServ {
 
         confiClass          confi;
 
-        int                 statusCode;
         string              fileType;
         string              buffer;
         string              DOCUMENT_ROOT;

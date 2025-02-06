@@ -28,11 +28,11 @@ struct keyValue {
     off_t                                       bodySize;
     string                                      port;
     string                                      host;
+    struct addrinfo*                            addInfo;
     vector<string>                              serNames;
     map<int, string>                            errorPages;
     map<string, vector<pair<string, string>>>   cgis;
     vector<root>                                roots;
-    struct addrinfo*                            addInfo;
 };
 
 

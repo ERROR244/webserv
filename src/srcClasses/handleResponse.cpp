@@ -45,74 +45,13 @@ void webServ::handelNewConnection(int eventFd) {
 }
 
 void webServ::handelClientRes(int clientFd) {
-    char        resolvedPath[PATH_MAX];
     struct stat file_stat;
-    string      reason;
-
-
-    statusCode = 200;
-    if (realpath(indexMap[clientFd].requestedFile.c_str(), resolvedPath)) {
-        string file = resolvedPath;
-        if (file.find(DOCUMENT_ROOT) == string::npos) {
-            cout << file << endl;
-            std::cerr << "Directory Traversal Attempt.\n";
-            statusCode = 403;
-            reason = " 403 Forbidden";
-        }
-    }
-    if (statusCode == 200 && stat(indexMap[clientFd].requestedFile.c_str(), &file_stat) == -1) {
-        if (errno == ENOENT) {
-            std::cerr << "No such file or directory: " << indexMap[clientFd].requestedFile + "\n";
-            statusCode = 404;
-            reason = " 404 Not Found";
-        }
-        else {
-            std::cerr << "stat() failed\n";
-            statusCode = 500;
-            reason = " 500 Internal Server Error";
-        }
-    }
-    else if (statusCode == 200 && indexMap[clientFd].method == "GET" && S_ISDIR(file_stat.st_mode) != 0) {
-        indexMap[clientFd].requestedFile = indexMap[clientFd].requestedFile + "/index.html";
-        fileType = extensions[".html"];
-        handelClientRes(clientFd);
-        return ;
-    }
-    else if (statusCode == 200 && S_ISREG(file_stat.st_mode) != 0) {
-        if (!(file_stat.st_mode & S_IRUSR)) {
-            std::cerr << "user don't have Permissions.\n";
-            statusCode = 403;
-            reason = " 403 Forbidden";
-        }
-        if (file_stat.st_size > MAX_PAYLOAD_SIZE) {
-            std::cerr << "Payload Too Large.\n";
-            statusCode = 413;
-            reason = " 413 Payload Too Large";
-        }
-    }
-
-
-
-
-
-
     
-    if (statusCode < 300) {
-        if (file_stat.st_size < 10000) {
-            sendRes(clientFd, true, file_stat);
-        }
-        else {
-            sendRes(clientFd, false, file_stat);
-        }
+    if (file_stat.st_size < 10000) {
+        sendRes(clientFd, true, file_stat);
     }
-    else {                       // send ERROR response
-        string body = "<header><h1>ERROR"+reason+"</h1></header>\n";
-        string response = "HTTP/1.1" + reason + string("\r\n") + "content-length: " + toString(body.size()) + "\r\n" + extensions[".html"] + "\r\n" + body;
-        cout << response << endl;
-        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
-        ev.events = EPOLLIN ;
-        ev.data.fd = clientFd;
-        epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev);
+    else {
+        sendRes(clientFd, false, file_stat);
     }
 }
 

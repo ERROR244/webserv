@@ -3,7 +3,7 @@
 void webServ::GET(int clientFd, bool smallFile) {
     string response;
 
-    if (smallFile) {
+    if (false || smallFile) {
         ifstream fileStream(indexMap[clientFd].requestedFile.c_str(), std::ios::binary);
         std::stringstream buffer;
         buffer << fileStream.rdbuf();
@@ -32,12 +32,13 @@ void webServ::sendBodyifChunked(int clientFd) {
     char buffer[BUFFER_SIZE+1];
     ssize_t bytesRead = read(indexMap[clientFd].fileFd, buffer, BUFFER_SIZE);
 
-    buffer[bytesRead] = '\0';
     if (bytesRead < 0) {
         cout << indexMap[clientFd].fileFd << endl;
         perror("ba33");
+        exit(1);
     }
     else if (bytesRead > 0) {
+        buffer[bytesRead] = '\0';
         std::ostringstream BUFFER_SIZEStream;
         BUFFER_SIZEStream << std::hex << bytesRead << "\r\n";
         std::string BUFFER_SIZEStr = BUFFER_SIZEStream.str();
@@ -46,6 +47,7 @@ void webServ::sendBodyifChunked(int clientFd) {
         send(clientFd, "\r\n", 2, MSG_DONTWAIT);
     }
     else {
+        buffer[bytesRead] = '\0';
         send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT);
         ev.events = EPOLLIN ;
         ev.data.fd = clientFd;

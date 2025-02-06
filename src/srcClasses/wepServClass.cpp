@@ -3,7 +3,6 @@
 webServ::webServ(string av) {
     confi = confiClass(av);
     confi.parseFile();
-    confi.printKeyValue();
     DOCUMENT_ROOT = "var/www";
     MAX_PAYLOAD_SIZE = 50 * 1024 * 1024;
 }
@@ -61,7 +60,8 @@ void webServ::reqResp() {
                 indexMap[events[i].data.fd].req.parseMessage(events[i].data.fd);
                 if (indexMap[events[i].data.fd].req.done == true) {
                     indexMap[events[i].data.fd].method = indexMap[events[i].data.fd].req.startLineComponents[0];
-                    indexMap[events[i].data.fd].requestedFile = DOCUMENT_ROOT + indexMap[events[i].data.fd].req.startLineComponents[1];
+                    indexMap[events[i].data.fd].requestedFile = indexMap[events[i].data.fd].KV.roots[0].alias + indexMap[events[i].data.fd].req.startLineComponents[1];
+                    cout << indexMap[events[i].data.fd].requestedFile << endl;
                     ev.events = EPOLLOUT ;
                     ev.data.fd = events[i].data.fd;
                     epoll_ctl(epollFd, EPOLL_CTL_MOD, events[i].data.fd, &ev);
