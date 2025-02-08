@@ -227,7 +227,8 @@ void handlelocs(string& line, int len, keyValue& kv, ifstream& sFile) {
         if (line.empty())
             continue;
         if (line == "[root]") {
-            kv.roots.push_back(handleRoot(sFile));
+            root rt = handleRoot(sFile);
+            kv.roots[rt.url] = rt;
         }
         else if (line == "[END]") {
             break ;
@@ -286,19 +287,20 @@ void confiClass::printKeyValue() {
         cout << "---------------------------> ai_protocol:   " << it->second.addInfo->ai_protocol << endl;
         cout << "---------------------------> ai_flags:      " << it->second.addInfo->ai_flags << endl;
         cout << endl << "---------> ROOTS:" << endl;
-        for (size_t j = 0; j < it->second.roots.size(); ++j) {
+        map<string, root>::iterator rootIt;
+        for (rootIt = it->second.roots.begin(); rootIt != it->second.roots.end(); ++rootIt) {
             cout << "------------------> ROOT:" << endl;
-            cout << "---------------------------> url:       " << it->second.roots[j].url << endl;
-            cout << "---------------------------> alias:     " << it->second.roots[j].alias << endl;
+            cout << "---------------------------> url:       " << rootIt->second.url << endl;
+            cout << "---------------------------> alias:     " << rootIt->second.alias << endl;
             cout << "---------------------------> Methods:   ";
-            for (size_t k = 0; k < it->second.roots[j].methods.size(); ++k) {
-                cout << it->second.roots[j].methods[k];
-                if (k + 1 < it->second.roots[j].methods.size())
+            for (size_t k = 0; k < rootIt->second.methods.size(); ++k) {
+                cout << rootIt->second.methods[k];
+                if (k + 1 < rootIt->second.methods.size())
                     cout << ", ";
             }
             cout << endl;
-            cout << "---------------------------> index:     " << it->second.roots[j].index << endl;
-            cout << "---------------------------> autoIndex: " << (it->second.roots[j].autoIndex ? "True" : "False") << endl;
+            cout << "---------------------------> index:     " << rootIt->second.index << endl;
+            cout << "---------------------------> autoIndex: " << (rootIt->second.autoIndex ? "True" : "False") << endl;
         }
         i++;
     }

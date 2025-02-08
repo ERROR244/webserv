@@ -32,7 +32,7 @@ struct keyValue {
     vector<string>                              serNames;
     map<int, string>                            errorPages;
     map<string, vector<pair<string, string>>>   cgis;
-    vector<root>                                roots;
+    map<string, root>                           roots;
 };
 
 
