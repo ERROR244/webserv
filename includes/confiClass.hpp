@@ -17,36 +17,35 @@ using namespace std;
 #include <netdb.h>
 
 enum  Ser1 {
-    PORT,     HOST,
-    SERNAMES, BODYLIMIT,
-    ERROR,    CGI,
-    LOCS
+    PORT,       HOST,
+    SERNAMES,   BODYLIMIT,
+    ERROR,      LOCS
 };
 
 enum  Ser2 {
-    URL,      ALIASRRDI,
-    METHODS,  INDEX,
-    AUTOINDEX
+    URL,        ALIASRRDI,
+    METHODS,    INDEX,
+    AUTOINDEX,  CGI
 };
 
 
 struct root {
-    vector<string>  methods;
-    string          url;
-    string          alias;
-    string          index;
-    bool            autoIndex;
+    bool                    autoIndex;
+    string                  url;
+    string                  alias;
+    string                  index;
+    vector<string>          methods;
+    map<string, string>     cgis;
 };
 
 struct keyValue {
-    off_t                                       bodySize;
-    string                                      port;
-    string                                      host;
-    struct addrinfo*                            addInfo;
-    vector<string>                              serNames;
-    map<int, string>                            errorPages;
-    map<string, vector<pair<string, string>>>   cgis;
-    map<string, root>                           roots;
+    off_t               bodySize;
+    string              port;
+    string              host;
+    struct addrinfo*    addInfo;
+    vector<string>      serNames;
+    map<int, string>    errorPages;
+    map<string, root>   roots;
 };
 
 
@@ -56,25 +55,26 @@ class confiClass {
 
     
     public:
-        map<string, keyValue>  kValue;
+        map<string, keyValue>   kValue;
+        keyValue                kv;
 
         confiClass();
         confiClass(string _file);
         ~confiClass();
 
         void        parseFile();
-        keyValue    handleServer(ifstream& sFile);
+        void        handleServer(ifstream& sFile);
         void        printKeyValue();
 };
 
 
-void    handlePort(string& line, int len, keyValue& kv, ifstream& sFile);
-void    handlehost(string& line, int len, keyValue& kv, ifstream& sFile);
-void    handleSerNames(string& line, int len, keyValue& kv, ifstream& sFile);
-void    handlelocs(string& line, int len, keyValue& kv, ifstream& sFile);
-void    handleError(string& line, int len, keyValue& kv, ifstream& sFile);
-void    handleBodyLimit(string& line, int len, keyValue& kv, ifstream& sFile);
-void    handleCgi(string& line, int len, keyValue& kv, ifstream& sFile);
+void    handlePort(string& line, keyValue& kv, ifstream& sFile);
+void    handlehost(string& line, keyValue& kv, ifstream& sFile);
+void    handleSerNames(string& line, keyValue& kv, ifstream& sFile);
+void    handlelocs(string& line, keyValue& kv, ifstream& sFile);
+void    handleError(string& line, keyValue& kv, ifstream& sFile);
+void    handleBodyLimit(string& line, keyValue& kv, ifstream& sFile);
 string  trim(const string& str);
+// void    handleCgi(string& line, keyValue& kv, ifstream& sFile);
 
 #endif

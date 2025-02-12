@@ -9,9 +9,9 @@ int main(int ac, char **av) {
     try {
         webServ wServ(av[1]);
 
-        wServ.createSockets();
-        wServ.startEpoll();
-        wServ.reqResp();
+        // wServ.createSockets();
+        // wServ.startEpoll();
+        // wServ.reqResp();
     }
     catch (const char *s) {
         cerr << s << endl;

@@ -35,7 +35,7 @@ bool isNumber(const std::string& str) {
     return true;
 }
 
-void handlePort(string& line, int len, keyValue& kv, ifstream& sFile) {
+void handlePort(string& line, keyValue& kv, ifstream& sFile) {
     int i = checkKey("port:", line);
 
     line = trim(line.substr(i));
@@ -55,7 +55,7 @@ string getCurrentHost(keyValue& kv, string line) {
     return line;
 }
 
-void handlehost(string& line, int len, keyValue& kv, ifstream& sFile) {
+void handlehost(string& line, keyValue& kv, ifstream& sFile) {
     int i = checkKey("host:", line);
     string tmp;
 
@@ -65,7 +65,7 @@ void handlehost(string& line, int len, keyValue& kv, ifstream& sFile) {
         throw "host can't be empty";
 }
 
-void handleSerNames(string& line, int len, keyValue& kv, ifstream& sFile) {
+void handleSerNames(string& line, keyValue& kv, ifstream& sFile) {
     int i = checkKey("serN:", line);
     string tmp;
 
@@ -84,49 +84,12 @@ void handleSerNames(string& line, int len, keyValue& kv, ifstream& sFile) {
     }
 }
 
-void handleBodyLimit(string& line, int len, keyValue& kv, ifstream& sFile) {
+void handleBodyLimit(string& line, keyValue& kv, ifstream& sFile) {
     int i = checkKey("body:", line);
     kv.bodySize = ft_stoi(trim(line.substr(i)));
 }
 
-void handleCgi(string& line, int len, keyValue& kv, ifstream& sFile) {
-    pair<string, string>    holdValue;
-    int                     index = 0;
-    int                     i = 0;
-
-    if (trim(line) != "[cgi]") {
-        throw "expected: `[cgi]` got `" + line + "`";
-    }
-
-    while (getline(sFile, line)) {
-        if (trim(line) == "[END]") { return ; }
-        else if (i == 2) { break; }
-        line = trim(line);
-        if (line[0] == 'A') {
-            index = checkKey("Alias-script:", trim(line));
-            line = trim(trim(line).substr(index));
-            if (line.empty())
-                throw "alias-script can't be empty";
-            holdValue.first = trim(line.substr(0, index));
-            holdValue.second = "";
-            kv.cgis["alias-script"].push_back(holdValue);
-        }
-        else {
-            index = checkKey("add-handler:", line);
-            line = trim(line.substr(index));
-            index = line.find_first_of(' ');
-            if (line.empty())
-                throw "add-handler can't be empty";
-            else if (index == string::npos)
-                throw "add-handler need two values";
-            holdValue.first = trim(line.substr(0, index));
-            holdValue.second = trim(line.substr(index));
-            kv.cgis["add-handler"].push_back(holdValue);
-        }
-    }
-}
-
-void handleError(string& line, int len, keyValue& kv, ifstream& sFile) {
+void handleError(string& line, keyValue& kv, ifstream& sFile) {
     if (trim(line) != "[errors]") {
         throw "expected: `[errors]` got `" + line + "`";
     }
@@ -203,6 +166,30 @@ void handleAutoIndex(string& line, root& kv, ifstream& sFile) {
         kv.autoIndex = false;
 }
 
+
+void handleCgi(string& line, root& kv, ifstream& sFile) {
+    int                     index = 0;
+    int                     i = 0;
+
+    if (trim(line) != "[cgi]") {
+        throw "expected: `[cgi]` got `" + line + "`";
+    }
+
+    while (getline(sFile, line)) {
+        if (trim(line) == "[END]") { return ; }
+        else if (i == 2) { break; }
+        line = trim(line);
+        index = checkKey("add-handler:", line);
+        line = trim(line.substr(index));
+        index = line.find_first_of(' ');
+        if (line.empty())
+            throw "add-handler can't be empty";
+        else if (index == string::npos)
+            throw "add-handler need two values";
+        kv.cgis[trim(line.substr(0, index))] = trim(line.substr(index));
+    }
+}
+
 int getSer2(string line) {
     if (line[0] == 'u')
         return URL;
@@ -214,14 +201,16 @@ int getSer2(string line) {
         return INDEX;
     else if (line[0] == 'A')
         return AUTOINDEX;
+    else if (line[0] == '[' && line[1] == 'c')
+        return CGI;
     else if (line.empty())
         throw "line can't be empty";
     return 0;
 }
 
 root handleRoot(ifstream& sFile) {
-    void (*farr[])(string& line, root& kv, ifstream& sFile) = {handleUrl, handleAliasRed, handleMethods, handleIndex, handleAutoIndex};
-    int mp[5] = {0, 0, 0, 0, 0};
+    void (*farr[])(string& line, root& kv, ifstream& sFile) = {handleUrl, handleAliasRed, handleMethods, handleIndex, handleAutoIndex, handleCgi};
+    int mp[6] = {0, 0, 0, 0, 0, 0};
     string line;
     root kv;
     int i = 0;
@@ -234,7 +223,7 @@ root handleRoot(ifstream& sFile) {
         }
         else if (line.empty())
             continue;
-        if (i > 4)
+        if (i > 5)
             break;
         index = getSer2(line);
         if (mp[index] == -1) {
@@ -246,7 +235,7 @@ root handleRoot(ifstream& sFile) {
     throw "[END] tag neede";
 }
 
-void handlelocs(string& line, int len, keyValue& kv, ifstream& sFile) {
+void handlelocs(string& line, keyValue& kv, ifstream& sFile) {
     if (line != "[ROOTS]")
             throw "handlelocs::unknown keywords: `" + line + "`";
     while (getline(sFile, line)) {
@@ -290,25 +279,6 @@ void confiClass::printKeyValue() {
         for (it_errorPages = it->second.errorPages.begin(); it_errorPages != it->second.errorPages.end(); ++it_errorPages) {
             cout << "------------------> " << it_errorPages->first << " | " << it_errorPages->second << endl;
         }
-        cout << "---------> Cgi Scripts:" << endl;
-        if (it->second.cgis.find("alias-script") != it->second.cgis.end()) {
-            cout << "------------------> alias-script: ";
-            for (size_t j = 0; j < it->second.cgis["alias-script"].size(); ++j) {
-                cout << " " << it->second.cgis["alias-script"][j].first;
-                if (j + 1 < it->second.cgis["alias-script"].size())
-                    cout << ",";
-                else
-                    cout << endl;
-            }
-        }
-        if (it->second.cgis.find("add-handler") != it->second.cgis.end()) {
-            cout << "------------------> add-handler: ";
-            for (size_t j = 0; j < it->second.cgis["add-handler"].size(); ++j) {
-                cout << " " << it->second.cgis["add-handler"][j].first << " | " << it->second.cgis["add-handler"][j].second;
-                if (j + 1 < it->second.cgis["add-handler"].size())
-                    cout << ",";
-            }
-        }
         cout << endl << "---------> ADDINFO:" << endl;
         cout << "---------------------------> ai_addr:       " << it->second.addInfo->ai_addr << endl;
         cout << "---------------------------> ai_protocol:   " << it->second.addInfo->ai_protocol << endl;
@@ -328,6 +298,11 @@ void confiClass::printKeyValue() {
             cout << endl;
             cout << "---------------------------> index:     " << rootIt->second.index << endl;
             cout << "---------------------------> autoIndex: " << (rootIt->second.autoIndex ? "True" : "False") << endl;
+            cout << "---------> Cgi Scripts:" << endl;
+            map<string, string>::iterator cgiIt;
+            for (cgiIt = rootIt->second.cgis.begin(); cgiIt != rootIt->second.cgis.end(); ++cgiIt) {
+                cout << "------------------> add-handler: " << cgiIt->first << " | " << cgiIt->second << endl;
+            }
         }
         i++;
     }

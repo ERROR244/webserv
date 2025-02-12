@@ -7,11 +7,13 @@ confiClass::confiClass(string _file) {
 }
 confiClass::~confiClass() {
     map<string, keyValue>::iterator it;
-
+    
     for (it = kValue.begin(); it != kValue.end(); ++it) {
-        if (it->second.addInfo)
-            freeaddrinfo(it->second.addInfo);
+        freeaddrinfo(it->second.addInfo);
+        it->second.addInfo = NULL;
     }
+    if (kv.addInfo != NULL)
+        freeaddrinfo(kv.addInfo);
 }
 
 int getSer1(string line) {
@@ -25,8 +27,6 @@ int getSer1(string line) {
         return BODYLIMIT;
     else if (line[0] == '[' && line[1] == 'e')
         return ERROR;
-    else if (line[0] == '[' && line[1] == 'c')
-        return CGI;
     else if (line[0] == '[' && line[1] == 'R')
         return LOCS;
     else if (line.empty())
@@ -34,29 +34,27 @@ int getSer1(string line) {
     return 0;
 }
 
-keyValue confiClass::handleServer(ifstream& sFile) {
-    void (*farr[])(string& line, int len, keyValue& kv, ifstream& sFile) = {handlePort, handlehost, handleSerNames, handleBodyLimit, handleError, handleCgi, handlelocs};
-    int mp[7] = {0, 0, 0, 0, 0, 0, 0};
+void confiClass::handleServer(ifstream& sFile) {
+    void (*farr[])(string& line, keyValue& kv, ifstream& sFile) = {handlePort, handlehost, handleSerNames, handleBodyLimit, handleError, handlelocs};
+    int mp[6] = {0, 0, 0, 0, 0, 0};
     string line;
-    keyValue kv;
     int index;
     int i = 0;
 
     while (getline(sFile, line)) {
         line = trim(line);
         if (line == "[END]")
-            return kv;
+            return ;
         else if (line.empty())
             continue;
-        if (i > 6)
+        if (i > 5)
             break;
         index = getSer1(line);
         if (mp[index] == -1) {
-            freeaddrinfo(kv.addInfo);
             throw "unexpected keyword: " + line;
         }
         mp[index] = -1;
-        farr[index](line, i, kv, sFile);
+        farr[index](line, kv, sFile);
         i++;
     }
     throw "[END] tag neede";
@@ -64,7 +62,6 @@ keyValue confiClass::handleServer(ifstream& sFile) {
 
 void confiClass::parseFile() {
     ifstream    sFile(file);
-    keyValue    kv;
     string      line;
     string      key;
 
@@ -76,14 +73,16 @@ void confiClass::parseFile() {
         if (line.empty())
             continue;
         if (trim(line) == "[server]") {
-            kv = handleServer(sFile);
+            handleServer(sFile);
         }
         else {
             throw "parseFile::unknown keywords: `" + line + "`";
         }
         key = kv.host + ":" + kv.port;
-        if (kValue.find(key) == kValue.end())
+        if (kValue.find(key) == kValue.end()) {
             kValue[key] = kv;
+            kv.addInfo = NULL;
+        }
     }
     sFile.close();
 }

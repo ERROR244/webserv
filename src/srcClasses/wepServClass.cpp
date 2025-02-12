@@ -3,7 +3,7 @@
 webServ::webServ(string av) {
     confi = confiClass(av);
     confi.parseFile();
-    // confi.printKeyValue();
+    confi.printKeyValue();
     DOCUMENT_ROOT = "var/www";
     MAX_PAYLOAD_SIZE = 50 * 1024 * 1024;
 }
