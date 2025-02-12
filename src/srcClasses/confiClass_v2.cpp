@@ -145,8 +145,13 @@ void handleUrl(string& line, root& kv, ifstream& sFile) {
         throw "root url can't be empty";
 }
 
-void handleAlias(string& line, root& kv, ifstream& sFile) {
-    int i = checkKey("alias:", line);
+void handleAliasRed(string& line, root& kv, ifstream& sFile) {
+    int i;
+    
+    if (line[0] == 'a')
+        i = checkKey("alias:", line);
+    else
+        i = checkKey("redirection:", line);
     kv.alias = trim(line.substr(i));
     if (kv.alias.empty())
         throw "root alias can't be empty";
@@ -189,7 +194,7 @@ void handleIndex(string& line, root& kv, ifstream& sFile) {
 }
 
 void handleAutoIndex(string& line, root& kv, ifstream& sFile) {
-    int i = checkKey("autoIndex:", line);
+    int i = checkKey("AutoIndex:", line);
     line = trim(line.substr(i));
 
     if (line == "on")
@@ -198,11 +203,29 @@ void handleAutoIndex(string& line, root& kv, ifstream& sFile) {
         kv.autoIndex = false;
 }
 
+int getSer2(string line) {
+    if (line[0] == 'u')
+        return URL;
+    else if (line[0] == 'a' || line[0] == 'r')
+        return ALIASRRDI;
+    else if (line[0] == 'm')
+        return METHODS;
+    else if (line[0] == 'I')
+        return INDEX;
+    else if (line[0] == 'A')
+        return AUTOINDEX;
+    else if (line.empty())
+        throw "line can't be empty";
+    // cout << line << endl;
+    return 0;
+}
+
 root handleRoot(ifstream& sFile) {
-    void (*farr[])(string& line, root& kv, ifstream& sFile) = {handleUrl, handleAlias, handleMethods, handleIndex, handleAutoIndex};
+    void (*farr[])(string& line, root& kv, ifstream& sFile) = {handleUrl, handleAliasRed, handleMethods, handleIndex, handleAutoIndex};
     string line;
     root kv;
     int i = 0;
+    int index;
 
     while (getline(sFile, line)) {
         line = trim(line);
@@ -213,7 +236,9 @@ root handleRoot(ifstream& sFile) {
             continue;
         if (i > 4)
             break;
-        farr[i](line, kv, sFile);
+        index = getSer2(line);
+        // cout << index << endl;
+        farr[index](line, kv, sFile);
         i++;
     }
     throw "[END] tag neede";

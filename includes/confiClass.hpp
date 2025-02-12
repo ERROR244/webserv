@@ -16,6 +16,20 @@ using namespace std;
 # include <arpa/inet.h>
 #include <netdb.h>
 
+enum  Ser1 {
+    PORT,     HOST,
+    SERNAMES, BODYLIMIT,
+    ERROR,    CGI,
+    LOCS
+};
+
+enum  Ser2 {
+    URL,      ALIASRRDI,
+    METHODS,  INDEX,
+    AUTOINDEX
+};
+
+
 struct root {
     vector<string>  methods;
     string          url;

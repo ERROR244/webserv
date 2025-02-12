@@ -13,10 +13,31 @@ confiClass::~confiClass() {
     }
 }
 
+int getSer1(string line) {
+    if (line[0] == 'p')
+        return PORT;
+    else if (line[0] == 'h')
+        return HOST;
+    else if (line[0] == 's')
+        return SERNAMES;
+    else if (line[0] == 'b')
+        return BODYLIMIT;
+    else if (line[0] == '[' && line[1] == 'e')
+        return ERROR;
+    else if (line[0] == '[' && line[1] == 'c')
+        return CGI;
+    else if (line[0] == '[' && line[1] == 'R')
+        return LOCS;
+    else
+        // cout << line[0] << endl;
+        throw "line can't be empty";
+}
+
 keyValue confiClass::handleServer(ifstream& sFile) {
     void (*farr[])(string& line, int len, keyValue& kv, ifstream& sFile) = {handlePort, handlehost, handleSerNames, handleBodyLimit, handleError, handleCgi, handlelocs};
     string line;
     keyValue kv;
+    int index;
     int i = 0;
 
     while (getline(sFile, line)) {
@@ -27,7 +48,8 @@ keyValue confiClass::handleServer(ifstream& sFile) {
             continue;
         if (i > 6)
             break;
-        farr[i](line, i, kv, sFile);
+        index = getSer1(line);
+        farr[index](line, i, kv, sFile);
         i++;
     }
     throw "[END] tag neede";
