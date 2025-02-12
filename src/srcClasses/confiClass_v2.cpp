@@ -216,12 +216,12 @@ int getSer2(string line) {
         return AUTOINDEX;
     else if (line.empty())
         throw "line can't be empty";
-    // cout << line << endl;
     return 0;
 }
 
 root handleRoot(ifstream& sFile) {
     void (*farr[])(string& line, root& kv, ifstream& sFile) = {handleUrl, handleAliasRed, handleMethods, handleIndex, handleAutoIndex};
+    int mp[5] = {0, 0, 0, 0, 0};
     string line;
     root kv;
     int i = 0;
@@ -237,7 +237,9 @@ root handleRoot(ifstream& sFile) {
         if (i > 4)
             break;
         index = getSer2(line);
-        // cout << index << endl;
+        if (mp[index] == -1) {
+            throw "unexpected keyword: " + line;
+        }
         farr[index](line, kv, sFile);
         i++;
     }

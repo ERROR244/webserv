@@ -62,9 +62,9 @@ class confiClass {
         confiClass(string _file);
         ~confiClass();
 
-        void parseFile();
-        keyValue handleServer(ifstream& sFile);
-        void printKeyValue();
+        void        parseFile();
+        keyValue    handleServer(ifstream& sFile);
+        void        printKeyValue();
 };
 
 

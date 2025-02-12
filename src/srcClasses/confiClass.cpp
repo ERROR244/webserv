@@ -9,7 +9,8 @@ confiClass::~confiClass() {
     map<string, keyValue>::iterator it;
 
     for (it = kValue.begin(); it != kValue.end(); ++it) {
-        freeaddrinfo(it->second.addInfo);
+        if (it->second.addInfo)
+            freeaddrinfo(it->second.addInfo);
     }
 }
 
@@ -28,13 +29,14 @@ int getSer1(string line) {
         return CGI;
     else if (line[0] == '[' && line[1] == 'R')
         return LOCS;
-    else
-        // cout << line[0] << endl;
+    else if (line.empty())
         throw "line can't be empty";
+    return 0;
 }
 
 keyValue confiClass::handleServer(ifstream& sFile) {
     void (*farr[])(string& line, int len, keyValue& kv, ifstream& sFile) = {handlePort, handlehost, handleSerNames, handleBodyLimit, handleError, handleCgi, handlelocs};
+    int mp[7] = {0, 0, 0, 0, 0, 0, 0};
     string line;
     keyValue kv;
     int index;
@@ -49,6 +51,11 @@ keyValue confiClass::handleServer(ifstream& sFile) {
         if (i > 6)
             break;
         index = getSer1(line);
+        if (mp[index] == -1) {
+            freeaddrinfo(kv.addInfo);
+            throw "unexpected keyword: " + line;
+        }
+        mp[index] = -1;
         farr[index](line, i, kv, sFile);
         i++;
     }
@@ -62,7 +69,7 @@ void confiClass::parseFile() {
     string      key;
 
     if (!sFile) {
-        throw "Unable to open file";
+            throw "Unable to open file";
     }
     while (getline(sFile, line)) {
         line = trim(line);
