@@ -31,8 +31,9 @@ enum  Ser2 {
 
 struct root {
     bool                    autoIndex;
+    bool                    red;
     string                  url;
-    string                  alias;
+    string                  aliasRed;
     string                  index;
     vector<string>          methods;
     map<string, string>     cgis;

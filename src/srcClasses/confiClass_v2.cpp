@@ -111,12 +111,16 @@ void handleUrl(string& line, root& kv, ifstream& sFile) {
 void handleAliasRed(string& line, root& kv, ifstream& sFile) {
     int i;
     
-    if (line[0] == 'a')
+    if (line[0] == 'a') {
+        kv.red = false;
         i = checkKey("alias:", line);
-    else
+    }
+    else {
+        kv.red = true;
         i = checkKey("redirection:", line);
-    kv.alias = trim(line.substr(i));
-    if (kv.alias.empty())
+    }
+    kv.aliasRed = trim(line.substr(i));
+    if (kv.aliasRed.empty())
         throw "root alias can't be empty";
 }
 
@@ -205,7 +209,7 @@ int getSer2(string line) {
         return CGI;
     else if (line.empty())
         throw "line can't be empty";
-    return 0;
+    throw "unexpected keyword: `" + line + "`";
 }
 
 root handleRoot(ifstream& sFile) {
@@ -288,7 +292,10 @@ void confiClass::printKeyValue() {
         for (rootIt = it->second.roots.begin(); rootIt != it->second.roots.end(); ++rootIt) {
             cout << "------------------> ROOT:" << endl;
             cout << "---------------------------> url:       " << rootIt->second.url << endl;
-            cout << "---------------------------> alias:     " << rootIt->second.alias << endl;
+            if (rootIt->second.red == false)
+                cout << "---------------------------> alias:     " << rootIt->second.aliasRed << endl;
+            else
+                cout << "---------------------------> redir:     " << rootIt->second.aliasRed << endl;
             cout << "---------------------------> Methods:   ";
             for (size_t k = 0; k < rootIt->second.methods.size(); ++k) {
                 cout << rootIt->second.methods[k];
@@ -298,11 +305,13 @@ void confiClass::printKeyValue() {
             cout << endl;
             cout << "---------------------------> index:     " << rootIt->second.index << endl;
             cout << "---------------------------> autoIndex: " << (rootIt->second.autoIndex ? "True" : "False") << endl;
-            cout << "---------> Cgi Scripts:" << endl;
+            if (!rootIt->second.cgis.empty())
+                cout << "---------> Cgi Scripts:" << endl;
             map<string, string>::iterator cgiIt;
             for (cgiIt = rootIt->second.cgis.begin(); cgiIt != rootIt->second.cgis.end(); ++cgiIt) {
                 cout << "------------------> add-handler: " << cgiIt->first << " | " << cgiIt->second << endl;
             }
+            cout << endl;
         }
         i++;
     }

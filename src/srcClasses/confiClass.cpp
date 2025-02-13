@@ -31,7 +31,7 @@ int getSer1(string line) {
         return LOCS;
     else if (line.empty())
         throw "line can't be empty";
-    return 0;
+    throw "unexpected keyword: `" + line + "`";
 }
 
 void confiClass::handleServer(ifstream& sFile) {
