@@ -1,5 +1,4 @@
-#include "server.hpp"
-#include "wrapperFunc.hpp"
+#include "server.h"
 
 httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK") {}
 
@@ -74,59 +73,24 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	}
 }
 
-void handelNewConnection(int eventFd, int epollFds) {
-    int clientFd;
-	struct epoll_event  ev;
+void	acceptNewClient(const int& epollFd, const int& serverFd) {
+	struct epoll_event	ev;
+	int					clientFd;
 
-    if ((clientFd = accept(eventFd, NULL, NULL)) == -1) {
-        cerr << "Accept failed" << endl;
-        return ;
+	if ((clientFd = accept(serverFd, NULL, NULL)) < 0) {
+		perror("accept faield: ");
+        throw(statusCodeException(500, "Internal Server Error"));//i can't send the error page//no fd to send to
     }
-    cout << "\n--------------------------------------New client connected!--------------------------------------\n" << endl;
-
-    // set the client socket to non-blocking mode
-    if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) {
-        cerr << "Failed to set non-blocking" << endl;
-        ft_close(clientFd, "clientFd");
-        return ;
-    }
-
-    // add the new client socket to epoll
-    ev.events = EPOLLIN;
-    ev.data.fd = clientFd;
-    if (epoll_ctl(epollFds, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
-        cerr << "epoll_ctl failed for client socket" << clientFd << endl;
-        ft_close(clientFd, "clientFd");
-        return ;
-    }
-    indexMap[clientFd].KV = confi.kValue[getsockname(clientFd)];
-    indexMap[clientFd].headerSended = false;
-    indexMap[clientFd].clientFd = clientFd;
-    indexMap[clientFd].fileFd = -1;
-    indexMap[clientFd].lastRes = 0;
+	ev.events = EPOLLIN;
+	ev.data.fd = clientFd;
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
+		perror("epoll_ctl faield(setUpserver.cpp): ");
+		throw(statusCodeException(500, "Internal Server Error"));
+	}
+	cerr << "-------new client added-------" << endl;
 }
 
-string toString(const int& nbr) {
-    ostringstream oss;
-
-    oss << nbr;
-    return (oss.str());
-}
-
-string getsockname(int clientFd) {
-    struct sockaddr_in addr;
-    socklen_t addrLen = sizeof(addr);
-    string res;
-
-    if (getsockname(clientFd, (struct sockaddr*)&addr, &addrLen) == 0) {
-        res = string(inet_ntoa(addr.sin_addr)) + ":" + toString(ntohs(addr.sin_port));
-        return res;
-    } else {
-        throw "getsockname failed";
-    }
-}
-
-void	multiplexerSytm(vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
+void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event		events[MAX_EVENTS];
 	map<int, httpSession*>	sessions;//change httpSession to a pointer so i can be able to free it
 
@@ -142,19 +106,13 @@ void	multiplexerSytm(vector<int>& servrSocks, const int& epollFd, map<string, co
 		for (int i = 0; i < nfds; ++i) {
 			int fd = events[i].data.fd;
 			try {
-				// if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end() && indexMap[fd].lastRes != 0 && time(nullptr) - indexMap[fd].lastRes > T) {
-				// 	cout << indexMap[fd].lastRes << endl;
-				// 	if (fd >= 0)
-				// 		ft_close(fd, "clientFd");
-				// }
 				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end()) {
-					string clientClass = getsockname(fd);
-					sessions.try_emplace(fd, new httpSession(fd, &(config[clientClass])));
-					handelNewConnection(epollFd, fd);
+					cerr << "here" << endl;
+					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
+					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)])));
 					sessions[fd]->req.parseMessage(fd);
-					sessions[fd]->clientClass = clientClass;
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());
 				}
 				else if (events[i].events & EPOLLOUT) {
@@ -166,22 +124,22 @@ void	multiplexerSytm(vector<int>& servrSocks, const int& epollFd, map<string, co
 				struct epoll_event	ev;
 				cerr << "code--> " << exception.code() << endl;
 				cerr << "reason--> " << exception.meaning() << endl;
-				// if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
-				// 	sessions[fd]->reSetPath(w_realpath(("." + config.errorPages.at(exception.code())).c_str()));
-				// 	ev.events = EPOLLOUT;
-				// 	ev.data.fd = fd;
-				// 	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
-				// 		perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
-				// 	}
-				// } else {
-				// 	sendError(fd, exception.code(), exception.meaning());
-				// 	ev.events = EPOLLIN;
-				// 	ev.data.fd = fd;
-				// 	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
-				// 		perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
-				// 	}
-				// 	sessions.erase(sessions.find(fd));
-				// }
+				if (sessions[fd]->config->errorPages.find(exception.code()) != sessions[fd]->config->errorPages.end()) {
+					sessions[fd]->reSetPath(w_realpath(("." + sessions[fd]->config->errorPages.at(exception.code())).c_str()));
+					ev.events = EPOLLOUT;
+					ev.data.fd = fd;
+					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
+						perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
+					}
+				} else {
+					sendError(fd, exception.code(), exception.meaning());
+					ev.events = EPOLLIN;
+					ev.data.fd = fd;
+					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
+						perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
+					}
+					sessions.erase(sessions.find(fd));
+				}
 			}
 		}
 	}

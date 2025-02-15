@@ -63,8 +63,7 @@ void	httpSession::Request::reconstructUri(location*	rules) {
 		s.codeMeaning = "Moved Permanently";
 		//adding the location header to the response with the new path;
 		return ;
-	}
-	else {
+	} else {
 		s.path.erase(s.path.begin(), s.path.begin()+rules->url.size() - 1);
 		s.path = rules->aliasRed + s.path;
 	}

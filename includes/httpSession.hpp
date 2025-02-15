@@ -11,36 +11,13 @@
 #include <string.h>
 #include <algorithm>
 #include <sys/stat.h>
-#include "wrappers.hpp"
-#include "statusCodeException.hpp"
+#include "wrappers.h"
 #include "confiClass.hpp"
-
+#include "statusCodeException.hpp"
 
 #define BUFFER_SIZE 8192
-#define MAX_EVENTS  10
-#define T 			5
 
 using namespace std;
-
-typedef map<string, string> e_map;
-
-// struct location {
-// 	string				uri;
-//     vector<string>		methods;
-//     string				redirection;
-//     string				alias;
-// 	string				upload;
-//     string				index;
-// 	map<string, string>	cgi;
-//     bool				autoIndex;
-// 	location() : index("index.html") {}
-// };
-
-// struct configuration {
-//     int						bodySize;
-//     map<int, string>		errorPages;
-//     map<string, location>	locations;
-// };
 
 class httpSession {
 private:
@@ -52,12 +29,7 @@ private:
 	int					statusCode;
 	string				codeMeaning;
 	Cgi*				cgi;
-	configuration*		config;
-
-
-
-	public:
-
+public:
 	class Request {
 	private:
 		httpSession&	s;
@@ -70,7 +42,7 @@ private:
 		int										fd;
 		string									remainingBuffer;
 		t_state									state;
-		
+
 		void									isProtocole(string& httpVersion);
 		void									isCGI(location*);
 		void									reconstructUri(location* rules);
@@ -82,9 +54,6 @@ private:
 		bool									validFieldName(string& str) const;
 		bool									parseFileds(stringstream&);
 		int										openTargetFile() const;
-		// bool									boundary(stringstream&);
-		// bool									fileHeaders(stringstream&);
-		// bool									fileContent(stringstream&);
 		bool									contentLengthBased(stringstream&);
 		bool									transferEncodingChunkedBased(stringstream&);
 		bool									parseBody(stringstream&);
@@ -95,37 +64,30 @@ private:
 	};
 
 	class Response {
-		private:
+	private:
 		httpSession&	s;
 		int				contentFd;
 		t_state			state;
-		e_map  			extensions;
 		
+		static string	getSupportedeExtensions(const string&);
 		string			contentTypeHeader() const;
 		void			sendHeader(const int);
 		void			sendBody(const int);
 		void			sendCgiStarterLine(const int);
 		void			sendCgiOutput(const int);
-		public:
+	public:
 		Response(httpSession& session);
 		void			sendResponse(const int clientFd);
 		const t_state&	status() const;
-
-		vector<int>     getPorts();
-        void 			sendRes(int FD, bool smallFile, struct stat file_stat);
-        void    		GET(int clientFd, bool smallFile);
-        void    		sendBodyifChunked(int clientFd);
 	};
-	
-	string		clientClass;
+
 	Request		req;
 	Response	res;
-	
+	configuration*	config;
+
 	httpSession(int clientFd, configuration* confi);
 	httpSession();
-	
-	void		reSetPath(const string& newPath);
-	
-};
 
-// void handelClientRes(int FD);
+	void		reSetPath(const string& newPath);
+
+};

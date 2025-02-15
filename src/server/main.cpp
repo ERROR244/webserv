@@ -1,15 +1,19 @@
-#include "server.hpp"
+#include "server.h"
 #include "confiClass.hpp"
 
 int main(int ac, char **av) {
     if (ac != 2) {
         cerr << "invalid number of argument" << endl;
     } else {
+        //config file
+        vector<int> serverFds;
+        int epollFd;
         map<string, configuration> config;
         try {
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
             confi.printprint();
+            epollFd = createSockets(config, serverFds);
         }
         catch (const char *s) {
             cerr << s << endl;
@@ -23,11 +27,12 @@ int main(int ac, char **av) {
             cerr << "ERROR" << endl;
             return -1;
         }
-        std::vector<int>    servrSocks;
-        int                     epollFd;
-    	createSockets(servrSocks, config);
-    	epollFd = startEpoll(servrSocks);
-        multiplexerSytm(servrSocks, epollFd, config);
+        //server setuping
+        //multiplexer
+        // printprint(config);
+        
+        cerr << "here: "  << epollFd << endl;
+        multiplexerSytm(serverFds, epollFd, config);
 	}
     return 0;
 }

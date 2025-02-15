@@ -43,8 +43,14 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
 
     while (getline(sFile, line)) {
         line = trim(line);
-        if (line == "[END]")
+        if (line == "[END]") {
+            kv.addInfo = NULL;
+            cout << kv.host.c_str() << ":" << kv.port.c_str() << endl;
+            getaddrinfo(kv.host.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
+            if (kv.addInfo == NULL)
+                throw "kv.addInfo is NULL";
             return ;
+        }
         else if (line.empty())
             continue;
         if (i > 5)

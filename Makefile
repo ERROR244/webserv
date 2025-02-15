@@ -2,11 +2,12 @@ NAME = webServ
 
 SRCS =  src/wrappers.cpp src/cgi/*.cpp \
 		src/exceptions/*.cpp src/request/*.cpp src/response/*.cpp \
-		src/server/*.cpp
+		src/server/*.cpp src/confi/*.cpp
+
 
 CC = g++
 
-CFLAGS = -Wall -Wextra -I ./includes/ -fsanitize=address -w -g3 #-Werror #-std=c++98
+CFLAGS = -Wall -Wextra -I./includes -fsanitize=address -w -g3 #-Werror #-std=c++98
 
 all : $(NAME)
 

@@ -44,12 +44,12 @@ struct location {
 };
 
 struct configuration {
-    off_t               bodySize;
-    string              port;
-    string              host;
-    struct addrinfo*    addInfo;
-    vector<string>      serNames;
-    map<int, string>    errorPages;
+    off_t                   bodySize;
+    string                  port;
+    string                  host;
+    struct addrinfo*        addInfo;
+    vector<string>          serNames;
+    map<int, string>        errorPages;
     map<string, location>	locations;
 };
 
@@ -81,5 +81,6 @@ void    handleError(string& line, configuration& kv, ifstream& sFile);
 void    handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
 string  trim(const string& str);
 // void    handleCgi(string& line, configuration& kv, ifstream& sFile);
+void printprint(map<string, configuration>);
 
 #endif
