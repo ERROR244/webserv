@@ -23,9 +23,10 @@ int main(int ac, char **av) {
             cerr << "ERROR" << endl;
             return -1;
         }
-        map<int, t_sockaddr>    servrSocks;
+        std::vector<int>    servrSocks;
         int                     epollFd;
-    	epollFd = startServer(servrSocks);
+    	createSockets(servrSocks, config);
+    	epollFd = startEpoll(servrSocks);
         multiplexerSytm(servrSocks, epollFd, config);
 	}
     return 0;

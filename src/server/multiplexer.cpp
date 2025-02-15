@@ -1,4 +1,5 @@
 #include "server.hpp"
+#include "wrapperFunc.hpp"
 
 httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK") {}
 
@@ -73,22 +74,36 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	}
 }
 
-void	acceptNewClient(const int& epollFd, const int& serverFd, const t_sockaddr& addrsInfo) {
-	struct epoll_event	ev;
-	int					clientFd;
-	socklen_t			addrsLen = sizeof(addrsInfo);
+void handelNewConnection(int eventFd, int epollFds) {
+    int clientFd;
+	struct epoll_event  ev;
 
-	if ((clientFd = accept(serverFd, (struct sockaddr*)&addrsInfo, &addrsLen)) < 0) {
-		perror("accept faield: ");
-        throw(statusCodeException(500, "Internal Server Error"));//i can't send the error page//no fd to send to
+    if ((clientFd = accept(eventFd, NULL, NULL)) == -1) {
+        cerr << "Accept failed" << endl;
+        return ;
     }
-	ev.events = EPOLLIN;
-	ev.data.fd = clientFd;
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
-		perror("epoll_ctl faield(setUpserver.cpp): ");
-		throw(statusCodeException(500, "Internal Server Error"));
-	}
-	cerr << "-------new client added-------" << endl;
+    cout << "\n--------------------------------------New client connected!--------------------------------------\n" << endl;
+
+    // set the client socket to non-blocking mode
+    if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) {
+        cerr << "Failed to set non-blocking" << endl;
+        ft_close(clientFd, "clientFd");
+        return ;
+    }
+
+    // add the new client socket to epoll
+    ev.events = EPOLLIN;
+    ev.data.fd = clientFd;
+    if (epoll_ctl(epollFds, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
+        cerr << "epoll_ctl failed for client socket" << clientFd << endl;
+        ft_close(clientFd, "clientFd");
+        return ;
+    }
+    indexMap[clientFd].KV = confi.kValue[getsockname(clientFd)];
+    indexMap[clientFd].headerSended = false;
+    indexMap[clientFd].clientFd = clientFd;
+    indexMap[clientFd].fileFd = -1;
+    indexMap[clientFd].lastRes = 0;
 }
 
 string toString(const int& nbr) {
@@ -111,10 +126,11 @@ string getsockname(int clientFd) {
     }
 }
 
-void	multiplexerSytm(map<int, t_sockaddr>& servrSocks, const int& epollFd, map<string, configuration>& config) {
+void	multiplexerSytm(vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event		events[MAX_EVENTS];
 	map<int, httpSession*>	sessions;//change httpSession to a pointer so i can be able to free it
 
+	
 	while (1) {
 		int nfds;
 		cerr << "waiting for requests..." << endl;
@@ -124,14 +140,19 @@ void	multiplexerSytm(map<int, t_sockaddr>& servrSocks, const int& epollFd, map<s
 			perror("epoll_wait failed(setUpserver.cpp): ");
 		}
 		for (int i = 0; i < nfds; ++i) {
-			const int fd = events[i].data.fd;
+			int fd = events[i].data.fd;
 			try {
-				if (servrSocks.find(fd) != servrSocks.end()) {
-					acceptNewClient(epollFd, fd, servrSocks[fd]);
-				}
-				else if (events[i].events & EPOLLIN) {
+				// if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end() && indexMap[fd].lastRes != 0 && time(nullptr) - indexMap[fd].lastRes > T) {
+				// 	cout << indexMap[fd].lastRes << endl;
+				// 	if (fd >= 0)
+				// 		ft_close(fd, "clientFd");
+				// }
+				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end()) {
 					string clientClass = getsockname(fd);
 					sessions.try_emplace(fd, new httpSession(fd, &(config[clientClass])));
+					handelNewConnection(epollFd, fd);
+				}
+				else if (events[i].events & EPOLLIN) {
 					sessions[fd]->req.parseMessage(fd);
 					sessions[fd]->clientClass = clientClass;
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());

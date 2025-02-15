@@ -17,8 +17,12 @@
 
 
 #define BUFFER_SIZE 8192
+#define MAX_EVENTS  10
+#define T 			5
 
 using namespace std;
+
+typedef map<string, string> e_map;
 
 // struct location {
 // 	string				uri;
@@ -49,7 +53,11 @@ private:
 	string				codeMeaning;
 	Cgi*				cgi;
 	configuration*		config;
+
+
+
 	public:
+
 	class Request {
 	private:
 		httpSession&	s;
@@ -91,8 +99,8 @@ private:
 		httpSession&	s;
 		int				contentFd;
 		t_state			state;
+		e_map  			extensions;
 		
-		static string	getSupportedeExtensions(const string&);
 		string			contentTypeHeader() const;
 		void			sendHeader(const int);
 		void			sendBody(const int);
@@ -102,6 +110,11 @@ private:
 		Response(httpSession& session);
 		void			sendResponse(const int clientFd);
 		const t_state&	status() const;
+
+		vector<int>     getPorts();
+        void 			sendRes(int FD, bool smallFile, struct stat file_stat);
+        void    		GET(int clientFd, bool smallFile);
+        void    		sendBodyifChunked(int clientFd);
 	};
 	
 	string		clientClass;
@@ -114,3 +127,5 @@ private:
 	void		reSetPath(const string& newPath);
 	
 };
+
+// void handelClientRes(int FD);
