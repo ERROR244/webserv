@@ -1,4 +1,4 @@
-#include "webServ.hpp"
+#include "server.hpp"
 
 void webServ::GET(int clientFd, bool smallFile) {
     string response;

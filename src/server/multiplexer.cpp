@@ -1,4 +1,4 @@
-#include "server.h"
+#include "server.hpp"
 
 httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK") {}
 
@@ -91,6 +91,26 @@ void	acceptNewClient(const int& epollFd, const int& serverFd, const t_sockaddr& 
 	cerr << "-------new client added-------" << endl;
 }
 
+string toString(const int& nbr) {
+    ostringstream oss;
+
+    oss << nbr;
+    return (oss.str());
+}
+
+string getsockname(int clientFd) {
+    struct sockaddr_in addr;
+    socklen_t addrLen = sizeof(addr);
+    string res;
+
+    if (getsockname(clientFd, (struct sockaddr*)&addr, &addrLen) == 0) {
+        res = string(inet_ntoa(addr.sin_addr)) + ":" + toString(ntohs(addr.sin_port));
+        return res;
+    } else {
+        throw "getsockname failed";
+    }
+}
+
 void	multiplexerSytm(map<int, t_sockaddr>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event		events[MAX_EVENTS];
 	map<int, httpSession*>	sessions;//change httpSession to a pointer so i can be able to free it
@@ -106,11 +126,14 @@ void	multiplexerSytm(map<int, t_sockaddr>& servrSocks, const int& epollFd, map<s
 		for (int i = 0; i < nfds; ++i) {
 			const int fd = events[i].data.fd;
 			try {
-				if (servrSocks.find(fd) != servrSocks.end())
+				if (servrSocks.find(fd) != servrSocks.end()) {
 					acceptNewClient(epollFd, fd, servrSocks[fd]);
+				}
 				else if (events[i].events & EPOLLIN) {
-					sessions.try_emplace(fd, new httpSession(fd, &(map[])));
+					string clientClass = getsockname(fd);
+					sessions.try_emplace(fd, new httpSession(fd, &(config[clientClass])));
 					sessions[fd]->req.parseMessage(fd);
+					sessions[fd]->clientClass = clientClass;
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());
 				}
 				else if (events[i].events & EPOLLOUT) {
@@ -122,22 +145,22 @@ void	multiplexerSytm(map<int, t_sockaddr>& servrSocks, const int& epollFd, map<s
 				struct epoll_event	ev;
 				cerr << "code--> " << exception.code() << endl;
 				cerr << "reason--> " << exception.meaning() << endl;
-				if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
-					sessions[fd]->reSetPath(w_realpath(("." + config.errorPages.at(exception.code())).c_str()));
-					ev.events = EPOLLOUT;
-					ev.data.fd = fd;
-					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
-						perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
-					}
-				} else {
-					sendError(fd, exception.code(), exception.meaning());
-					ev.events = EPOLLIN;
-					ev.data.fd = fd;
-					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
-						perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
-					}
-					sessions.erase(sessions.find(fd));
-				}
+				// if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
+				// 	sessions[fd]->reSetPath(w_realpath(("." + config.errorPages.at(exception.code())).c_str()));
+				// 	ev.events = EPOLLOUT;
+				// 	ev.data.fd = fd;
+				// 	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
+				// 		perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
+				// 	}
+				// } else {
+				// 	sendError(fd, exception.code(), exception.meaning());
+				// 	ev.events = EPOLLIN;
+				// 	ev.data.fd = fd;
+				// 	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
+				// 		perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
+				// 	}
+				// 	sessions.erase(sessions.find(fd));
+				// }
 			}
 		}
 	}

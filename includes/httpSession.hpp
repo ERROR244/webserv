@@ -11,8 +11,10 @@
 #include <string.h>
 #include <algorithm>
 #include <sys/stat.h>
-#include "wrappers.h"
+#include "wrappers.hpp"
 #include "statusCodeException.hpp"
+#include "confiClass.hpp"
+
 
 #define BUFFER_SIZE 8192
 
@@ -47,7 +49,7 @@ private:
 	string				codeMeaning;
 	Cgi*				cgi;
 	configuration*		config;
-public:
+	public:
 	class Request {
 	private:
 		httpSession&	s;
@@ -60,7 +62,7 @@ public:
 		int										fd;
 		string									remainingBuffer;
 		t_state									state;
-
+		
 		void									isProtocole(string& httpVersion);
 		void									isCGI(location*);
 		void									reconstructUri(location* rules);
@@ -85,7 +87,7 @@ public:
 	};
 
 	class Response {
-	private:
+		private:
 		httpSession&	s;
 		int				contentFd;
 		t_state			state;
@@ -96,18 +98,19 @@ public:
 		void			sendBody(const int);
 		void			sendCgiStarterLine(const int);
 		void			sendCgiOutput(const int);
-	public:
+		public:
 		Response(httpSession& session);
 		void			sendResponse(const int clientFd);
 		const t_state&	status() const;
 	};
-
+	
+	string		clientClass;
 	Request		req;
 	Response	res;
-
+	
 	httpSession(int clientFd, configuration* confi);
 	httpSession();
-
+	
 	void		reSetPath(const string& newPath);
-
+	
 };

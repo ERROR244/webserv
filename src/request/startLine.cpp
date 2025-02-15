@@ -30,17 +30,17 @@ void	httpSession::Request::isCGI(location* loc) {
 	while (1) {
 		pos = s.path.find('/', pos);
 		string subUri = s.path.substr(0, pos);
-		if (subUri == loc->alias || (subUri + '/') == loc->uri)
+		if (subUri == loc->aliasRed || (subUri + '/') == loc->url)
 			subUri += '/' + loc->index;
 		size_t	dotPos = subUri.rfind('.');
 		string subUriExt = "";
 		if (dotPos != string::npos)
 			subUriExt = subUri.substr(dotPos);
-		if (loc->cgi.find(subUriExt) != loc->cgi.end() && !access(("." + subUri).c_str() ,F_OK)) {
+		if (loc->cgis.find(subUriExt) != loc->cgis.end() && !access(("." + subUri).c_str() ,F_OK)) {
 			cgiVars.scriptUri = w_realpath(("." + subUri).c_str());
 			size_t barPos = subUri.rfind('/');
 			cgiVars.scriptName = subUri.substr(barPos+1);
-			cgiVars.exec = loc->cgi[subUriExt];
+			cgiVars.exec = loc->cgis[subUriExt];
 			if (s.path.size() > subUri.size()+1)
 				cgiVars.path = s.path.substr(pos);
 			cgiVars.query = s.query;
@@ -58,15 +58,15 @@ void	httpSession::Request::reconstructUri(location*	rules) {
 
 	if (find(rules->methods.begin(), rules->methods.end(), s.method) == rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
-	if (!rules->redirection.empty()) {
+	if (rules->isRed == true) {
 		s.statusCode = 301;
 		s.codeMeaning = "Moved Permanently";
 		//adding the location header to the response with the new path;
 		return ;
 	}
-	if (!rules->alias.empty()) {
-		s.path.erase(s.path.begin(), s.path.begin()+rules->uri.size() - 1);
-		s.path = rules->alias + s.path;
+	else {
+		s.path.erase(s.path.begin(), s.path.begin()+rules->url.size() - 1);
+		s.path = rules->aliasRed + s.path;
 	}
 	isCGI(rules);
 	if (s.cgi == NULL) {

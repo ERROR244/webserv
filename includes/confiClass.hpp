@@ -15,40 +15,6 @@ using namespace std;
 # include <cerrno>
 # include <arpa/inet.h>
 #include <netdb.h>
-// <<<<<<< HEAD
-
-// enum  Ser1 {
-//     PORT,       HOST,
-//     SERNAMES,   BODYLIMIT,
-//     ERROR,      LOCS
-// };
-
-// enum  Ser2 {
-//     URL,        ALIASRRDI,
-//     METHODS,    INDEX,
-//     AUTOINDEX,  CGI
-// };
-
-
-// struct root {
-//     bool                    autoIndex;
-//     bool                    red;
-//     string                  url;
-//     string                  aliasRed;
-//     string                  index;
-//     vector<string>          methods;
-//     map<string, string>     cgis;
-// };
-
-// struct keyValue {
-//     off_t               bodySize;
-//     string              port;
-//     string              host;
-//     struct addrinfo*    addInfo;
-//     vector<string>      serNames;
-//     map<int, string>    errorPages;
-//     map<string, root>   roots;
-// =======
 
 enum  Ser1 {
     PORT,       HOST,
@@ -60,7 +26,6 @@ enum  Ser2 {
     URL,        ALIASRRDI,
     METHODS,    INDEX,
     AUTOINDEX,  CGI
-// >>>>>>> pr-merge-branch
 };
 
 
@@ -73,7 +38,7 @@ struct location {
     string                  index;
     vector<string>          methods;
     map<string, string>     cgis;
-    bool                    red;
+    bool                    isRed;
     bool                    autoIndex;
     location() : index("index.html") {}
 };
