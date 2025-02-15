@@ -15,6 +15,40 @@ using namespace std;
 # include <cerrno>
 # include <arpa/inet.h>
 #include <netdb.h>
+// <<<<<<< HEAD
+
+// enum  Ser1 {
+//     PORT,       HOST,
+//     SERNAMES,   BODYLIMIT,
+//     ERROR,      LOCS
+// };
+
+// enum  Ser2 {
+//     URL,        ALIASRRDI,
+//     METHODS,    INDEX,
+//     AUTOINDEX,  CGI
+// };
+
+
+// struct root {
+//     bool                    autoIndex;
+//     bool                    red;
+//     string                  url;
+//     string                  aliasRed;
+//     string                  index;
+//     vector<string>          methods;
+//     map<string, string>     cgis;
+// };
+
+// struct keyValue {
+//     off_t               bodySize;
+//     string              port;
+//     string              host;
+//     struct addrinfo*    addInfo;
+//     vector<string>      serNames;
+//     map<int, string>    errorPages;
+//     map<string, root>   roots;
+// =======
 
 enum  Ser1 {
     PORT,       HOST,
@@ -26,56 +60,61 @@ enum  Ser2 {
     URL,        ALIASRRDI,
     METHODS,    INDEX,
     AUTOINDEX,  CGI
+// >>>>>>> pr-merge-branch
 };
 
 
-struct root {
-    bool                    autoIndex;
-    bool                    red;
+string  trim(const string& str);
+
+
+struct location {
     string                  url;
     string                  aliasRed;
     string                  index;
     vector<string>          methods;
     map<string, string>     cgis;
+    bool                    red;
+    bool                    autoIndex;
+    location() : index("index.html") {}
 };
 
-struct keyValue {
+struct configuration {
     off_t               bodySize;
     string              port;
     string              host;
     struct addrinfo*    addInfo;
     vector<string>      serNames;
     map<int, string>    errorPages;
-    map<string, root>   roots;
+    map<string, location>	locations;
 };
 
 
-class confiClass {
+class ConfigFileParser {
     private:
         string              file;
 
     
     public:
-        map<string, keyValue>   kValue;
-        keyValue                kv;
+        map<string, configuration>   kValue;
+        configuration                kv;
 
-        confiClass();
-        confiClass(string _file);
-        ~confiClass();
+        ConfigFileParser();
+        ConfigFileParser(string _file);
+        ~ConfigFileParser();
 
-        void        parseFile();
-        void        handleServer(ifstream& sFile);
-        void        printKeyValue();
+        map<string, configuration>   parseFile();
+        void                    handleServer(ifstream& sFile);
+        void                    printprint();
 };
 
 
-void    handlePort(string& line, keyValue& kv, ifstream& sFile);
-void    handlehost(string& line, keyValue& kv, ifstream& sFile);
-void    handleSerNames(string& line, keyValue& kv, ifstream& sFile);
-void    handlelocs(string& line, keyValue& kv, ifstream& sFile);
-void    handleError(string& line, keyValue& kv, ifstream& sFile);
-void    handleBodyLimit(string& line, keyValue& kv, ifstream& sFile);
+void    handlePort(string& line, configuration& kv, ifstream& sFile);
+void    handlehost(string& line, configuration& kv, ifstream& sFile);
+void    handleSerNames(string& line, configuration& kv, ifstream& sFile);
+void    handlelocs(string& line, configuration& kv, ifstream& sFile);
+void    handleError(string& line, configuration& kv, ifstream& sFile);
+void    handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
 string  trim(const string& str);
-// void    handleCgi(string& line, keyValue& kv, ifstream& sFile);
+// void    handleCgi(string& line, configuration& kv, ifstream& sFile);
 
 #endif
