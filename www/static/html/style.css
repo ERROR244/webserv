@@ -58,13 +58,13 @@ main p {
 .hero {
 	width: 100%;
 	height: 550px;
-	background-image: url("/static/assets/willian-justen-de-vasconcellos-T_Qe4QlMIvQ-unsplash.jpg");
+	background-image: url("/assets/willian-justen-de-vasconcellos-T_Qe4QlMIvQ-unsplash.jpg");
 	background-position: center;
 	background-size: cover;
 }
 
 .side-img {
-	background-image: url("/static/assets/simon-berger-AiwWrn575c8-unsplash.jpg");
+	background-image: url("/assets/simon-berger-AiwWrn575c8-unsplash.jpg");
 	background-position: center;
 	background-size: cover;
 }

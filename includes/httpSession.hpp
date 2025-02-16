@@ -84,6 +84,7 @@ public:
 	public:
 		Response(httpSession& session);
 		void			handelClientRes(const int clientFd);
+		void			setStatus();
 		const t_state&	status() const;
 	};
 

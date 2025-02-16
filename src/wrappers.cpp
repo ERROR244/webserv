@@ -5,7 +5,7 @@ string	w_realpath(const char * file_name) {
 
     cout << file_name << endl;
 	if (realpath(file_name, absolutePath) == nullptr)
-		throw(statusCodeException(404, "Not Found"));
+		throw(statusCodeException(404, "Not Found 2D"));
 	return string(absolutePath);
 }
 

@@ -50,7 +50,7 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
                 throw "kv.addInfo is NULL";
             return ;
         }
-        else if (line.empty())
+        else if (line.empty() || line[0] == '#')
             continue;
         if (i > 5)
             break;

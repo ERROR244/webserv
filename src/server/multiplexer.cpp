@@ -31,14 +31,12 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	struct epoll_event	ev;
 
 	if (status == DONE) {
-		cout << "YEAH" << endl;
 		ev.events = EPOLLIN;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
 			throw(statusCodeException(500, "Internal Server Error"));
 		}
-		close(clientFd);
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
@@ -99,7 +97,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 	
 	while (1) {
 		int nfds;
-		cerr << "\nwaiting for requests..." << endl;
+		// cerr << "\nwaiting for requests..." << endl;
 		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1)) == -1) {
 			//send the internal error page to all current clients
 			//close all connections and start over
@@ -112,6 +110,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
+					cout << "----> " << events[i].data.fd << endl;
 					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)])));
 					sessions[fd]->req.parseMessage(fd);
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());
@@ -119,13 +118,14 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				else if (events[i].events & EPOLLOUT) {
 					sessions[fd]->res.handelClientRes(fd);
 					resSessionStatus(epollFd, fd, sessions, sessions[fd]->res.status());
+					cout << "++++> " << events[i].data.fd << endl;
 				}
 			}
 			catch (const statusCodeException& exception) {
 				struct epoll_event	ev;
 				cerr << "code--> " << exception.code() << endl;
 				cerr << "reason--> " << exception.meaning() << endl;
-				if (sessions[fd]->config->errorPages.find(exception.code()) != sessions[fd]->config->errorPages.end()) {
+				if (false && sessions[fd]->config->errorPages.find(exception.code()) != sessions[fd]->config->errorPages.end()) {
 					sessions[fd]->reSetPath(w_realpath(("." + sessions[fd]->config->errorPages.at(exception.code())).c_str()));
 					ev.events = EPOLLOUT;
 					ev.data.fd = fd;
@@ -144,4 +144,5 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 			}
 		}
 	}
+	
 }

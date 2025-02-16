@@ -156,6 +156,7 @@ bool	httpSession::Request::parseStartLine(stringstream& stream) {
 		isMethod(comps[0]);
 		isTarget(comps[1]);
 		isProtocole(comps[2]);
+		cerr << "original path: " << s.path << endl;
 		if ((rules = getConfigFileRules()))
 			reconstructUri(rules);
 		else

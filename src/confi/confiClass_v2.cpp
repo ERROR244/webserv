@@ -250,7 +250,7 @@ void handlelocs(string& line, configuration& kv, ifstream& sFile) {
             throw "handlelocs::unknown keywords: `" + line + "`";
     while (getline(sFile, line)) {
         line = trim(line);
-        if (line.empty())
+        if (line.empty() || line[0] == '#')
             continue;
         if (line == "[root]") {
             location rt = handleRoot(sFile);

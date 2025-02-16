@@ -13,6 +13,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat fi
     }
     if (s.method == "POST") {
         cout << "POST method called\n";
+        state = DONE;
     }
     if (s.method == "DELETE") {
         // string response;
@@ -37,17 +38,19 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat fi
         // ev.data.fd = clientFd;
         // epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev);
         // s.lastRes = time(nullptr);
+        state = DONE;
     }
 }
 
 void	httpSession::Response::handelClientRes(const int clientFd) {
 	if (s.cgi == NULL) {
 		struct stat file_stat;
-    
-		if (stat(s.path.c_str(), &file_stat) == -1) {
-			throw(statusCodeException(500, "Internal Server Error"));
+        int i = stat(s.path.c_str(), &file_stat);
+        cout << "-------------------------------------------------------------------------------------------------------------------------> " << file_stat.st_size << endl;
+		if (i == -1) {
+			throw (statusCodeException(500, "Internal Server Error"));
 		}
-		else if (file_stat.st_size < 10000) {
+		else if (file_stat.st_size < BUFFER_SIZE) {
 			sendRes(clientFd, true, file_stat);
 		}
 		else {
@@ -68,4 +71,8 @@ void	httpSession::Response::handelClientRes(const int clientFd) {
 
 const t_state&	httpSession::Response::status() const {
 	return state;
+}
+
+void	httpSession::Response::setStatus() {
+	state = PROCESSING;
 }

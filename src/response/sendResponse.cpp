@@ -80,9 +80,8 @@ void httpSession::Response::GET(int clientFd, bool smallFile) {
     string response;
     string fileType = getSupportedeExtensions(getExt(s.path));
 
-    // cout << s.path << endl;
     if (smallFile) {
-        ifstream fileStream(s.path.c_str(), std::ios::binary);
+        ifstream fileStream(s.path.c_str());
         std::stringstream buffer;
         buffer << fileStream.rdbuf();
         string body = buffer.str();
@@ -90,15 +89,16 @@ void httpSession::Response::GET(int clientFd, bool smallFile) {
                         "Content-Length: " + toString(body.size()) + "\r\n" +
                         "Connection: keep-alive" + string("\r\n\r\n");
         response += body;
+        cout << "\n\n" << response << "\n\n";
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
         state = DONE;
-        cout << "\ndone sending the response\n" << endl;
         // lastRes = time(nullptr);      // for timeout
+        // cout << "\ndone sending the response\n" << endl;
     }
     else {
         headerSended = true;
         contentFd = open(s.path.c_str(), O_RDONLY);
-        response =   "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" +
+        response = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" +
                             fileType + "Connection: keep-alive" + string("\r\n\r\n");
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
     }
@@ -111,7 +111,6 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
     if (bytesRead < 0) {
         cout << contentFd << endl;
         perror("ba33");
-        exit(1);
     }
     else if (bytesRead > 0) {
         buffer[bytesRead] = '\0';
@@ -125,13 +124,12 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
     else {
         buffer[bytesRead] = '\0';
         send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT);
-                state = DONE;
-
+        state = DONE;
+        headerSended = false;
         if (contentFd >= 0)
             ft_close(contentFd, "fileFd");
-        headerSended = false;
         // lastRes = time(nullptr);      // for timeout
-        cout << "\ndone sending the response\n" << endl;
+        // cout << "\ndone sending the response\n" << endl;
     }
 }
 
