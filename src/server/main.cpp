@@ -12,7 +12,8 @@ int main(int ac, char **av) {
         try {
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
-            confi.printprint();
+            // confi.printprint();
+            //server setuping
             epollFd = createSockets(config, serverFds);
         }
         catch (const char *s) {
@@ -27,11 +28,7 @@ int main(int ac, char **av) {
             cerr << "ERROR" << endl;
             return -1;
         }
-        //server setuping
         //multiplexer
-        // printprint(config);
-        
-        cerr << "here: "  << epollFd << endl;
         multiplexerSytm(serverFds, epollFd, config);
 	}
     return 0;

@@ -116,7 +116,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());
 				}
 				else if (events[i].events & EPOLLOUT) {
-					sessions[fd]->res.sendResponse(fd);
+					sessions[fd]->res.handelClientRes(fd);
 					resSessionStatus(epollFd, fd, sessions, sessions[fd]->res.status());
 				}
 			}

@@ -45,7 +45,6 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         line = trim(line);
         if (line == "[END]") {
             kv.addInfo = NULL;
-            cout << kv.host.c_str() << ":" << kv.port.c_str() << endl;
             getaddrinfo(kv.host.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
             if (kv.addInfo == NULL)
                 throw "kv.addInfo is NULL";
@@ -84,7 +83,12 @@ map<string, configuration> ConfigFileParser::parseFile() {
         else {
             throw "parseFile::unknown keywords: `" + line + "`";
         }
-        key = kv.host + ":" + kv.port;
+        struct sockaddr_in *addr = (struct sockaddr_in *)kv.addInfo->ai_addr;
+        char ipstr[INET_ADDRSTRLEN];
+
+        inet_ntop(kv.addInfo->ai_family, &(addr->sin_addr), ipstr, sizeof(ipstr));
+        key = string(ipstr) + ":" + kv.port;
+        cout << "+++> " << key << endl;
         if (kValue.find(key) == kValue.end()) {
             kValue[key] = kv;
             kv.addInfo = NULL;

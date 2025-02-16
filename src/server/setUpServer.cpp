@@ -30,7 +30,10 @@ int	createSockets(map<string, configuration>& config, vector<int>& serverFds) {
     for (it = config.begin(); it != config.end(); ++it) {
         int s = startSocket(it->second);
         serverFds.push_back(s);
-        cout << "----> " << getsockname(s) << endl;
+        string tmp = getsockname(s);
+        cout << "---> " << tmp << endl;
+        cout << "---------> Ports: " << config[tmp].port << endl;
+        cout << "---------> hosts: " << config[tmp].host << endl;
     }
     return startEpoll(serverFds);
 }

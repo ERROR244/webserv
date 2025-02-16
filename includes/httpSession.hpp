@@ -75,9 +75,11 @@ public:
 		void			sendBody(const int);
 		void			sendCgiStarterLine(const int);
 		void			sendCgiOutput(const int);
+
+		void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat file_stat);
 	public:
 		Response(httpSession& session);
-		void			sendResponse(const int clientFd);
+		void			handelClientRes(const int clientFd);
 		const t_state&	status() const;
 	};
 

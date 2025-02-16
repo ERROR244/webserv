@@ -69,7 +69,7 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
 string	httpSession::Response::contentTypeHeader() const {
 	size_t pos = s.path.rfind(".");
 	if (pos == string::npos)
-		throw(statusCodeException(501, "Not Implemented"));
+		throw(statusCodeException(501, "Not Implemened"));
 	string ext = s.path.substr(pos);
 	string contentTypeValue = getSupportedeExtensions(ext);
 	if (contentTypeValue.empty())
@@ -100,8 +100,9 @@ void	httpSession::Response::sendBody(const int clientFd) {
 	char buff[BUFFER_SIZE+1] = {0};
 
 	if (contentFd == -1) {
-		if ((contentFd = open(s.path.c_str(), O_RDONLY, 0644)) == -1) {
-			perror("open failed(sendresponse.cpp 37)");
+        cerr << "ba33333333" << ("." + s.path).c_str() << endl;
+		if ((contentFd = open(("." + s.path).c_str(), O_RDONLY, 0644)) == -1) {
+			perror("open failed(sendresponse.cpp 104)");
 			throw(statusCodeException(500, "Internal Server Error"));
 		}
 	}
