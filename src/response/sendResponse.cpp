@@ -66,79 +66,73 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
     return "";
 }
 
-string	httpSession::Response::contentTypeHeader() const {
-	size_t pos = s.path.rfind(".");
-	if (pos == string::npos)
-		throw(statusCodeException(501, "Not Implemened"));
-	string ext = s.path.substr(pos);
-	string contentTypeValue = getSupportedeExtensions(ext);
-	if (contentTypeValue.empty())
-		throw(statusCodeException(501, "Not Implemented"));//check this before begining to write in the sock
-	return ("Content-Type: " + contentTypeValue + "\r\n");
+string httpSession::Response::getExt(string path) {
+    size_t size = s.path.find_last_of(".");
+    string ext;
+
+    if (size != string::npos) {
+        ext = s.path.substr(size);
+    }
+    return ext;
 }
 
-void	httpSession::Response::sendHeader(const int clientFd) {
-	string header;
+void httpSession::Response::GET(int clientFd, bool smallFile) {
+    string response;
+    string fileType = getSupportedeExtensions(getExt(s.path));
 
-	header += s.httpProtocole + " " + to_string(s.statusCode) + " " + s.codeMeaning + "\r\n";
-    if (s.method != "POST") {
-	    header += contentTypeHeader();
-	    header += "Transfer-Encoding: chunked\r\n";
-    } else
-        header += "Content-Length: 0\r\n";
-	header += "Connection: keep-alive\r\n";
-	header += "Server: bngn/0.1\r\n";
-	header += "\r\n";
-	if (write(clientFd, header.c_str(), header.size()) <= 0) {
-		perror("write failed(sendResponse.cpp 24)");
-		state = CCLOSEDCON;
-		return ;
-	}
+    // cout << s.path << endl;
+    if (smallFile) {
+        ifstream fileStream(s.path.c_str(), std::ios::binary);
+        std::stringstream buffer;
+        buffer << fileStream.rdbuf();
+        string body = buffer.str();
+        response = "HTTP/1.1 200 OK\r\n" + fileType +
+                        "Content-Length: " + toString(body.size()) + "\r\n" +
+                        "Connection: keep-alive" + string("\r\n\r\n");
+        response += body;
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+        state = DONE;
+        cout << "\ndone sending the response\n" << endl;
+        // lastRes = time(nullptr);      // for timeout
+    }
+    else {
+        headerSended = true;
+        contentFd = open(s.path.c_str(), O_RDONLY);
+        response =   "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" +
+                            fileType + "Connection: keep-alive" + string("\r\n\r\n");
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+    }
 }
 
-void	httpSession::Response::sendBody(const int clientFd) {
-	char buff[BUFFER_SIZE+1] = {0};
+void httpSession::Response::sendBodyifChunked(int clientFd) {
+    char buffer[BUFFER_SIZE+1];
+    ssize_t bytesRead = read(contentFd, buffer, BUFFER_SIZE);
 
-	if (contentFd == -1) {
-        cerr << "ba33333333" << ("." + s.path).c_str() << endl;
-		if ((contentFd = open(("." + s.path).c_str(), O_RDONLY, 0644)) == -1) {
-			perror("open failed(sendresponse.cpp 104)");
-			throw(statusCodeException(500, "Internal Server Error"));
-		}
-	}
-	int sizeRead;
-	if((sizeRead = read(contentFd, buff, BUFFER_SIZE)) < 0) {
-		perror("read failed(sendresponse.cpp 43)");
-		throw(statusCodeException(500, "Internal Server Error"));
-	}
-	if (sizeRead > 0) {
-		ostringstream chunkSize;
-		chunkSize << hex << sizeRead << "\r\n";
-		if (write(clientFd, chunkSize.str().c_str(), chunkSize.str().size()) <= 0) {//not good wrapper good
-			perror("write failed(sendResponse.cpp 50)");
-			state = CCLOSEDCON;
-			return ;
-		}
-		if (write(clientFd, buff, sizeRead) <= 0) {
-			perror("write failed(sendResponse.cpp 50)");
-			state = CCLOSEDCON;
-			return ;
-		}
-		if (write(clientFd, "\r\n", 2) <= 0) {
-			perror("write failed(sendResponse.cpp 50)");
-			state = CCLOSEDCON;
-			return ;
-		}
-	} else {
-		if (write(clientFd, "0\r\n\r\n", 5) <= 0) {
-			perror("write failed(sendResponse.cpp 56)");
-			state = CCLOSEDCON;
-			return ;
-		}
-		state = DONE;
-		close(contentFd);
-		cerr << "done sending response" << endl;
-	}
+    if (bytesRead < 0) {
+        cout << contentFd << endl;
+        perror("ba33");
+        exit(1);
+    }
+    else if (bytesRead > 0) {
+        buffer[bytesRead] = '\0';
+        std::ostringstream BUFFER_SIZEStream;
+        BUFFER_SIZEStream << std::hex << bytesRead << "\r\n";
+        std::string BUFFER_SIZEStr = BUFFER_SIZEStream.str();
+        send(clientFd, BUFFER_SIZEStr.c_str(), BUFFER_SIZEStr.size(), MSG_DONTWAIT);
+        send(clientFd, buffer, bytesRead, MSG_DONTWAIT);
+        send(clientFd, "\r\n", 2, MSG_DONTWAIT);
+    }
+    else {
+        buffer[bytesRead] = '\0';
+        send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT);
+                state = DONE;
+
+        if (contentFd >= 0)
+            ft_close(contentFd, "fileFd");
+        headerSended = false;
+        // lastRes = time(nullptr);      // for timeout
+        cout << "\ndone sending the response\n" << endl;
+    }
 }
 
 void    httpSession::Response::sendCgiStarterLine(const int clientFd) {

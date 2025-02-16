@@ -65,18 +65,22 @@ public:
 
 	class Response {
 	private:
-		httpSession&	s;
 		int				contentFd;
+		bool			headerSended;
 		t_state			state;
+		httpSession&	s;
 		
 		static string	getSupportedeExtensions(const string&);
-		string			contentTypeHeader() const;
-		void			sendHeader(const int);
-		void			sendBody(const int);
+		// string			contentTypeHeader() const;
+		// void			sendHeader(const int);
+		// void			sendBody(const int);
 		void			sendCgiStarterLine(const int);
 		void			sendCgiOutput(const int);
 
-		void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat file_stat);
+		void	sendRes(int clientFd, bool smallFile, struct stat file_stat);
+		void    GET(int clientFd, bool smallFile);
+        void    sendBodyifChunked(int clientFd);
+		string	getExt(string path);
 	public:
 		Response(httpSession& session);
 		void			handelClientRes(const int clientFd);

@@ -31,12 +31,14 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	struct epoll_event	ev;
 
 	if (status == DONE) {
+		cout << "YEAH" << endl;
 		ev.events = EPOLLIN;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
 			throw(statusCodeException(500, "Internal Server Error"));
 		}
+		close(clientFd);
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
@@ -97,7 +99,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 	
 	while (1) {
 		int nfds;
-		cerr << "waiting for requests..." << endl;
+		cerr << "\nwaiting for requests..." << endl;
 		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1)) == -1) {
 			//send the internal error page to all current clients
 			//close all connections and start over
@@ -107,7 +109,6 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 			int fd = events[i].data.fd;
 			try {
 				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end()) {
-					cerr << "here" << endl;
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {

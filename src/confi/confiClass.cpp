@@ -88,7 +88,6 @@ map<string, configuration> ConfigFileParser::parseFile() {
 
         inet_ntop(kv.addInfo->ai_family, &(addr->sin_addr), ipstr, sizeof(ipstr));
         key = string(ipstr) + ":" + kv.port;
-        cout << "+++> " << key << endl;
         if (kValue.find(key) == kValue.end()) {
             kValue[key] = kv;
             kv.addInfo = NULL;

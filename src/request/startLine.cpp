@@ -70,6 +70,7 @@ void	httpSession::Request::reconstructUri(location*	rules) {
 	isCGI(rules);
 	if (s.cgi == NULL) {
 		s.path = w_realpath(("." + s.path).c_str());
+		cout << "--- " << s.path << endl;
     	if (stat(s.path.c_str(), &pathStat))
 			throw(statusCodeException(404, "Not Found"));
 		if (S_ISDIR(pathStat.st_mode)) {//&& s->path == location
