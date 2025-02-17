@@ -25,9 +25,9 @@ int getSer1(string line) {
         return SERNAMES;
     else if (line[0] == 'b')
         return BODYLIMIT;
-    else if (line[0] == '[' && line[1] == 'e')
+    else if (checkRule(line, "errors"))
         return ERROR;
-    else if (line[0] == '[' && line[1] == 'R')
+    else if (checkRule(line, "ROOTS"))
         return LOCS;
     else if (line.empty())
         throw "line can't be empty";
@@ -43,7 +43,7 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
 
     while (getline(sFile, line)) {
         line = trim(line);
-        if (line == "[END]") {
+        if (line == "}") {
             kv.addInfo = NULL;
             getaddrinfo(kv.host.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
             if (kv.addInfo == NULL)
@@ -52,8 +52,8 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         }
         else if (line.empty() || line[0] == '#')
             continue;
-        if (i > 5)
-            break;
+        // if (i > 5)
+        //     break;
         index = getSer1(line);
         if (mp[index] == -1) {
             throw "unexpected keyword: " + line;
@@ -62,7 +62,20 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         farr[index](line, kv, sFile);
         i++;
     }
-    throw "[END] tag neede";
+    // throw "[END] tag neede";
+}
+
+bool checkRule(string s1, string s2) {
+    int firstPos = s1.find_first_of(' ');
+    int lastPos = s1.find_last_of(' ') + 1;
+
+    // cout << "`" << s1.substr(0, firstPos) << "`" << ", "<< "`" << s1.substr(lastPos, string::npos) << "`" << endl;
+    if (s1.substr(0, firstPos) != s2) {
+        return false;
+    } else if (s1.substr(lastPos, string::npos) != "{") {
+        return false;
+    }
+    return true;
 }
 
 map<string, configuration> ConfigFileParser::parseFile() {
@@ -77,7 +90,7 @@ map<string, configuration> ConfigFileParser::parseFile() {
         line = trim(line);
         if (line.empty())
             continue;
-        if (trim(line) == "[server]") {
+        if (checkRule(line, "server")) {
             handleServer(sFile);
         }
         else {

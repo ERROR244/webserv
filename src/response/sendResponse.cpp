@@ -4,65 +4,66 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
     static map<string, string> ext;
     
     if (ext.empty()) {
-        ext[".7z"]    = "application/x-7z-compressed";
-        ext[".avi"]   = "video/x-msvideo";
-        ext[".bat"]   = "application/x-msdownload";
-        ext[".bin"]   = "application/octet-stream";
-        ext[".bmp"]   = "image/bmp";
-        ext[".css"]   = "text/css";
-        ext[".csv"]   = "text/csv";
-        ext[".doc"]   = "application/msword";
-        ext[".docx"]  = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        ext[".dll"]   = "application/octet-stream";
-        ext[".exe"]   = "application/octet-stream";
-        ext[".eot"]   = "application/vnd.ms-fontobject";
-        ext[".gif"]   = "image/gif";
-        ext[".gz"]    = "application/gzip";
-        ext[".html"]  = "text/html";
-        ext[".ico"]   = "image/x-icon";
-        ext[".iso"]   = "application/octet-stream";
-        ext[".js"]    = "text/javascript";
-        ext[".jpg"]   = "images/jpeg";
-        ext[".jpeg"]  = "image/jpeg";
-        ext[".json"]  = "application/json";
-        ext[".java"]  = "text/x-java-source";
-        ext[".mjs"]   = "text/javascript";
-        ext[".mp3"]   = "audio/mpeg";
-        ext[".mp4"]   = "video/mp4";
-        ext[".mov"]   = "video/quicktime";
-        ext[".mkv"]   = "video/x-matroska";
-        ext[".ogg"]   = "audio/ogg";
-        ext[".odt"]   = "application/vnd.oasis->opendocument.text";
-        ext[".ods"]   = "application/vnd.oasis->opendocument.spreadsheet";
-        ext[".odp"]   = "application/vnd.oasis->opendocument.presentation";
-        ext[".otf"]   = "font/otf";
-        ext[".png"]   = "images/png";
-        ext[".pdf"]   = "application/pdf";
-        ext[".ppt"]   = "application/vnd.ms-powerpoint";
-        ext[".pptx"]  = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-        ext[".php"]   = "application/x-httpd-php";
-        ext[".py"]    = "text/x-python";
-        ext[".rar"]   = "application/x-rar-compressed";
-        ext[".rtf"]   = "application/rtf";
-        ext[".svg"]   = "image/svg+xml";
-        ext[".sh"]    = "application/x-sh";
-        ext[".sfnt"]  = "font/sfnt";
-        ext[".txt"]   = "text/plain";
-        ext[".tiff"]  = "image/tiff";
-        ext[".tar"]   = "application/x-tar";
-        ext[".ttf"]   = "font/ttf";
-        ext[".webp"]  = "image/webp";
-        ext[".wav"]   = "audio/wav";
-        ext[".webm"]  = "video/webm";
-        ext[".woff"]  = "font/woff";
-        ext[".woff2"] = "font/woff2";
-        ext[".xml"]   = "application/xml";
-        ext[".xls"]   = "application/vnd.ms-excel";
-        ext[".xlsx"]  = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        ext[".zip"]   = "application/zip";
+        ext[".7z"]    = "Content-Type: application/x-7z-compressed\r\n";
+        ext[".avi"]   = "Content-Type: video/x-msvideo\r\n";
+        ext[".bat"]   = "Content-Type: application/x-msdownload\r\n";
+        ext[".bin"]   = "Content-Type: application/octet-stream\r\n";
+        ext[".bmp"]   = "Content-Type: image/bmp\r\n";
+        ext[".css"]   = "Content-Type: text/css\r\n";
+        ext[".csv"]   = "Content-Type: text/csv\r\n";
+        ext[".doc"]   = "Content-Type: application/msword\r\n";
+        ext[".docx"]  = "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document\r\n";
+        ext[".dll"]   = "Content-Type: application/octet-stream\r\n";
+        ext[".exe"]   = "Content-Type: application/octet-stream\r\n";
+        ext[".eot"]   = "Content-Type: application/vnd.ms-fontobject\r\n";
+        ext[".gif"]   = "Content-Type: image/gif\r\n";
+        ext[".gz"]    = "Content-Type: application/gzip\r\n";
+        ext[".html"]  = "Content-Type: text/html\r\n";
+        ext[".ico"]   = "Content-Type: image/x-icon\r\n";
+        ext[".iso"]   = "Content-Type: application/octet-stream\r\n";
+        ext[".js"]    = "Content-Type: text/javascript\r\n";
+        ext[".jpg"]   = "Content-Type: images/jpeg\r\n";
+        ext[".jpeg"]  = "Content-Type: image/jpeg\r\n";
+        ext[".json"]  = "Content-Type: application/json\r\n";
+        ext[".java"]  = "Content-Type: text/x-java-source\r\n";
+        ext[".mjs"]   = "Content-Type: text/javascript\r\n";
+        ext[".mp3"]   = "Content-Type: audio/mpeg\r\n";
+        ext[".mp4"]   = "Content-Type: video/mp4\r\n";
+        ext[".mov"]   = "Content-Type: video/quicktime\r\n";
+        ext[".mkv"]   = "Content-Type: video/x-matroska\r\n";
+        ext[".ogg"]   = "Content-Type: audio/ogg\r\n";
+        ext[".odt"]   = "Content-Type: application/vnd.oasis->opendocument.text\r\n";
+        ext[".ods"]   = "Content-Type: application/vnd.oasis->opendocument.spreadsheet\r\n";
+        ext[".odp"]   = "Content-Type: application/vnd.oasis->opendocument.presentation\r\n";
+        ext[".otf"]   = "Content-Type: font/otf\r\n";
+        ext[".png"]   = "Content-Type: images/png\r\n";
+        ext[".pdf"]   = "Content-Type: application/pdf\r\n";
+        ext[".ppt"]   = "Content-Type: application/vnd.ms-powerpoint\r\n";
+        ext[".pptx"]  = "Content-Type: application/vnd.openxmlformats-officedocument.presentationml.presentation\r\n";
+        ext[".php"]   = "Content-Type: application/x-httpd-php\r\n";
+        ext[".py"]    = "Content-Type: text/x-python\r\n";
+        ext[".rar"]   = "Content-Type: application/x-rar-compressed\r\n";
+        ext[".rtf"]   = "Content-Type: application/rtf\r\n";
+        ext[".svg"]   = "Content-Type: image/svg+xml\r\n";
+        ext[".sh"]    = "Content-Type: application/x-sh\r\n";
+        ext[".sfnt"]  = "Content-Type: font/sfnt\r\n";
+        ext[".txt"]   = "Content-Type: text/plain\r\n";
+        ext[".tiff"]  = "Content-Type: image/tiff\r\n";
+        ext[".tar"]   = "Content-Type: application/x-tar\r\n";
+        ext[".ttf"]   = "Content-Type: font/ttf\r\n";
+        ext[".webp"]  = "Content-Type: image/webp\r\n";
+        ext[".wav"]   = "Content-Type: audio/wav\r\n";
+        ext[".webm"]  = "Content-Type: video/webm\r\n";
+        ext[".woff"]  = "Content-Type: font/woff\r\n";
+        ext[".woff2"] = "Content-Type: font/woff2\r\n";
+        ext[".xml"]   = "Content-Type: application/xml\r\n";
+        ext[".xls"]   = "Content-Type: application/vnd.ms-excel\r\n";
+        ext[".xlsx"]  = "Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n";
+        ext[".zip"]   = "Content-Type: application/zip\r\n";
     }
-    if (ext.find(key) != ext.end())
+    if (ext.find(key) != ext.end()) {
         return ext[key];
+    }
     return "";
 }
 
@@ -81,7 +82,7 @@ void httpSession::Response::GET(int clientFd, bool smallFile) {
     string fileType = getSupportedeExtensions(getExt(s.path));
 
     if (smallFile) {
-        ifstream fileStream(s.path.c_str());
+        ifstream fileStream(s.path.c_str(), std::ios::binary);
         std::stringstream buffer;
         buffer << fileStream.rdbuf();
         string body = buffer.str();
@@ -89,10 +90,9 @@ void httpSession::Response::GET(int clientFd, bool smallFile) {
                         "Content-Length: " + toString(body.size()) + "\r\n" +
                         "Connection: keep-alive" + string("\r\n\r\n");
         response += body;
-        cout << "\n\n" << response << "\n\n";
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
         state = DONE;
-        // lastRes = time(nullptr);      // for timeout
+        lastActivityTime = time(NULL);      // for timeout
         // cout << "\ndone sending the response\n" << endl;
     }
     else {
@@ -128,7 +128,7 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
         headerSended = false;
         if (contentFd >= 0)
             ft_close(contentFd, "fileFd");
-        // lastRes = time(nullptr);      // for timeout
+        lastActivityTime = time(NULL);      // for timeout
         // cout << "\ndone sending the response\n" << endl;
     }
 }
@@ -148,7 +148,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
         perror("read failed(sendResponse.cpp 152)");
         throw(statusCodeException(500, "Internal Server Error"));
     }
-    cerr << buff << endl;
+    // cerr << buff << endl;
     if (byteRead > 0) {
         if (write(clientFd, buff, byteRead) <= 0) {
 			perror("write failed(sendResponse.cpp 157)");

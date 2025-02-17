@@ -14,8 +14,10 @@
 #include "wrappers.h"
 #include "confiClass.hpp"
 #include "statusCodeException.hpp"
+#include <ctime>
 
 #define BUFFER_SIZE 8192
+#define T 5
 
 using namespace std;
 
@@ -67,25 +69,23 @@ public:
 	private:
 		int				contentFd;
 		bool			headerSended;
+		time_t      	lastActivityTime;
 		t_state			state;
 		httpSession&	s;
 		
-		static string	getSupportedeExtensions(const string&);
-		// string			contentTypeHeader() const;
-		// void			sendHeader(const int);
-		// void			sendBody(const int);
-		void			sendCgiStarterLine(const int);
-		void			sendCgiOutput(const int);
-
-		void	sendRes(int clientFd, bool smallFile, struct stat file_stat);
-		void    GET(int clientFd, bool smallFile);
-        void    sendBodyifChunked(int clientFd);
-		string	getExt(string path);
+		static string		getSupportedeExtensions(const string&);
+		void				sendCgiStarterLine(const int);
+		void				sendCgiOutput(const int);
+		void				sendRes(int clientFd, bool smallFile, struct stat file_stat);
+		void    			GET(int clientFd, bool smallFile);
+        void    			sendBodyifChunked(int clientFd);
+		string				getExt(string path);
 	public:
 		Response(httpSession& session);
-		void			handelClientRes(const int clientFd);
-		void			setStatus();
-		const t_state&	status() const;
+
+		time_t				handelClientRes(const int clientFd);
+		void				setStatus();
+		const t_state&		status() const;
 	};
 
 	Request		req;
@@ -98,3 +98,5 @@ public:
 	void		reSetPath(const string& newPath);
 
 };
+
+void	checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);

@@ -1,6 +1,33 @@
 #include "httpSession.hpp"
 
-httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), state(PROCESSING) {}
+httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), state(PROCESSING), lastActivityTime(0) {}
+
+time_t	httpSession::Response::handelClientRes(const int clientFd) {
+	if (s.cgi == NULL) {
+		struct stat file_stat;
+
+        if (stat(s.path.c_str(), &file_stat) == -1) {
+			throw (statusCodeException(500, "Internal Server Error"));
+		}
+		else if (file_stat.st_size < BUFFER_SIZE) {
+			sendRes(clientFd, true, file_stat);
+		}
+		else {
+			sendRes(clientFd, false, file_stat);
+		}
+	} else {
+		if (state == PROCESSING) {
+			sendCgiStarterLine(clientFd);
+			if (state == CCLOSEDCON)
+				return 0;
+			state = SHEADER;
+			s.cgi->setupCGIProcess();
+			cerr << "here" << endl;
+		}
+		sendCgiOutput(clientFd);
+	}
+    return lastActivityTime;
+}
 
 void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat file_stat) {
     if (s.method == "GET") {
@@ -13,6 +40,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat fi
     }
     if (s.method == "POST") {
         cout << "POST method called\n";
+        lastActivityTime = time(NULL);      // for timeout
         state = DONE;
     }
     if (s.method == "DELETE") {
@@ -37,36 +65,9 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat fi
         // ev.events = EPOLLIN ;
         // ev.data.fd = clientFd;
         // epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev);
-        // s.lastRes = time(nullptr);
+        lastActivityTime = time(NULL);      // for timeout
         state = DONE;
     }
-}
-
-void	httpSession::Response::handelClientRes(const int clientFd) {
-	if (s.cgi == NULL) {
-		struct stat file_stat;
-        int i = stat(s.path.c_str(), &file_stat);
-        cout << "-------------------------------------------------------------------------------------------------------------------------> " << file_stat.st_size << endl;
-		if (i == -1) {
-			throw (statusCodeException(500, "Internal Server Error"));
-		}
-		else if (file_stat.st_size < BUFFER_SIZE) {
-			sendRes(clientFd, true, file_stat);
-		}
-		else {
-			sendRes(clientFd, false, file_stat);
-		}
-	} else {
-		if (state == PROCESSING) {
-			sendCgiStarterLine(clientFd);
-			if (state == CCLOSEDCON)
-				return ;
-			state = SHEADER;
-			s.cgi->setupCGIProcess();
-			cerr << "here" << endl;
-		}
-		sendCgiOutput(clientFd);
-	}
 }
 
 const t_state&	httpSession::Response::status() const {
@@ -75,4 +76,13 @@ const t_state&	httpSession::Response::status() const {
 
 void	httpSession::Response::setStatus() {
 	state = PROCESSING;
+}
+
+void	checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime) {
+    // cout << "   TIME SPEND: " << time(NULL) << ", " <<  lastActivityTime << endl;
+	if (lastActivityTime != 0 && time(NULL) - lastActivityTime > T) {
+        cout << "client " << clientFd << " TIMED OUT: " << time(NULL) - lastActivityTime << endl;
+        close(clientFd);
+        timeOut.erase(timeOut.find(clientFd));
+    }
 }

@@ -70,7 +70,7 @@ void	httpSession::Request::reconstructUri(location*	rules) {
 	isCGI(rules);
 	if (s.cgi == NULL) {
 		s.path = w_realpath(("." + s.path).c_str());
-		cout << "--- " << s.path << endl;
+		// cout << "--- " << s.path << endl;
     	if (stat(s.path.c_str(), &pathStat))
 			throw(statusCodeException(404, "Not Found"));
 		if (S_ISDIR(pathStat.st_mode)) {//&& s->path == location
@@ -156,7 +156,6 @@ bool	httpSession::Request::parseStartLine(stringstream& stream) {
 		isMethod(comps[0]);
 		isTarget(comps[1]);
 		isProtocole(comps[2]);
-		cerr << "original path: " << s.path << endl;
 		if ((rules = getConfigFileRules()))
 			reconstructUri(rules);
 		else

@@ -85,11 +85,11 @@ void handleBodyLimit(string& line, configuration& kv, ifstream& sFile) {
 }
 
 void handleError(string& line, configuration& kv, ifstream& sFile) {
-    if (trim(line) != "[errors]") {
-        throw "expected: `[errors]` got `" + line + "`";
+    if (!checkRule(line, "errors")) {
+        throw "expected: `errors && {` got `" + line + "`";
     }
     while (getline(sFile, line)) {
-        if (trim(line) == "[END]") { return ; }
+        if (trim(line) == "}") { return ; }
         kv.errorPages[ft_stoi(trim(line).substr(0, 3))] = trim(line).substr(4);
     }
 }
@@ -181,12 +181,12 @@ void handleCgi(string& line, location& kv, ifstream& sFile) {
     int                     index = 0;
     int                     i = 0;
 
-    if (trim(line) != "[cgi]") {
-        throw "expected: `[cgi]` got `" + line + "`";
+    if (!checkRule(line, "cgi")) {
+        throw "expected: `cgi && {` got `" + line + "`";
     }
 
     while (getline(sFile, line)) {
-        if (trim(line) == "[END]") { return ; }
+        if (trim(line) == "}") { return ; }
         else if (i == 2) { break; }
         line = trim(line);
         index = checkKey("add-handler:", line);
@@ -211,7 +211,7 @@ int getSer2(string line) {
         return INDEX;
     else if (line[0] == 'A')
         return AUTOINDEX;
-    else if (line[0] == '[' && line[1] == 'c')
+    else if (checkRule(line, "cgi"))
         return CGI;
     else if (line.empty())
         throw "line can't be empty";
@@ -228,13 +228,13 @@ location handleRoot(ifstream& sFile) {
 
     while (getline(sFile, line)) {
         line = trim(line);
-        if (line == "[END]") {
+        if (line == "}") {
             return kv;
         }
         else if (line.empty())
             continue;
-        if (i > 5)
-            break;
+        // if (i > 5)
+        //     break;
         index = getSer2(line);
         if (mp[index] == -1) {
             throw "unexpected keyword: " + line;
@@ -242,21 +242,21 @@ location handleRoot(ifstream& sFile) {
         farr[index](line, kv, sFile);
         i++;
     }
-    throw "[END] tag neede";
+    // throw "[END] tag neede";
 }
 
 void handlelocs(string& line, configuration& kv, ifstream& sFile) {
-    if (line != "[ROOTS]")
+    if (!checkRule(line, "ROOTS"))
             throw "handlelocs::unknown keywords: `" + line + "`";
     while (getline(sFile, line)) {
         line = trim(line);
         if (line.empty() || line[0] == '#')
             continue;
-        if (line == "[root]") {
+        if (checkRule(line, "root")) {
             location rt = handleRoot(sFile);
             kv.locations[rt.url] = rt;
         }
-        else if (line == "[END]") {
+        else if (line == "}") {
             break ;
         }
         else {
@@ -264,7 +264,6 @@ void handlelocs(string& line, configuration& kv, ifstream& sFile) {
         }
     }
 }
-
 
 
 void ConfigFileParser::printprint() {
@@ -322,55 +321,3 @@ void ConfigFileParser::printprint() {
         i++;
     }
 }
-
-// void printprint(map<string, configuration> kValue) {
-//     map<string, configuration>::iterator it;
-//     map<int, string>::iterator it_errorPages;
-//     int i = 0;
-
-//     for (it = kValue.begin(); it != kValue.end(); ++it) {
-//         if (it != kValue.begin())
-//             cout << "\n\n                              ------------------------------------\n\n" << endl;
-//         cout << "------------------SERVER-" << i << "------------------" << endl;
-//         cout << "---------> Ports: " << it->second.port << endl;
-//         cout << "---------> hosts: " << it->second.host << endl;
-//         cout << "---------> Server Names:";
-//         for (size_t j = 0; j < it->second.serNames.size(); ++j) {
-//             cout << " " << it->second.serNames[j];
-//             if (j + 1 < it->second.serNames.size())
-//                 cout << ",";
-//         }
-//         cout << endl << "---------> Body Size: " << it->second.bodySize << "M";
-//         cout << endl << "---------> Error Pages:" << endl;
-//         for (it_errorPages = it->second.errorPages.begin(); it_errorPages != it->second.errorPages.end(); ++it_errorPages) {
-//             cout << "------------------> " << it_errorPages->first << " | " << it_errorPages->second << endl;
-//         }
-//         cout << endl << "---------> ROOTS:" << endl;
-//         map<string, location>::iterator rootIt;
-//         for (rootIt = it->second.locations.begin(); rootIt != it->second.locations.end(); ++rootIt) {
-//             cout << "------------------> ROOT:" << endl;
-//             cout << "---------------------------> url:       " << rootIt->second.url << endl;
-//             if (rootIt->second.isRed == false)
-//                 cout << "---------------------------> alias:     " << rootIt->second.aliasRed << endl;
-//             else
-//                 cout << "---------------------------> redir:     " << rootIt->second.aliasRed << endl;
-//             cout << "---------------------------> Methods:   ";
-//             for (size_t k = 0; k < rootIt->second.methods.size(); ++k) {
-//                 cout << rootIt->second.methods[k];
-//                 if (k + 1 < rootIt->second.methods.size())
-//                     cout << ", ";
-//             }
-//             cout << endl;
-//             cout << "---------------------------> index:     " << rootIt->second.index << endl;
-//             cout << "---------------------------> autoIndex: " << (rootIt->second.autoIndex ? "True" : "False") << endl;
-//             if (!rootIt->second.cgis.empty())
-//                 cout << "---------> Cgi Scripts:" << endl;
-//             map<string, string>::iterator cgiIt;
-//             for (cgiIt = rootIt->second.cgis.begin(); cgiIt != rootIt->second.cgis.end(); ++cgiIt) {
-//                 cout << "------------------> add-handler: " << cgiIt->first << " | " << cgiIt->second << endl;
-//             }
-//             cout << endl;
-//         }
-//         i++;
-//     }
-// }

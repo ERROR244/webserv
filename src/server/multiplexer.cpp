@@ -87,18 +87,23 @@ void	acceptNewClient(const int& epollFd, const int& serverFd) {
 		perror("epoll_ctl faield(setUpserver.cpp): ");
 		throw(statusCodeException(500, "Internal Server Error"));
 	}
-	cerr << "-------new client added-------" << endl;
+	cerr << "		--------------new client added--------------" << endl;
 }
 
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
-	struct epoll_event		events[MAX_EVENTS];
-	map<int, httpSession*>	sessions;//change httpSession to a pointer so i can be able to free it
+	struct epoll_event					events[MAX_EVENTS];
+	map<int, httpSession*>				sessions;					//change httpSession to a pointer so i can be able to free it
+	map<int, time_t>					timeOut;
+	map<int, time_t>::iterator			it;
+	int									nfds;
 
-	
+
+	cerr << "Started the server..." << endl;
 	while (1) {
-		int nfds;
-		// cerr << "\nwaiting for requests..." << endl;
-		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1)) == -1) {
+		for (it = timeOut.begin(); it != timeOut.end(); ++it) {
+			checkTimeOut(timeOut, it->first, it->second);
+		}		
+		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 1)) == -1) {
 			//send the internal error page to all current clients
 			//close all connections and start over
 			perror("epoll_wait failed(setUpserver.cpp): ");
@@ -110,15 +115,13 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
-					cout << "----> " << events[i].data.fd << endl;
 					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)])));
 					sessions[fd]->req.parseMessage(fd);
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());
 				}
 				else if (events[i].events & EPOLLOUT) {
-					sessions[fd]->res.handelClientRes(fd);
+					timeOut[fd] = sessions[fd]->res.handelClientRes(fd);
 					resSessionStatus(epollFd, fd, sessions, sessions[fd]->res.status());
-					cout << "++++> " << events[i].data.fd << endl;
 				}
 			}
 			catch (const statusCodeException& exception) {

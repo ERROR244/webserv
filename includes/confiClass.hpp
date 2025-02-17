@@ -79,8 +79,8 @@ void    handleSerNames(string& line, configuration& kv, ifstream& sFile);
 void    handlelocs(string& line, configuration& kv, ifstream& sFile);
 void    handleError(string& line, configuration& kv, ifstream& sFile);
 void    handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
+void    printprint(map<string, configuration>);
+bool    checkRule(string s1, string s2);
 string  trim(const string& str);
-// void    handleCgi(string& line, configuration& kv, ifstream& sFile);
-void printprint(map<string, configuration>);
 
 #endif

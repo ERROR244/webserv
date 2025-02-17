@@ -50,7 +50,9 @@
 		"cstring": "cpp",
 		"fstream": "cpp",
 		"format": "cpp",
-		"span": "cpp"
+		"span": "cpp",
+		"chrono": "cpp",
+		"text_encoding": "cpp"
 	},
 	"C_Cpp.errorSquiggles": "enabled",
 }
