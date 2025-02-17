@@ -52,8 +52,6 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         }
         else if (line.empty() || line[0] == '#')
             continue;
-        // if (i > 5)
-        //     break;
         index = getSer1(line);
         if (mp[index] == -1) {
             throw "unexpected keyword: " + line;
@@ -62,18 +60,29 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         farr[index](line, kv, sFile);
         i++;
     }
-    // throw "[END] tag neede";
 }
 
 bool checkRule(string s1, string s2) {
-    int firstPos = s1.find_first_of(' ');
-    int lastPos = s1.find_last_of(' ') + 1;
+    int i = 0;
 
-    // cout << "`" << s1.substr(0, firstPos) << "`" << ", "<< "`" << s1.substr(lastPos, string::npos) << "`" << endl;
-    if (s1.substr(0, firstPos) != s2) {
-        return false;
-    } else if (s1.substr(lastPos, string::npos) != "{") {
-        return false;
+    if (i < s1.size()) {
+        while (i < s1.size() && i < s2.size()) {
+            if (s1[i] != s2[i])
+                return false;
+            i++;
+        }
+        if (i != s2.size())
+            return false;
+        while (i < s1.size()) {
+            if (s1[i] == '{')
+                break;
+            else if (s1[i] != 32 && s1[i] != 9) {
+                return false;
+            }
+            i++;
+        }
+        if (i >= s1.size() || s1[i] != '{')
+            return false;
     }
     return true;
 }

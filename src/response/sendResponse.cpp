@@ -87,19 +87,18 @@ void httpSession::Response::GET(int clientFd, bool smallFile) {
         buffer << fileStream.rdbuf();
         string body = buffer.str();
         response = "HTTP/1.1 200 OK\r\n" + fileType +
-                        "Content-Length: " + toString(body.size()) + "\r\n" +
-                        "Connection: keep-alive" + string("\r\n\r\n");
+                        "Content-Length: " + toString(body.size()) + "\r\n" + "Connection: " +
+                        (s.headers["connection"].empty() ? "close" : s.headers["connection"]) + string("\r\n\r\n");
         response += body;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
         state = DONE;
         lastActivityTime = time(NULL);      // for timeout
-        // cout << "\ndone sending the response\n" << endl;
     }
     else {
         headerSended = true;
         contentFd = open(s.path.c_str(), O_RDONLY);
-        response = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" +
-                            fileType + "Connection: keep-alive" + string("\r\n\r\n");
+        response = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" + fileType + "Connection: " +
+                            (s.headers["connection"].empty() ? "close" : s.headers["connection"]) + string("\r\n\r\n");
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
     }
 }
@@ -129,7 +128,6 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
         if (contentFd >= 0)
             ft_close(contentFd, "fileFd");
         lastActivityTime = time(NULL);      // for timeout
-        // cout << "\ndone sending the response\n" << endl;
     }
 }
 

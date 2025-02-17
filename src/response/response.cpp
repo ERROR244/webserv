@@ -26,6 +26,8 @@ time_t	httpSession::Response::handelClientRes(const int clientFd) {
 		}
 		sendCgiOutput(clientFd);
 	}
+    if (s.headers["connection"] != "keep-alive")
+        return -1;
     return lastActivityTime;
 }
 
@@ -79,9 +81,11 @@ void	httpSession::Response::setStatus() {
 }
 
 void	checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime) {
-    // cout << "   TIME SPEND: " << time(NULL) << ", " <<  lastActivityTime << endl;
-	if (lastActivityTime != 0 && time(NULL) - lastActivityTime > T) {
-        cout << "client " << clientFd << " TIMED OUT: " << time(NULL) - lastActivityTime << endl;
+	if (lastActivityTime != 0 && time(NULL) - lastActivityTime >= T) {
+        if (lastActivityTime == -1)
+            cout << "Client " << clientFd << " connection closed." << endl;
+        else
+            cout << "Client " << clientFd << " TIMED OUT: " << time(NULL) - lastActivityTime << ".1" << endl;
         close(clientFd);
         timeOut.erase(timeOut.find(clientFd));
     }

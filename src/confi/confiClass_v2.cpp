@@ -138,7 +138,7 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
     while (true) {
         i = line.find_first_of(',');
         if (i == string::npos) {
-            if (!trim(tmp).empty())
+            if (!trim(line).empty())
                 kv.methods.push_back(trim(line));
             break;
         }
@@ -162,8 +162,9 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
 void handleIndex(string& line, location& kv, ifstream& sFile) {
     int i = checkKey("Index:", line);
     kv.index = trim(line.substr(i));
-    if (kv.index.empty())
+    if (kv.index.empty()) {
         kv.index = "index.html";
+    }
 }
 
 void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
@@ -231,10 +232,8 @@ location handleRoot(ifstream& sFile) {
         if (line == "}") {
             return kv;
         }
-        else if (line.empty())
+        else if (line.empty() || line[0] == '#')
             continue;
-        // if (i > 5)
-        //     break;
         index = getSer2(line);
         if (mp[index] == -1) {
             throw "unexpected keyword: " + line;
@@ -242,10 +241,10 @@ location handleRoot(ifstream& sFile) {
         farr[index](line, kv, sFile);
         i++;
     }
-    // throw "[END] tag neede";
 }
 
 void handlelocs(string& line, configuration& kv, ifstream& sFile) {
+    location rt;
     if (!checkRule(line, "ROOTS"))
             throw "handlelocs::unknown keywords: `" + line + "`";
     while (getline(sFile, line)) {
@@ -253,7 +252,7 @@ void handlelocs(string& line, configuration& kv, ifstream& sFile) {
         if (line.empty() || line[0] == '#')
             continue;
         if (checkRule(line, "root")) {
-            location rt = handleRoot(sFile);
+            rt = handleRoot(sFile);
             kv.locations[rt.url] = rt;
         }
         else if (line == "}") {
@@ -267,12 +266,12 @@ void handlelocs(string& line, configuration& kv, ifstream& sFile) {
 
 
 void ConfigFileParser::printprint() {
-    map<string, configuration>::iterator it;
+    map<string, configuration>::reverse_iterator it;
     map<int, string>::iterator it_errorPages;
     int i = 0;
 
-    for (it = kValue.begin(); it != kValue.end(); ++it) {
-        if (it != kValue.begin())
+    for (it = kValue.rbegin(); it != kValue.rend(); ++it) {
+        if (it != kValue.rbegin())
             cout << "\n\n                              ------------------------------------\n\n" << endl;
         cout << "------------------SERVER-" << i << "------------------" << endl;
         cout << "---------> Ports: " << it->second.port << endl;
@@ -293,8 +292,8 @@ void ConfigFileParser::printprint() {
         cout << "---------------------------> ai_protocol:   " << it->second.addInfo->ai_protocol << endl;
         cout << "---------------------------> ai_flags:      " << it->second.addInfo->ai_flags << endl;
         cout << endl << "---------> ROOTS:" << endl;
-        map<string, location>::iterator rootIt;
-        for (rootIt = it->second.locations.begin(); rootIt != it->second.locations.end(); ++rootIt) {
+        map<string, location>::reverse_iterator rootIt;
+        for (rootIt = it->second.locations.rbegin(); rootIt != it->second.locations.rend(); ++rootIt) {
             cout << "------------------> ROOT:" << endl;
             cout << "---------------------------> url:       " << rootIt->second.url << endl;
             if (rootIt->second.isRed == false)
@@ -311,10 +310,10 @@ void ConfigFileParser::printprint() {
             cout << "---------------------------> index:     " << rootIt->second.index << endl;
             cout << "---------------------------> autoIndex: " << (rootIt->second.autoIndex ? "True" : "False") << endl;
             if (!rootIt->second.cgis.empty())
-                cout << "---------> Cgi Scripts:" << endl;
+                cout << "---------------------------> Cgi Scripts:" << endl;
             map<string, string>::iterator cgiIt;
             for (cgiIt = rootIt->second.cgis.begin(); cgiIt != rootIt->second.cgis.end(); ++cgiIt) {
-                cout << "------------------> add-handler: " << cgiIt->first << " | " << cgiIt->second << endl;
+                cout << "------------------------------------> add-handler: " << cgiIt->first << " | " << cgiIt->second << endl;
             }
             cout << endl;
         }

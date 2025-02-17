@@ -13,7 +13,7 @@ void	sendError(const int clientFd, const int statusCode, const string codeMeanin
 	msg += "HTTP/1.1 " + to_string(statusCode) + " " + codeMeaning + "\r\n"; 
 	msg += "Content-type: text/html\r\n";
 	msg += "Transfer-Encoding: chunked\r\n";
-	msg += "Connection: keep-alive\r\n";
+	msg += "Connection: close\r\n";
 	msg += "Server: bngn/0.1\r\n";
 	msg += "\r\n";
 	write(clientFd, msg.c_str(), msg.size());
@@ -39,11 +39,12 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		}
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
+		cout << "\ndone sending the response\n" << endl;
 	}
 	else if (status == CCLOSEDCON) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));//this throw is not supposed to be here
+			throw(statusCodeException(500, "Internal Server Error"));		//this throw is not supposed to be here
 		}
 		close(clientFd);
 		delete s[clientFd];
@@ -65,7 +66,7 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	else if (status == CCLOSEDCON) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));//this throw is not supposed to be here
+			throw(statusCodeException(500, "Internal Server Error"));		//this throw is not supposed to be here
 		}
 		close(clientFd);
 		delete s[clientFd];
@@ -97,13 +98,12 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 	map<int, time_t>::iterator			it;
 	int									nfds;
 
-
 	cerr << "Started the server..." << endl;
 	while (1) {
 		for (it = timeOut.begin(); it != timeOut.end(); ++it) {
 			checkTimeOut(timeOut, it->first, it->second);
 		}		
-		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 1)) == -1) {
+		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
 			//send the internal error page to all current clients
 			//close all connections and start over
 			perror("epoll_wait failed(setUpserver.cpp): ");
