@@ -55,4 +55,10 @@
 		"text_encoding": "cpp"
 	},
 	"C_Cpp.errorSquiggles": "enabled",
+	"[ini]": {
+		"editor.comments": {
+			"lineComment": "#"
+		}
+	}
+
 }

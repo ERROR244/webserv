@@ -89,8 +89,11 @@ void handleError(string& line, configuration& kv, ifstream& sFile) {
         throw "expected: `errors && {` got `" + line + "`";
     }
     while (getline(sFile, line)) {
-        if (trim(line) == "}") { return ; }
-        kv.errorPages[ft_stoi(trim(line).substr(0, 3))] = trim(line).substr(4);
+        line = trim(line);
+        if (line == "}") { return ; }
+        else if (line.empty() || line[0] == '#' || line[0] == ';')
+            continue;
+        kv.errorPages[ft_stoi(line.substr(0, 3))] = line.substr(4);
     }
 }
 
@@ -130,6 +133,26 @@ void handleAliasRed(string& line, location& kv, ifstream& sFile) {
         throw "root alias can't be empty";
 }
 
+methods getMethods(const string& method) {
+    if (method == "GET")
+        return GET;
+    else if (method == "DELETE")
+        return DELETE;
+    else if (method == "POST")
+        return POST;
+    return NONE;
+}
+
+string getMethods(methods method) {
+    if (method == GET)
+        return "GET";
+    else if (method == DELETE)
+        return "DELETE";
+    else if (method == POST)
+        return "POST";
+    return "NONE";
+}
+
 void handleMethods(string& line, location& kv, ifstream& sFile) {
     int i = checkKey("methods:", line);
     string tmp;
@@ -139,12 +162,12 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
         i = line.find_first_of(',');
         if (i == string::npos) {
             if (!trim(line).empty())
-                kv.methods.push_back(trim(line));
+                kv.methods.push_back(getMethods(trim(line)));
             break;
         }
         tmp = line.substr(0, i);
         if (!trim(tmp).empty())
-            kv.methods.push_back(trim(tmp));
+            kv.methods.push_back(getMethods(trim(tmp)));
         line = line.substr(i);
         if (line[0] == ',')
             line = line.substr(1);
@@ -152,19 +175,26 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
     if (kv.methods.size() > 3)
         throw "invalid numbers of methods: " + to_string(kv.methods.size());
     for (int i = 0; i < kv.methods.size(); ++i) {
-        if (kv.methods[i] != "GET" && kv.methods[i] != "DELETE" && kv.methods[i] != "POST")
-            throw "invalid method: `" + kv.methods[i] + "`";
+        if (kv.methods[i] != GET && kv.methods[i] != DELETE && kv.methods[i] != POST)
+            throw "invalid method: `" + getMethods(kv.methods[i]) + "`";
     }
     if (kv.methods.empty())
-        kv.methods = {"GET", "DELETE", "POST"};
+        kv.methods = {GET, DELETE, POST};
 }
 
 void handleIndex(string& line, location& kv, ifstream& sFile) {
     int i = checkKey("Index:", line);
     kv.index = trim(line.substr(i));
-    if (kv.index.empty()) {
-        kv.index = "index.html";
-    }
+}
+
+void handleUploads(string& line, location& kv, ifstream& sFile) {
+    int i = checkKey("uploads:", line);
+    kv.uploads = trim(line.substr(i));
+}
+
+void handleUsrDir(string& line, location& kv, ifstream& sFile) {
+    int i = checkKey("usrDir:", line);
+    kv.usrDir = trim(line.substr(i));
 }
 
 void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
@@ -173,23 +203,21 @@ void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
 
     if (line == "on")
         kv.autoIndex = true;
-    else
-        kv.autoIndex = false;
 }
 
 
 void handleCgi(string& line, location& kv, ifstream& sFile) {
     int                     index = 0;
-    int                     i = 0;
 
     if (!checkRule(line, "cgi")) {
         throw "expected: `cgi && {` got `" + line + "`";
     }
-
     while (getline(sFile, line)) {
-        if (trim(line) == "}") { return ; }
-        else if (i == 2) { break; }
         line = trim(line);
+        if (line == "}") { return ; }
+        else if (line.empty() || line[0] == '#' || line[0] == ';')
+            continue;
+        line = line;
         index = checkKey("add-handler:", line);
         line = trim(line.substr(index));
         index = line.find_first_of(' ');
@@ -202,26 +230,35 @@ void handleCgi(string& line, location& kv, ifstream& sFile) {
 }
 
 int getSer2(string line) {
-    if (line[0] == 'u')
-        return URL;
-    else if (line[0] == 'a' || line[0] == 'r')
-        return ALIASRRDI;
-    else if (line[0] == 'm')
+    if (line[0] == 'm')
         return METHODS;
     else if (line[0] == 'I')
         return INDEX;
     else if (line[0] == 'A')
         return AUTOINDEX;
+    else if (line[0] == 'a' || line[0] == 'r')
+        return ALIASRRDI;
+    else if (line[0] == 'u' && line[1] == 'r')
+        return URL;
+    else if (line[0] == 'u' && line[1] == 'p')
+        return UPLOADS;
+    else if (line[0] == 'u' && line[1] == 's')
+        return USRDIR;
     else if (checkRule(line, "cgi"))
         return CGI;
-    else if (line.empty())
-        throw "line can't be empty";
     throw "unexpected keyword: `" + line + "`";
 }
 
 location handleRoot(ifstream& sFile) {
-    void (*farr[])(string& line, location& kv, ifstream& sFile) = {handleUrl, handleAliasRed, handleMethods, handleIndex, handleAutoIndex, handleCgi};
-    int mp[6] = {0, 0, 0, 0, 0, 0};
+    void (*farr[8])(string& line, location& kv, ifstream& sFile) = { handleUrl,
+                                                                     handleAliasRed,
+                                                                     handleMethods,
+                                                                     handleIndex,
+                                                                     handleAutoIndex,
+                                                                     handleCgi,
+                                                                     handleUploads,
+                                                                     handleUsrDir };
+    int mp[8] = {0, 0, 0, 0, 0, 0};
     string line;
     location kv;
     int i = 0;
@@ -232,7 +269,7 @@ location handleRoot(ifstream& sFile) {
         if (line == "}") {
             return kv;
         }
-        else if (line.empty() || line[0] == '#')
+        else if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
         index = getSer2(line);
         if (mp[index] == -1) {
@@ -256,12 +293,13 @@ void handlelocs(string& line, configuration& kv, ifstream& sFile) {
             kv.locations[rt.url] = rt;
         }
         else if (line == "}") {
-            break ;
+            return ;
         }
         else {
             throw "handlelocs::unknown keywords: `" + line + "`";
         }
     }
+    throw "`}` is expected at the end of each rule";
 }
 
 
@@ -302,12 +340,14 @@ void ConfigFileParser::printprint() {
                 cout << "---------------------------> redir:     " << rootIt->second.aliasRed << endl;
             cout << "---------------------------> Methods:   ";
             for (size_t k = 0; k < rootIt->second.methods.size(); ++k) {
-                cout << rootIt->second.methods[k];
+                cout << getMethods(rootIt->second.methods[k]);
                 if (k + 1 < rootIt->second.methods.size())
                     cout << ", ";
             }
             cout << endl;
             cout << "---------------------------> index:     " << rootIt->second.index << endl;
+            cout << "---------------------------> uploads:   " << rootIt->second.uploads << endl;
+            cout << "---------------------------> usrDir:    " << rootIt->second.usrDir << endl;
             cout << "---------------------------> autoIndex: " << (rootIt->second.autoIndex ? "True" : "False") << endl;
             if (!rootIt->second.cgis.empty())
                 cout << "---------------------------> Cgi Scripts:" << endl;

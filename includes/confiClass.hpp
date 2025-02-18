@@ -25,22 +25,32 @@ enum  Ser1 {
 enum  Ser2 {
     URL,        ALIASRRDI,
     METHODS,    INDEX,
-    AUTOINDEX,  CGI
+    AUTOINDEX,  CGI,
+    UPLOADS,    USRDIR
 };
 
-
-string  trim(const string& str);
+enum methods {
+    GET,
+    DELETE,
+    POST,
+    NONE
+};
 
 
 struct location {
     string                  url;
     string                  aliasRed;
     string                  index;
-    vector<string>          methods;
+    string                  uploads;
+    string                  usrDir;
+    vector<methods>         methods;
     map<string, string>     cgis;
     bool                    isRed;
     bool                    autoIndex;
-    location() : index("index.html") {}
+    location() :    index("index.html"),
+                    uploads("uploads"),
+                    usrDir("usrDir"),
+                    autoIndex(false) {}
 };
 
 struct configuration {
@@ -73,12 +83,14 @@ class ConfigFileParser {
 };
 
 
+void    handleSerNames(string& line, configuration& kv, ifstream& sFile);
+void    handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
+void    handleError(string& line, configuration& kv, ifstream& sFile);
 void    handlePort(string& line, configuration& kv, ifstream& sFile);
 void    handlehost(string& line, configuration& kv, ifstream& sFile);
-void    handleSerNames(string& line, configuration& kv, ifstream& sFile);
 void    handlelocs(string& line, configuration& kv, ifstream& sFile);
-void    handleError(string& line, configuration& kv, ifstream& sFile);
-void    handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
+void    handleUploads(string& line, location& kv, ifstream& sFile);
+void    handleUsrDir(string& line, location& kv, ifstream& sFile);
 void    printprint(map<string, configuration>);
 bool    checkRule(string s1, string s2);
 string  trim(const string& str);

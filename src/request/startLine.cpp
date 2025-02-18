@@ -136,8 +136,8 @@ void	httpSession::Request::isTarget(string& target) {
 	extractPathQuery(target);
 }
 
-void	httpSession::Request::isMethod(string& method) {
-	if (method == "GET" || method == "POST" || method == "DELETE")
+void	httpSession::Request::isMethod(const methods& method) {
+	if (method == GET || method == POST || method == DELETE)
 		s.method = method;
 	else
 		throw(statusCodeException(400, "Bad Request"));
@@ -153,7 +153,7 @@ bool	httpSession::Request::parseStartLine(stringstream& stream) {
 		comps = split(line);
 		if (comps.size() != 3)
 			throw(statusCodeException(400, "Bad Request"));
-		isMethod(comps[0]);
+		isMethod(getMethods(comps[0]));
 		isTarget(comps[1]);
 		isProtocole(comps[2]);
 		if ((rules = getConfigFileRules()))

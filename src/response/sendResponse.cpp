@@ -77,7 +77,7 @@ string httpSession::Response::getExt(string path) {
     return ext;
 }
 
-void httpSession::Response::GET(int clientFd, bool smallFile) {
+void httpSession::Response::Get(int clientFd, bool smallFile) {
     string response;
     string fileType = getSupportedeExtensions(getExt(s.path));
 

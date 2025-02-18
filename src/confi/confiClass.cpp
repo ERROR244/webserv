@@ -35,7 +35,12 @@ int getSer1(string line) {
 }
 
 void ConfigFileParser::handleServer(ifstream& sFile) {
-    void (*farr[])(string& line, configuration& kv, ifstream& sFile) = {handlePort, handlehost, handleSerNames, handleBodyLimit, handleError, handlelocs};
+    void (*farr[6])(string& line, configuration& kv, ifstream& sFile) = { handlePort,
+                                                                         handlehost,
+                                                                         handleSerNames,
+                                                                         handleBodyLimit,
+                                                                         handleError,
+                                                                         handlelocs };
     int mp[6] = {0, 0, 0, 0, 0, 0};
     string line;
     int index;
@@ -50,7 +55,7 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
                 throw "kv.addInfo is NULL";
             return ;
         }
-        else if (line.empty() || line[0] == '#')
+        else if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
         index = getSer1(line);
         if (mp[index] == -1) {
@@ -60,6 +65,7 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         farr[index](line, kv, sFile);
         i++;
     }
+    throw "`}` is expected at the end of each rule";
 }
 
 bool checkRule(string s1, string s2) {

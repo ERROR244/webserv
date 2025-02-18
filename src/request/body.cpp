@@ -113,7 +113,7 @@ bool	httpSession::Request::transferEncodingChunkedBased(stringstream& stream) {
 
 
 bool	httpSession::Request::parseBody(stringstream& stream) {
-	if (s.method != "POST")
+	if (s.method != POST)
 		return true;
 	if (s.headers.find("content-length") != s.headers.end())
 		parseFunctions.push(&Request::contentLengthBased);

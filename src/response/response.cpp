@@ -32,20 +32,20 @@ time_t	httpSession::Response::handelClientRes(const int clientFd) {
 }
 
 void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat file_stat) {
-    if (s.method == "GET") {
+    if (s.method == GET) {
         if (headerSended == false) {
-            GET(clientFd, smallFile);
+            Get(clientFd, smallFile);
         }
         else {
             sendBodyifChunked(clientFd);
         }
     }
-    if (s.method == "POST") {
+    if (s.method == POST) {
         cout << "POST method called\n";
         lastActivityTime = time(NULL);      // for timeout
         state = DONE;
     }
-    if (s.method == "DELETE") {
+    if (s.method == DELETE) {
         // string response;
         // response = "HTTP/1.1 204 No Content\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n";
         // cout << "DELETE method called\n";
