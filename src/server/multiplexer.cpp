@@ -91,18 +91,28 @@ void	acceptNewClient(const int& epollFd, const int& serverFd) {
 	cerr << "		--------------new client added--------------" << endl;
 }
 
+bool checkTimeOutForEachUsr(std::map<int, time_t> &timeOut) {
+	map<int, time_t>::iterator			it;
+
+	for (it = timeOut.begin(); it != timeOut.end(); ++it) {
+		if (checkTimeOut(timeOut, it->first, it->second) == true) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
 	map<int, httpSession*>				sessions;					//change httpSession to a pointer so i can be able to free it
 	map<int, time_t>					timeOut;
-	map<int, time_t>::iterator			it;
 	int									nfds;
 
 	cerr << "Started the server..." << endl;
 	while (1) {
-		for (it = timeOut.begin(); it != timeOut.end(); ++it) {
-			checkTimeOut(timeOut, it->first, it->second);
-		}		
+		if (checkTimeOutForEachUsr(timeOut) == true) {
+			continue ;
+		}
 		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
 			//send the internal error page to all current clients
 			//close all connections and start over

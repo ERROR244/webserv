@@ -23,7 +23,7 @@ using namespace std;
 
 class httpSession {
 private:
-	methods				method;
+	eMethods			method;
 	string				path;
 	string				query;
 	string				httpProtocole;
@@ -50,7 +50,7 @@ public:
 		void									reconstructUri(location* rules);
 		void									extractPathQuery(string& uri);
 		void									isTarget(string& target);
-		void									isMethod(const methods& method);
+		void									isMethod(const eMethods& method);
 		location*								getConfigFileRules();
 		bool									parseStartLine(stringstream&);
 		bool									validFieldName(string& str) const;
@@ -99,6 +99,6 @@ public:
 
 };
 
-void	checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);
-methods	getMethods(const string& method);
-string	getMethods(methods method);
+bool		checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);
+eMethods	getMethods(const string& method);
+string		getMethods(eMethods method);

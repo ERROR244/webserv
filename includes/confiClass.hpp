@@ -3,6 +3,7 @@
 
 using namespace std;
 
+# include <sys/stat.h>  
 # include <iostream>
 # include <sstream>
 # include <fstream>
@@ -18,18 +19,19 @@ using namespace std;
 
 enum  Ser1 {
     PORT,       HOST,
-    SERNAMES,   BODYLIMIT,
-    ERROR,      LOCS
+    ROOT,       SERNAMES,
+    LIMIT_REQ,  ERROR,
+    LOCS
 };
 
 enum  Ser2 {
-    URL,        ALIASRRDI,
-    METHODS,    INDEX,
-    AUTOINDEX,  CGI,
-    UPLOADS,    USRDIR
+    ALIASRRDI,  METHODS,
+    INDEX,      AUTOINDEX,
+    CGI,        UPLOADS,
+    USRDIR
 };
 
-enum methods {
+enum eMethods {
     GET,
     DELETE,
     POST,
@@ -43,7 +45,7 @@ struct location {
     string                  index;
     string                  uploads;
     string                  usrDir;
-    vector<methods>         methods;
+    vector<eMethods>         methods;
     map<string, string>     cgis;
     bool                    isRed;
     bool                    autoIndex;
@@ -57,6 +59,7 @@ struct configuration {
     off_t                   bodySize;
     string                  port;
     string                  host;
+    string                  root;
     struct addrinfo*        addInfo;
     vector<string>          serNames;
     map<int, string>        errorPages;
@@ -87,6 +90,7 @@ void    handleSerNames(string& line, configuration& kv, ifstream& sFile);
 void    handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
 void    handleError(string& line, configuration& kv, ifstream& sFile);
 void    handlePort(string& line, configuration& kv, ifstream& sFile);
+void    handleRoot(string& line, configuration& kv, ifstream& sFile);
 void    handlehost(string& line, configuration& kv, ifstream& sFile);
 void    handlelocs(string& line, configuration& kv, ifstream& sFile);
 void    handleUploads(string& line, location& kv, ifstream& sFile);

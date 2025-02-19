@@ -17,31 +17,34 @@ ConfigFileParser::~ConfigFileParser() {
 }
 
 int getSer1(string line) {
-    if (line[0] == 'p')
+    if (line.empty())
+        throw std::runtime_error("line can't be empty");
+    else if (line[0] == 'p')
         return PORT;
     else if (line[0] == 'h')
         return HOST;
+    else if (line[0] == 'r')
+        return ROOT;
     else if (line[0] == 's')
         return SERNAMES;
-    else if (line[0] == 'b')
-        return BODYLIMIT;
+    else if (line[0] == 'l' && line[1] == 'i')
+        return LIMIT_REQ;
     else if (checkRule(line, "errors"))
         return ERROR;
-    else if (checkRule(line, "ROOTS"))
+    else if (checkRule(line, "locations"))
         return LOCS;
-    else if (line.empty())
-        throw "line can't be empty";
-    throw "unexpected keyword: `" + line + "`";
+    throw std::runtime_error("handleServer::getSer1::unexpected keyword: `" + line + "`");
 }
 
 void ConfigFileParser::handleServer(ifstream& sFile) {
-    void (*farr[6])(string& line, configuration& kv, ifstream& sFile) = { handlePort,
-                                                                         handlehost,
-                                                                         handleSerNames,
-                                                                         handleBodyLimit,
-                                                                         handleError,
-                                                                         handlelocs };
-    int mp[6] = {0, 0, 0, 0, 0, 0};
+    void (*farr[8])(string& line, configuration& kv, ifstream& sFile) = { handlePort,
+                                                                          handlehost,
+                                                                          handleRoot,
+                                                                          handleSerNames,
+                                                                          handleBodyLimit,
+                                                                          handleError,
+                                                                          handlelocs };
+    int mp[8] = {0};
     string line;
     int index;
     int i = 0;
@@ -52,44 +55,39 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
             kv.addInfo = NULL;
             getaddrinfo(kv.host.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
             if (kv.addInfo == NULL)
-                throw "kv.addInfo is NULL";
+                throw std::runtime_error("handleServer::kv.addInfo is NULL");
             return ;
         }
         else if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
         index = getSer1(line);
         if (mp[index] == -1) {
-            throw "unexpected keyword: " + line;
+            throw std::runtime_error("handleServer::unexpected keyword: `" + line + "`");
         }
         mp[index] = -1;
         farr[index](line, kv, sFile);
         i++;
     }
-    throw "`}` is expected at the end of each rule";
+    throw std::runtime_error("handleServer::`}` is expected at the end of each rule");
 }
 
 bool checkRule(string s1, string s2) {
-    int i = 0;
+    int first_occ = s1.find_first_of(' ');
+    int last_occ = s1.find_last_of(' ');
 
-    if (i < s1.size()) {
-        while (i < s1.size() && i < s2.size()) {
-            if (s1[i] != s2[i])
-                return false;
-            i++;
-        }
-        if (i != s2.size())
-            return false;
-        while (i < s1.size()) {
-            if (s1[i] == '{')
-                break;
-            else if (s1[i] != 32 && s1[i] != 9) {
-                return false;
-            }
-            i++;
-        }
-        if (i >= s1.size() || s1[i] != '{')
-            return false;
-    }
+    if (first_occ == string::npos || last_occ == string::npos)
+        throw std::runtime_error("checkRule::unexpected keyword: `" + s1 + "`");
+
+    string key = trim(s1.substr(0, first_occ));
+    string separator = trim(s1.substr(first_occ, last_occ - first_occ));
+    string closeBracket = trim(s1.substr(last_occ));
+
+    if (key != s2)
+        return false;
+    else if (!separator.empty())
+        return false;
+    else if (closeBracket != "{")
+        return false;
     return true;
 }
 
@@ -99,17 +97,17 @@ map<string, configuration> ConfigFileParser::parseFile() {
     string      key;
 
     if (!sFile) {
-            throw "Unable to open file";
+            throw std::runtime_error("Unable to open file");
     }
     while (getline(sFile, line)) {
         line = trim(line);
-        if (line.empty())
+        if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
         if (checkRule(line, "server")) {
             handleServer(sFile);
         }
         else {
-            throw "parseFile::unknown keywords: `" + line + "`";
+            throw std::runtime_error("parseFile::unknown keywords: `" + line + "`");
         }
         struct sockaddr_in *addr = (struct sockaddr_in *)kv.addInfo->ai_addr;
         char ipstr[INET_ADDRSTRLEN];
@@ -120,6 +118,7 @@ map<string, configuration> ConfigFileParser::parseFile() {
             kValue[key] = kv;
             kv.addInfo = NULL;
         }
+        kv = configuration();
     }
     sFile.close();
     return kValue;

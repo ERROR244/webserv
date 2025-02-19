@@ -66,7 +66,8 @@ bool	httpSession::Request::contentLengthBased(stringstream& stream) {
 			perror("unvalid number in content length"); throw(statusCodeException(500, "Internal Server Error"));
 		}
 	}
-	char buff[length+1] = {0};
+	char buff[length+1];
+	memset(buff, 0, length + 1);
 	stream.read(buff, length);
 	length -= stream.gcount();
 	write(fd, buff, stream.gcount());
@@ -101,7 +102,8 @@ bool	httpSession::Request::transferEncodingChunkedBased(stringstream& stream) {
 				return true;
 			}
 		}
-		char buff[length+1] = {0};
+		char buff[length+1];
+		memset(buff, 0, length + 1);
 		stream.read(buff, length);
 		if (stream.gcount() == 0) return false;
 		length -= stream.gcount();

@@ -12,16 +12,13 @@ int main(int ac, char **av) {
         try {
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
-            confi.printprint();
+            cerr << "2D" << endl;
+            // confi.printprint();
             //server setuping
             epollFd = createSockets(config, serverFds);
         }
-        catch (const char *s) {
-            cerr << s << endl;
-            return -1;
-        }
-        catch (string s) {
-            cerr << s << endl;
+        catch (const runtime_error& error) {
+            cerr << error.what() << endl;
             return -1;
         }
         catch (...) {

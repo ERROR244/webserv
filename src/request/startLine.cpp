@@ -136,7 +136,7 @@ void	httpSession::Request::isTarget(string& target) {
 	extractPathQuery(target);
 }
 
-void	httpSession::Request::isMethod(const methods& method) {
+void	httpSession::Request::isMethod(const eMethods& method) {
 	if (method == GET || method == POST || method == DELETE)
 		s.method = method;
 	else

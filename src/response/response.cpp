@@ -80,13 +80,20 @@ void	httpSession::Response::setStatus() {
 	state = PROCESSING;
 }
 
-void	checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime) {
-	if (lastActivityTime != 0 && time(NULL) - lastActivityTime >= T) {
-        if (lastActivityTime == -1)
+bool checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime) {
+	bool timedOut = false;
+
+    if (lastActivityTime != 0 && time(NULL) - lastActivityTime >= T) {
+        if (lastActivityTime == -1) {
+            timedOut = false;
             cout << "Client " << clientFd << " connection closed." << endl;
-        else
+        }
+        else {
+            timedOut = true;
             cout << "Client " << clientFd << " TIMED OUT: " << time(NULL) - lastActivityTime << ".1" << endl;
-        close(clientFd);
-        timeOut.erase(timeOut.find(clientFd));
+            close(clientFd);
+            timeOut.erase(timeOut.find(clientFd));
+        }
     }
+    return timedOut;
 }
