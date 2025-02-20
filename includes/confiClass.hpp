@@ -18,85 +18,90 @@ using namespace std;
 #include <netdb.h>
 
 enum  Ser1 {
-    PORT,       HOST,
-    ROOT,       SERNAMES,
-    LIMIT_REQ,  ERROR,
-    LOCS
+	LISTEN, ROOT,
+	SERNAMES, LIMIT_REQ,
+	ERROR, LOCS
 };
 
 enum  Ser2 {
-    ALIASRRDI,  METHODS,
-    INDEX,      AUTOINDEX,
-    CGI,        UPLOADS,
-    USRDIR
+	ALIASRRDI,  METHODS,
+	INDEX,	  AUTOINDEX,
+	CGI,		UPLOADS,
+	USRDIR
 };
 
 enum eMethods {
-    GET,
-    DELETE,
-    POST,
-    NONE
+	GET,
+	DELETE,
+	POST,
+	NONE
 };
 
 
 struct location {
-    string                  url;
-    string                  aliasRed;
-    string                  index;
-    string                  uploads;
-    string                  usrDir;
-    vector<eMethods>         methods;
-    map<string, string>     cgis;
-    bool                    isRed;
-    bool                    autoIndex;
-    location() :    index("index.html"),
-                    uploads("uploads"),
-                    usrDir("usrDir"),
-                    autoIndex(false) {}
+	string				url;
+	string				aliasRed;
+	string				index;
+	string				uploads;
+	string				usrDir;
+	vector<eMethods>	methods;
+	map<string, string>	cgis;
+	bool				isRed;
+	bool				autoIndex;
+
+	location() :	index("index.html"),
+					uploads("uploads"),
+					usrDir("usrDir"),
+					autoIndex(false) {}
 };
 
 struct configuration {
-    off_t                   bodySize;
-    string                  port;
-    string                  host;
-    string                  root;
-    struct addrinfo*        addInfo;
-    vector<string>          serNames;
-    map<int, string>        errorPages;
-    map<string, location>	locations;
+	off_t					bodySize;
+	string					port;
+	string					host;
+	string					root;
+	struct addrinfo*		addInfo;
+	vector<string>			serNames;
+	map<int, string>		errorPages;
+	map<string, location>	locations;
+
+	configuration() : bodySize(50), port("8008"), host("localhost"), addInfo(NULL) {}
 };
 
 
 class ConfigFileParser {
-    private:
-        string              file;
+	private:
+		string			  file;
 
-    
-    public:
-        map<string, configuration>   kValue;
-        configuration                kv;
+		
+	public:
+		map<string, configuration>	kValue;
+		configuration				kv;
+		int							serverFunc[8];
+		int							locationsFunc[7];
 
-        ConfigFileParser();
-        ConfigFileParser(string _file);
-        ~ConfigFileParser();
+		ConfigFileParser();
+		ConfigFileParser(string _file);
+		~ConfigFileParser();
 
-        map<string, configuration>   parseFile();
-        void                    handleServer(ifstream& sFile);
-        void                    printprint();
+		map<string, configuration>   parseFile();
+		void					handleServer(ifstream& sFile);
+		void					printprint();
 };
 
 
-void    handleSerNames(string& line, configuration& kv, ifstream& sFile);
-void    handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
-void    handleError(string& line, configuration& kv, ifstream& sFile);
-void    handlePort(string& line, configuration& kv, ifstream& sFile);
-void    handleRoot(string& line, configuration& kv, ifstream& sFile);
-void    handlehost(string& line, configuration& kv, ifstream& sFile);
-void    handlelocs(string& line, configuration& kv, ifstream& sFile);
-void    handleUploads(string& line, location& kv, ifstream& sFile);
-void    handleUsrDir(string& line, location& kv, ifstream& sFile);
-void    printprint(map<string, configuration>);
-bool    checkRule(string s1, string s2);
+void	handleSerNames(string& line, configuration& kv, ifstream& sFile);
+void	handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
+void	handleError(string& line, configuration& kv, ifstream& sFile);
+void	handlePort(string& line, configuration& kv, ifstream& sFile);
+void	handleListen(string& line, configuration& kv, ifstream& sFile);
+void	handleRoot(string& line, configuration& kv, ifstream& sFile);
+void	handleHost(string& line, configuration& kv, ifstream& sFile);
+void	handleLocs(string& line, configuration& kv, ifstream& sFile);
+void	handleUploads(string& line, location& kv, ifstream& sFile);
+void	handleUsrDir(string& line, location& kv, ifstream& sFile);
+void	printprint(map<string, configuration>);
+bool	checkRule(string s1, string s2);
 string  trim(const string& str);
 
 #endif

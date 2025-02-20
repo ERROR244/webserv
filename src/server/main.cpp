@@ -12,12 +12,11 @@ int main(int ac, char **av) {
         try {
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
-            cerr << "2D" << endl;
-            // confi.printprint();
+            confi.printprint();
             //server setuping
             epollFd = createSockets(config, serverFds);
         }
-        catch (const runtime_error& error) {
+        catch (const std::runtime_error& error) {
             cerr << error.what() << endl;
             return -1;
         }
@@ -27,7 +26,7 @@ int main(int ac, char **av) {
         }
         //multiplexer
         try {
-            // multiplexerSytm(serverFds, epollFd, config);
+            multiplexerSytm(serverFds, epollFd, config);
         }
         catch (const statusCodeException& exception) {
             struct epoll_event	ev;

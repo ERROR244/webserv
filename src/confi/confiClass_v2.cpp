@@ -1,25 +1,15 @@
 #include "confiClass.hpp"
 
-int checkKey(string key, const string& line) {
-    int i = 0;
-
+int checkKey(const string& key, const string& line) {
     if (line.size() < key.size()) {
-        throw std::runtime_error("checkKey::expected: `" + key + "` got to smaller than `" + line + "`");
+        throw std::runtime_error("checkKey::expected: `" + key + "` need to be smaller than `" + line + "`");
     }
-    cout << "key and line---: " << key.size() << ", " << line.size() << endl;
-    cout << "key and line---: " << key << ", " << line << endl;
-
-    cout << endl;
-    for (i = 0; i < key.size(); ++i) {
-        if (key == "server_name:")
-            cout << i << " " << line[i] << " == " << key[i] << endl;
+    for (size_t i = 0; i < key.size(); ++i) {
         if (key[i] != line[i]) {
-            // exit(0);
-            throw std::runtime_error("checkKey::expected: ``");
+            throw std::runtime_error("checkKey::expected: `" + key + "` instead of `" + line + "`");
         }
     }
-    cout << "line and key---: " << line.size() << ", " << key.size() << endl;
-    return (i);
+    return (key.size());
 }
 
 int ft_stoi(const std::string &__str) {
@@ -46,9 +36,6 @@ bool isNumber(const std::string& str) {
 }
 
 void handlePort(string& line, configuration& kv, ifstream& sFile) {
-    int i = checkKey("port:", line);
-
-    line = trim(line.substr(i));
     if (isNumber(line) == false) {
         throw std::runtime_error("invalid port.");
     }
@@ -61,13 +48,28 @@ string getCurrentHost(configuration& kv, string line) {
     return line;
 }
 
-void handlehost(string& line, configuration& kv, ifstream& sFile) {
-    int i = checkKey("host:", line);
-
-    line = trim(line.substr(i));
+void handleHost(string& line, configuration& kv, ifstream& sFile) {
     kv.host = getCurrentHost(kv, line);
     if (kv.host.empty())
         throw std::runtime_error("host can't be empty");
+}
+
+void handleListen(string& line, configuration& kv, ifstream& sFile) {
+    string host;
+    string port;
+    int first_occ;
+    int i;
+    
+    i = checkKey("listen:", line);
+    kv.root = trim(line.substr(i));
+    first_occ = kv.root.find_first_of(':');
+    host = trim(kv.root.substr(0, first_occ));
+    port = trim(kv.root.substr(first_occ + 1));
+    cout << host << ":" << port << endl;
+    if (!port.empty())
+        handlePort(port, kv, sFile);
+    if (!host.empty())
+        handleHost(host, kv, sFile);
 }
 
 bool isValidDirectory(const char* path) {  
@@ -88,10 +90,10 @@ void handleRoot(string& line, configuration& kv, ifstream& sFile) {
 }
 
 void handleSerNames(string& line, configuration& kv, ifstream& sFile) {
-    int i = checkKey("server_name:", line);
-    cout << "size---: " << line.size() << ", " << endl;
     string tmp;
+    int i;
     
+    i = checkKey("server_name:", line);
     while (true) {
         i = line.find_first_of(',');
         if (i == string::npos) {
@@ -189,6 +191,10 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
     string tmp;
 
     line = trim(line.substr(i));
+    if (line == "*" || line.empty()) {
+        kv.methods = {GET, DELETE, POST};
+        return ;
+    }
     while (true) {
         i = line.find_first_of(',');
         if (i == string::npos) {
@@ -209,8 +215,6 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
         if (kv.methods[i] != GET && kv.methods[i] != DELETE && kv.methods[i] != POST)
             throw std::runtime_error("invalid method: `" + getMethods(kv.methods[i]) + "`");
     }
-    if (kv.methods.empty())
-        kv.methods = {GET, DELETE, POST};
 }
 
 void handleIndex(string& line, location& kv, ifstream& sFile) {
@@ -241,7 +245,7 @@ void handleCgi(string& line, location& kv, ifstream& sFile) {
     int                     index = 0;
 
     if (!checkRule(line, "cgi")) {
-        throw std::runtime_error("expected: `cgi && {` got `" + line + "`");
+        throw std::runtime_error("expected: `cgi && {` instead of `" + line + "`");
     }
     while (getline(sFile, line)) {
         line = trim(line);
@@ -277,9 +281,8 @@ int getSer2(string line) {
         return USRDIR;
     else if (checkRule(line, "cgi"))
         return CGI;
-    throw std::runtime_error("unexpected keyword: ``" + line + "`" + "`");
+    throw std::runtime_error("unexpected keyword: `" + line + "`");
 }
-
 
 string checkLocationRule(string s1, string s2) {
     int first_occ = s1.find_first_of(' ');
@@ -310,7 +313,7 @@ location handleLocation(ifstream& sFile, string line) {
                                                                      handleCgi,
                                                                      handleUploads,
                                                                      handleUsrDir };
-    int mp[7] = {0};
+    int locationsFunc[7] = {0};
     location kv;
     int i = 0;
     int index;
@@ -324,22 +327,22 @@ location handleLocation(ifstream& sFile, string line) {
         else if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
         index = getSer2(line);
-        if (mp[index] == -1) {
-            throw std::runtime_error("handleLocation::unexpected keyword: `" + line + "`");
+        if (locationsFunc[index] == -1) {
+            throw std::runtime_error("handleLocation::duplicate_is_error: `" + line + "`");
         }
-        mp[index] = -1;
+        locationsFunc[index] = -1;
         farr[index](line, kv, sFile);
         i++;
     }
     return location();
 }
 
-void handlelocs(string& line, configuration& kv, ifstream& sFile) {
+void handleLocs(string& line, configuration& kv, ifstream& sFile) {
     location rt;
     string url;
 
     if (!checkRule(line, "locations"))
-            throw std::runtime_error("handlelocs::unknown keywords: `" + line + "`");
+            throw std::runtime_error("handlelocs::expected: `locations & {` instead of `" + line + "`");
     while (getline(sFile, line)) {
         line = trim(line);
 
@@ -350,7 +353,7 @@ void handlelocs(string& line, configuration& kv, ifstream& sFile) {
     
         url = checkLocationRule(line, "location");
         if (url.empty()) {
-            throw std::runtime_error("handlelocs::unvalid location: `" + line + "`");
+            throw std::runtime_error("handlelocs::expected: `location & {` instead of `" + line + "`");
         }
         else {
             rt = handleLocation(sFile, url);
@@ -370,16 +373,15 @@ void ConfigFileParser::printprint() {
         if (it != kValue.rbegin())
             cout << "\n\n                              ------------------------------------\n\n" << endl;
         cout << "------------------SERVER-" << i << "------------------" << endl;
-        cout << "---------> Ports: " << it->second.port << endl;
-        cout << "---------> hosts: " << it->second.host << endl;
-        cout << "---------> root:  " << it->second.root << endl;
-        cout << "---------> Server Names:";
+        cout << "---------> listen:       " << it->second.host << ":" << it->second.port << endl;
+        cout << "---------> root:         " << it->second.root << endl;
+        cout << "---------> Server Names: ";
         for (size_t j = 0; j < it->second.serNames.size(); ++j) {
             cout << " " << it->second.serNames[j];
             if (j + 1 < it->second.serNames.size())
                 cout << ",";
         }
-        cout << endl << "---------> Body Size: " << it->second.bodySize << "M";
+        cout << endl << "---------> Body Size:     " << it->second.bodySize << "M";
         cout << endl << "---------> Error Pages:" << endl;
         for (it_errorPages = it->second.errorPages.begin(); it_errorPages != it->second.errorPages.end(); ++it_errorPages) {
             cout << "------------------> " << it_errorPages->first << " | " << it_errorPages->second << endl;

@@ -19,15 +19,13 @@ ConfigFileParser::~ConfigFileParser() {
 int getSer1(string line) {
     if (line.empty())
         throw std::runtime_error("line can't be empty");
-    else if (line[0] == 'p')
-        return PORT;
-    else if (line[0] == 'h')
-        return HOST;
     else if (line[0] == 'r')
         return ROOT;
     else if (line[0] == 's')
         return SERNAMES;
-    else if (line[0] == 'l' && line[1] == 'i')
+    else if (line[0] == 'l' && line[1] == 'i' && line[2] == 's')
+        return LISTEN;
+    else if (line[0] == 'l' && line[1] == 'i' && line[2] == 'm')
         return LIMIT_REQ;
     else if (checkRule(line, "errors"))
         return ERROR;
@@ -37,14 +35,12 @@ int getSer1(string line) {
 }
 
 void ConfigFileParser::handleServer(ifstream& sFile) {
-    void (*farr[8])(string& line, configuration& kv, ifstream& sFile) = { handlePort,
-                                                                          handlehost,
+    void (*funcArr[8])(string& line, configuration& kv, ifstream& sFile) = { handleListen,
                                                                           handleRoot,
                                                                           handleSerNames,
                                                                           handleBodyLimit,
                                                                           handleError,
-                                                                          handlelocs };
-    int mp[8] = {0};
+                                                                          handleLocs };
     string line;
     int index;
     int i = 0;
@@ -61,15 +57,51 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         else if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
         index = getSer1(line);
-        if (mp[index] == -1) {
+        if (serverFunc[index] == -1) {
             throw std::runtime_error("handleServer::unexpected keyword: `" + line + "`");
         }
-        mp[index] = -1;
-        farr[index](line, kv, sFile);
+        serverFunc[index] = -1;
+        funcArr[index](line, kv, sFile);
         i++;
     }
     throw std::runtime_error("handleServer::`}` is expected at the end of each rule");
 }
+
+map<string, configuration> ConfigFileParser::parseFile() {
+    ifstream    sFile(file);
+    string      line;
+    string      key;
+
+    if (!sFile) {
+        throw std::runtime_error("Unable to open file");
+    }
+    while (getline(sFile, line)) {
+        memset(serverFunc, 0, sizeof(serverFunc));
+        memset(locationsFunc, 0, sizeof(locationsFunc));
+        line = trim(line);
+        if (line.empty() || line[0] == '#' || line[0] == ';')
+            continue;
+        if (checkRule(line, "server")) {
+            handleServer(sFile);
+        }
+        else {
+            throw std::runtime_error("parseFile::expected: `server & {` need to be smaller than `" + line + "`");
+        }
+        struct sockaddr_in *addr = (struct sockaddr_in *)kv.addInfo->ai_addr;
+        char ipstr[INET_ADDRSTRLEN];
+
+        inet_ntop(kv.addInfo->ai_family, &(addr->sin_addr), ipstr, sizeof(ipstr));
+        key = string(ipstr) + ":" + kv.port;
+        if (kValue.find(key) == kValue.end()) {
+            kValue[key] = kv;
+            kv.addInfo = NULL;
+        }
+        kv = configuration();
+    }
+    sFile.close();
+    return kValue;
+}
+
 
 bool checkRule(string s1, string s2) {
     int first_occ = s1.find_first_of(' ');
@@ -89,38 +121,5 @@ bool checkRule(string s1, string s2) {
     else if (closeBracket != "{")
         return false;
     return true;
-}
-
-map<string, configuration> ConfigFileParser::parseFile() {
-    ifstream    sFile(file);
-    string      line;
-    string      key;
-
-    if (!sFile) {
-            throw std::runtime_error("Unable to open file");
-    }
-    while (getline(sFile, line)) {
-        line = trim(line);
-        if (line.empty() || line[0] == '#' || line[0] == ';')
-            continue;
-        if (checkRule(line, "server")) {
-            handleServer(sFile);
-        }
-        else {
-            throw std::runtime_error("parseFile::unknown keywords: `" + line + "`");
-        }
-        struct sockaddr_in *addr = (struct sockaddr_in *)kv.addInfo->ai_addr;
-        char ipstr[INET_ADDRSTRLEN];
-
-        inet_ntop(kv.addInfo->ai_family, &(addr->sin_addr), ipstr, sizeof(ipstr));
-        key = string(ipstr) + ":" + kv.port;
-        if (kValue.find(key) == kValue.end()) {
-            kValue[key] = kv;
-            kv.addInfo = NULL;
-        }
-        kv = configuration();
-    }
-    sFile.close();
-    return kValue;
 }
 

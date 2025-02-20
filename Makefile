@@ -7,7 +7,7 @@ SRCS =  src/wrappers.cpp src/cgi/*.cpp \
 
 CC = g++
 
-CFLAGS = -I./includes #-fsanitize=address #-Wall -Wextra  #-Werror #-std=c++98
+CFLAGS = -I./includes -g3 #-fsanitize=address #-Wall -Wextra  #-Werror #-std=c++98
 
 all : $(NAME)
 
