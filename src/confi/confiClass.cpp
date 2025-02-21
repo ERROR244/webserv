@@ -19,12 +19,10 @@ ConfigFileParser::~ConfigFileParser() {
 int getSer1(string line) {
     if (line.empty())
         throw std::runtime_error("line can't be empty");
-    else if (line[0] == 'r')
-        return ROOT;
-    else if (line[0] == 's')
-        return SERNAMES;
     else if (line[0] == 'l' && line[1] == 'i' && line[2] == 's')
         return LISTEN;
+    else if (line[0] == 's')
+        return SERNAMES;
     else if (line[0] == 'l' && line[1] == 'i' && line[2] == 'm')
         return LIMIT_REQ;
     else if (checkRule(line, "errors"))
@@ -34,25 +32,47 @@ int getSer1(string line) {
     throw std::runtime_error("handleServer::getSer1::unexpected keyword: `" + line + "`");
 }
 
+void checkServer(configuration& kv, int (&serverFunc)[5]) {
+	int locationsFunc[7] = {0};
+
+    for (int i = 0; i < 7; ++i) {
+        if (serverFunc[i] == -1)
+            continue;
+        else if (i == 0) {
+            kv.host = "localhost";
+            kv.port = "8080";
+		}
+        else if (i == 2) {
+            kv.bodySize = 50;
+		}
+        else if (i == 4) {
+			location defaultLoc;
+			checkLocation(defaultLoc, locationsFunc);
+			defaultLoc.url = "/";
+			kv.locations["/"] = defaultLoc;
+		}
+    }
+	kv.addInfo = NULL;
+	getaddrinfo(kv.host.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
+	if (kv.addInfo == NULL)
+		throw std::runtime_error("handleServer::kv.addInfo is NULL");
+}
+
 void ConfigFileParser::handleServer(ifstream& sFile) {
-    void (*funcArr[8])(string& line, configuration& kv, ifstream& sFile) = { handleListen,
-                                                                          handleRoot,
-                                                                          handleSerNames,
-                                                                          handleBodyLimit,
-                                                                          handleError,
-                                                                          handleLocs };
-    string line;
-    int index;
-    int i = 0;
+    void (*funcArr[5])(string& line, configuration& kv, ifstream& sFile) = { handleListen,
+                                                                          	 handleSerNames,
+                                                                          	 handleBodyLimit,
+                                                                          	 handleError,
+                                                                          	 handleLocs };
+    string  line;
+    int     index;
+    int		serverFunc[5];
 
     while (getline(sFile, line)) {
         line = trim(line);
         if (line == "}") {
-            kv.addInfo = NULL;
-            getaddrinfo(kv.host.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
-            if (kv.addInfo == NULL)
-                throw std::runtime_error("handleServer::kv.addInfo is NULL");
-            return ;
+            checkServer(kv, serverFunc);
+			return ;
         }
         else if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
@@ -62,22 +82,31 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
         }
         serverFunc[index] = -1;
         funcArr[index](line, kv, sFile);
-        i++;
     }
     throw std::runtime_error("handleServer::`}` is expected at the end of each rule");
+}
+
+string getMapName(configuration &kv) {
+	char		ipstr[INET_ADDRSTRLEN];
+	struct		sockaddr_in *addr;
+	string		key;
+
+	addr = (struct sockaddr_in *)kv.addInfo->ai_addr;
+	inet_ntop(kv.addInfo->ai_family, &(addr->sin_addr), ipstr, sizeof(ipstr));
+	key = string(ipstr) + ":" + kv.port;
+	return key;
 }
 
 map<string, configuration> ConfigFileParser::parseFile() {
     ifstream    sFile(file);
     string      line;
     string      key;
+	int			serverFunc[5];
 
     if (!sFile) {
         throw std::runtime_error("Unable to open file");
     }
     while (getline(sFile, line)) {
-        memset(serverFunc, 0, sizeof(serverFunc));
-        memset(locationsFunc, 0, sizeof(locationsFunc));
         line = trim(line);
         if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
@@ -87,18 +116,18 @@ map<string, configuration> ConfigFileParser::parseFile() {
         else {
             throw std::runtime_error("parseFile::expected: `server & {` need to be smaller than `" + line + "`");
         }
-        struct sockaddr_in *addr = (struct sockaddr_in *)kv.addInfo->ai_addr;
-        char ipstr[INET_ADDRSTRLEN];
-
-        inet_ntop(kv.addInfo->ai_family, &(addr->sin_addr), ipstr, sizeof(ipstr));
-        key = string(ipstr) + ":" + kv.port;
+        key = getMapName(kv);
         if (kValue.find(key) == kValue.end()) {
             kValue[key] = kv;
             kv.addInfo = NULL;
         }
         kv = configuration();
     }
-    sFile.close();
+	if (kValue.empty()) {
+		checkServer(kv, serverFunc);
+		kValue[getMapName(kv)] = kv;
+		kv = configuration();
+	}
     return kValue;
 }
 

@@ -61,11 +61,10 @@ void handleListen(string& line, configuration& kv, ifstream& sFile) {
     int i;
     
     i = checkKey("listen:", line);
-    kv.root = trim(line.substr(i));
-    first_occ = kv.root.find_first_of(':');
-    host = trim(kv.root.substr(0, first_occ));
-    port = trim(kv.root.substr(first_occ + 1));
-    cout << host << ":" << port << endl;
+    line = trim(line.substr(i));
+    first_occ = line.find_first_of(':');
+    host = trim(line.substr(0, first_occ));
+    port = trim(line.substr(first_occ + 1));
     if (!port.empty())
         handlePort(port, kv, sFile);
     if (!host.empty())
@@ -81,13 +80,13 @@ bool isValidDirectory(const char* path) {
     return false;
 }
 
-void handleRoot(string& line, configuration& kv, ifstream& sFile) {
-    int i = checkKey("root:", line);
+// void handleRoot(string& line, configuration& kv, ifstream& sFile) {
+//     int i = checkKey("root:", line);
     
-    kv.root = trim(line.substr(i));
-    if (isValidDirectory(kv.root.c_str()) == false)
-        throw std::runtime_error("root must be a valid directory");
-}
+//     kv.root = trim(line.substr(i));
+//     if (isValidDirectory(kv.root.c_str()) == false)
+//         throw std::runtime_error("root must be a valid directory");
+// }
 
 void handleSerNames(string& line, configuration& kv, ifstream& sFile) {
     string tmp;
@@ -305,6 +304,30 @@ string checkLocationRule(string s1, string s2) {
     return url;
 }
 
+void checkLocation(location& kv, int (&locationsFunc)[7]) {
+    for (int i = 0; i < 7; ++i) {
+        if (locationsFunc[i] == -1)
+            continue;
+        else if (i == 0) {
+            kv.isRed = false;
+            kv.aliasRed = "/";
+        }
+        else if (i == 1)
+            kv.methods = {GET, POST, DELETE};
+        else if (i == 2)
+            kv.index = "index.html";
+        else if (i == 3)
+            kv.autoIndex = false;
+        // else if (i == 4)
+        //     kv.cgis;
+        else if (i == 5)
+            kv.uploads = "";
+        else if (i == 6)
+            kv.usrDir = "";
+    }
+    // return kv;
+}
+
 location handleLocation(ifstream& sFile, string line) {
     void (*farr[7])(string& line, location& kv, ifstream& sFile) = { handleAliasRed,
                                                                      handleMethods,
@@ -314,14 +337,14 @@ location handleLocation(ifstream& sFile, string line) {
                                                                      handleUploads,
                                                                      handleUsrDir };
     int locationsFunc[7] = {0};
-    location kv;
-    int i = 0;
-    int index;
+    location    kv;
+    int         index;
 
     kv.url = line;
     while (getline(sFile, line)) {
         line = trim(line);
         if (line == "}") {
+            checkLocation(kv, locationsFunc);
             return kv;
         }
         else if (line.empty() || line[0] == '#' || line[0] == ';')
@@ -332,7 +355,6 @@ location handleLocation(ifstream& sFile, string line) {
         }
         locationsFunc[index] = -1;
         farr[index](line, kv, sFile);
-        i++;
     }
     return location();
 }
@@ -374,7 +396,6 @@ void ConfigFileParser::printprint() {
             cout << "\n\n                              ------------------------------------\n\n" << endl;
         cout << "------------------SERVER-" << i << "------------------" << endl;
         cout << "---------> listen:       " << it->second.host << ":" << it->second.port << endl;
-        cout << "---------> root:         " << it->second.root << endl;
         cout << "---------> Server Names: ";
         for (size_t j = 0; j < it->second.serNames.size(); ++j) {
             cout << " " << it->second.serNames[j];
