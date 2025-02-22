@@ -28,10 +28,8 @@ int main(int ac, char **av) {
         try {
             multiplexerSytm(serverFds, epollFd, config);
         }
-        catch (const statusCodeException& exception) {
-            struct epoll_event	ev;
-            cerr << "2D code--> " << exception.code() << endl;
-            cerr << "2D reason--> " << exception.meaning() << endl;
+        catch (...) {
+            cerr << "server error" << endl;
         }
 	}
     return 0;

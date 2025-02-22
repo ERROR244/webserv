@@ -76,7 +76,10 @@ public:
 		static string		getSupportedeExtensions(const string&);
 		void				sendCgiStarterLine(const int);
 		void				sendCgiOutput(const int);
-		void				sendRes(int clientFd, bool smallFile, struct stat file_stat);
+		string				getDeleteRes(const string& path, const string& connection, struct stat& file_stat);
+		string				deleteDir(const string& dir, const string& connection);
+		string				deleteFile(const string& file, const string& connection);
+		void				sendRes(int clientFd, bool smallFile, struct stat& file_stat);
 		void    			Get(int clientFd, bool smallFile);
         void    			sendBodyifChunked(int clientFd);
 		string				getExt(string path);
@@ -84,7 +87,6 @@ public:
 		Response(httpSession& session);
 
 		time_t				handelClientRes(const int clientFd);
-		void				setStatus();
 		const t_state&		status() const;
 	};
 
@@ -99,6 +101,5 @@ public:
 
 };
 
-bool		checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);
-eMethods	getMethods(const string& method);
-string		getMethods(eMethods method);
+bool				checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);
+

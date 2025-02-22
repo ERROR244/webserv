@@ -82,17 +82,19 @@ class ConfigFileParser {
 };
 
 
-void	handleSerNames(string& line, configuration& kv, ifstream& sFile);
-void	handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
-void	handleError(string& line, configuration& kv, ifstream& sFile);
-void	handlePort(string& line, configuration& kv, ifstream& sFile);
-void	handleListen(string& line, configuration& kv, ifstream& sFile);
-void	handleHost(string& line, configuration& kv, ifstream& sFile);
-void	handleLocs(string& line, configuration& kv, ifstream& sFile);
-void	handleUploads(string& line, location& kv, ifstream& sFile);
-void	handleUsrDir(string& line, location& kv, ifstream& sFile);
-void	checkLocation(location& kv, int (&locationsFunc)[7]);
-bool	checkRule(string s1, string s2);
-string  trim(const string& str);
+void		handleSerNames(string& line, configuration& kv, ifstream& sFile);
+void		handleBodyLimit(string& line, configuration& kv, ifstream& sFile);
+void		handleError(string& line, configuration& kv, ifstream& sFile);
+void		handlePort(string& line, configuration& kv, ifstream& sFile);
+void		handleListen(string& line, configuration& kv, ifstream& sFile);
+void		handleHost(string& line, configuration& kv, ifstream& sFile);
+void		handleLocs(string& line, configuration& kv, ifstream& sFile);
+void		handleUploads(string& line, location& kv, ifstream& sFile);
+void		handleUsrDir(string& line, location& kv, ifstream& sFile);
+void		checkLocation(location& kv, int (&locationsFunc)[7]);
+eMethods	getMethods(const string& method);
+bool		checkRule(string s1, string s2);
+string		getMethods(eMethods method);
+string  	trim(const string& str);
 
 #endif
