@@ -1,20 +1,20 @@
-#include "server.hpp"
-void	f(stringstream& stream) {
-	int length;
-	string line;
-	// if (!length) {
-	// 	try {
-	// 		length = stoi(s.headers["content-length"]);
-	// 	}
-	// 	catch(...) {
-	// 		perror("unvalid number in content length"); throw(statusCodeException(500, "Internal Server Error"));
-	// 	}
-	// }
+// #include "server.hpp"
+// void	f(stringstream& stream) {
+// 	int length;
+// 	string line;
+// 	// if (!length) {
+// 	// 	try {
+// 	// 		length = stoi(s.headers["content-length"]);
+// 	// 	}
+// 	// 	catch(...) {
+// 	// 		perror("unvalid number in content length"); throw(statusCodeException(500, "Internal Server Error"));
+// 	// 	}
+// 	// }
 
-	while(getline(stream, line)) {
+// 	while(getline(stream, line)) {
 		
-	}
-}
+// 	}
+// }
 
 
 

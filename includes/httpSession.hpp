@@ -13,6 +13,8 @@
 #include <sys/stat.h>
 #include "wrappers.h"
 #include "confiClass.hpp"
+#include "binarystring.hpp"
+#include "stringManipulation.h"
 #include "statusCodeException.hpp"
 #include <ctime>
 
@@ -31,38 +33,43 @@ private:
 	int					statusCode;
 	string				codeMeaning;
 	Cgi*				cgi;
+	location*			locationRules;
 public:
 	class Request {
 	private:
-		httpSession&	s;
-		string									prvsFieldName;
-		string									prvsContentFieldName;
-		queue<bool(Request::*)(stringstream&)>	parseFunctions;
-		queue<bool(Request::*)(stringstream&)>	bodyParseFunctions;
-		map<string, string>						contentHeaders;
-		int										length;
-		int										fd;
-		string									remainingBuffer;
-		t_state									state;
+		httpSession&						s;
+		string								prvsFieldName;
+		string								prvsContentFieldName;
+		queue<bool(Request::*)(bstring&)>	parseFunctions;
+		queue<bool(Request::*)(bstring&)>	bodyParseFunctions;
+		map<string, string>					contentHeaders;
+		int									length;
+		ofstream							fd;
+		string								boundaryValue;
+		bstring								remainingBuffer;
+		t_state								state;
 
-		void									isProtocole(string& httpVersion);
-		void									isCGI(location*);
-		void									reconstructUri(location* rules);
-		void									extractPathQuery(string& uri);
-		void									isTarget(string& target);
-		void									isMethod(const eMethods& method);
-		location*								getConfigFileRules();
-		bool									parseStartLine(stringstream&);
-		bool									validFieldName(string& str) const;
-		bool									parseFileds(stringstream&);
-		int										openTargetFile() const;
-		bool									contentLengthBased(stringstream&);
-		bool									transferEncodingChunkedBased(stringstream&);
-		bool									parseBody(stringstream&);
+		void								isCGI(location*);
+		void								reconstructUri(location* rules);
+		void								isProtocole(bstring& httpVersion);
+		void								extractPathQuery(bstring& uri);
+		void								isTarget(bstring& target);
+		void								isMethod(bstring& method);
+		location*							getConfigFileRules();
+		bool								parseStartLine(bstring&);
+		bool								validFieldName(string& str) const;
+		bool								parseFileds(bstring&);
+		void								openTargetFile(const string& filename, ofstream& fd) const;
+		bool								boundary(bstring&);
+		bool								fileHeaders(bstring&);
+		bool								fileContent(bstring&);
+		bool								contentLengthBased(bstring&);
+		bool								transferEncodingChunkedBased(bstring&);
+		bool								parseBody(bstring&);
 	public:
 		Request(httpSession& session);
-		void									parseMessage(const int clientFd);
-		const t_state&							status() const;
+		void								parseMessage(const int clientFd);
+		const t_state&						status() const;
 	};
 
 	class Response {
@@ -92,7 +99,7 @@ public:
 
 	Request		req;
 	Response	res;
-	configuration*	config;
+	configuration*		config;
 
 	httpSession(int clientFd, configuration* confi);
 	httpSession();

@@ -1,11 +1,5 @@
 #include "httpSession.hpp"
 
-inline std::string& trim(std::string& s) {
-	s.erase(s.find_last_not_of(" \t\n\r\f\v") + 1);
-	s.erase(0, s.find_first_not_of(" \t\n\r\f\v"));
-    return s;
-}
-
 bool    httpSession::Request::validFieldName(string& str) const {
 	for (auto& c: str) {
 		if (!iswalnum(c) && c != '_' && c != '-')	return false;
@@ -14,22 +8,21 @@ bool    httpSession::Request::validFieldName(string& str) const {
 	return true;
 }
 
-bool	httpSession::Request::parseFileds(stringstream& stream) {
-	string			line;
-
-	while(getline(stream, line) && line != " ") {
+bool	httpSession::Request::parseFileds(bstring& buffer) {
+	bstring	line;
+	bool	eof;
+	while((eof = buffer.getheaderline(line)) && !line.empty()) {
 		string	fieldName;
 		string	filedValue;
 
 		if (!s.headers.empty() && (line[0] == ' ' || line[0] == '\t')) {
-			s.headers[prvsFieldName] += " " + trim(line);
+			s.headers[prvsFieldName] += " " + trim(line.cppstring());
 			continue ;
 		}
-
-		size_t colonIndex = line.find(':');
-		fieldName = line.substr(0, colonIndex);
+		size_t colonIndex = line.find(":");
+		fieldName = line.substr(0, colonIndex).cppstring();
 		if (colonIndex != string::npos && colonIndex+1 < line.size()) {
-			filedValue = line.substr(colonIndex+1);
+			filedValue = line.substr(colonIndex+1).cppstring();
 			filedValue = trim(filedValue);
 		}
 		if (colonIndex == string::npos || !validFieldName(fieldName)) {
@@ -38,7 +31,7 @@ bool	httpSession::Request::parseFileds(stringstream& stream) {
 		s.headers[fieldName] = filedValue;
 		prvsFieldName = fieldName;
 	}
-	if (stream.eof()) {
+	if (!eof) {
 		remainingBuffer = line;
 		return false;
 	}

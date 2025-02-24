@@ -1,6 +1,24 @@
 #include "httpSession.hpp"
 
-vector<string>	split(string& str) {
+inline void	cmpget(char c1, char c2, char c3) {
+	if (c1 == 'G' && c2 == 'E' && c3 == 'T')
+		return ;
+	throw(statusCodeException(400, "Bad Request"));
+}
+
+inline void	cmppost(char c1, char c2, char c3, char c4) {
+	if (c1 == 'P' && c2 == 'O' && c3 == 'S' && c4 == 'T')
+		return ;
+	throw(statusCodeException(400, "Bad Request"));
+}
+
+inline void	cmpdelete(char c1, char c2, char c3, char c4, char c5, char c6) {
+	if (c1 == 'D' && c2 == 'E' && c3 == 'L' && c4 == 'E' && c5 == 'T' && c6 == 'E')
+		return ;
+	throw(statusCodeException(400, "Bad Request"));
+}
+
+static vector<string>	split(string& str) {
 	const string	whiteSpace = " \t\n\r\f\v";
 	string			remainingStr;
 	int				pos = 0, i = 0;
@@ -58,22 +76,33 @@ void	httpSession::Request::reconstructUri(location*	rules) {
 
 	if (find(rules->methods.begin(), rules->methods.end(), s.method) == rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
-	if (rules->isRed == true) {
-		s.statusCode = 301;
-		s.codeMeaning = "Moved Permanently";
-		//adding the location header to the response with the new path;
-		return ;
-	} else {
-		s.path.erase(s.path.begin(), s.path.begin()+rules->url.size() - 1);
-		s.path = rules->aliasRed + s.path;
+	if (s.method == GET) {
+		if (rules->isRed) {
+			s.statusCode = 301;
+			s.codeMeaning = "Moved Permanently";
+			//adding the location header to the response with the new path;
+			return ;
+		}
+		else {
+			s.path.erase(s.path.begin(), s.path.begin()+rules->url.size() - 1);
+			s.path = rules->aliasRed + s.path;
+		}
+	} else if (s.method == POST) {
+		if (!rules->uploads.empty()) {
+			s.path = rules->uploads;
+			s.path = w_realpath(("." + s.path).c_str());
+			if (stat(s.path.c_str(), &pathStat) && !S_ISDIR(pathStat.st_mode))
+				throw(statusCodeException(403, "Forbidden"));
+			return ;
+		} else
+			throw(statusCodeException(403, "Forbidden"));
 	}
 	isCGI(rules);
 	if (s.cgi == NULL) {
 		s.path = w_realpath(("." + s.path).c_str());
-		// cout << "--- " << s.path << endl;
     	if (stat(s.path.c_str(), &pathStat))
 			throw(statusCodeException(404, "Not Found"));
-		if (S_ISDIR(pathStat.st_mode)) {//&& s->path == location
+		if (s.method == GET && S_ISDIR(pathStat.st_mode)) {//&& s->path == location
 			s.path += "/" + rules->index;
 			if (stat(s.path.c_str(), &pathStat))
 				throw(statusCodeException(404, "Not Found"));
@@ -97,71 +126,89 @@ location*	httpSession::Request::getConfigFileRules() {
 		if (pos++ == string::npos)
 			break;
 	}
+	s.locationRules = loc;
 	return loc;
 }
 
-void	httpSession::Request::isProtocole(string& http) {
-	if (http == "HTTP/1.1") {
-		s.httpProtocole = http;
+void	httpSession::Request::isProtocole(bstring& http) {
+	if (!http.cmp("HTTP/1.1")) {
+		s.httpProtocole = http.cppstring();
 		return ;
 	}
-	else if (http.size() == 8 && !strncmp(http.c_str(), "HTTP/", 5) && isdigit(http[5]) && http[6] == '.' && isdigit(http[7]))
-	throw(statusCodeException(505, "HTTP Version Not Supported"));
+	else if (http.size() == 8 && http.ncmp("HTTP/", 5) == 0 && isdigit(http[5]) && http[6] == '.' && isdigit(http[7]))
+		throw(statusCodeException(505, "HTTP Version Not Supported"));
 	throw(statusCodeException(400, "Bad Request"));
 }
 
-void	httpSession::Request::extractPathQuery(string& uri) {
+void	httpSession::Request::extractPathQuery(bstring& uri) {
 	if (uri[0] != '/') {
-		size_t pos = uri.find('/', 7);
+		size_t pos = uri.find("/", 7);
 		if (pos == string::npos)
 			uri = "/";
 		else
 			uri = uri.substr(pos);
 	}
-	size_t pos = uri.find('?');
-	s.path = uri.substr(0, pos);
+	size_t pos = uri.find("?");
+	s.path = uri.substr(0, pos).cppstring();
 	if (pos != string::npos)
-		s.query = uri.substr(pos+1);
+		s.query = uri.substr(pos+1).cppstring();
 }
 
-void	httpSession::Request::isTarget(string& target) {
+void	httpSession::Request::isTarget(bstring& target) {
 	const string	validCharachters = "-._~:/?#[]@!$&'()*+,;=";
 
-	if (strncmp(target.c_str(), "http://", 7) && target[0] != '/')
+	if (target.ncmp("http://", 7) && target[0] != '/')
 		throw(statusCodeException(400, "Bad Request"));
-	for (const auto& c : target) {
-		if (!iswalnum(c) && validCharachters.find(c) == string::npos)
+	for (size_t i = 0; i < target.size(); ++i) {
+		if (!iswalnum(target[i]) && validCharachters.find(target[i]) == string::npos)
 			throw(statusCodeException(400, "Bad Request"));
 	}
 	extractPathQuery(target);
 }
 
-void	httpSession::Request::isMethod(const eMethods& method) {
-	if (method == GET || method == POST || method == DELETE)
-		s.method = method;
-	else
+void	httpSession::Request::isMethod(bstring& method) {
+	switch (method.size())
+	{
+	case 5: {
+		cmpdelete(method[0], method[1], method[2], method[3], method[4], method[5]);
+		s.method = DELETE;
+		break;
+	}
+	case 4: {
+		cmppost(method[0], method[1], method[2], method[3]);
+		s.method = POST;
+		break;
+	}
+	case 3: {
+		cmpget(method[0], method[1], method[2]);
+		s.method = GET;
+		break;
+	}
+	default:
 		throw(statusCodeException(400, "Bad Request"));
+	}
 }
 
 
-bool	httpSession::Request::parseStartLine(stringstream& stream) {
-	string	line;
-	location* rules;
-	char absolutePath[1024];
-	if (getline(stream, line)) {
-		vector<string>	comps;
-		comps = split(line);
-		if (comps.size() != 3)
+bool	httpSession::Request::parseStartLine(bstring& buffer) {
+	bstring		line;
+	bool		eof;
+	location*	rules;
+	char		absolutePath[1024];
+
+	if (buffer.getheaderline(line)) {
+		vector<bstring>	list = line.split();
+		if (list.size() != 3)
 			throw(statusCodeException(400, "Bad Request"));
-		isMethod(getMethods(comps[0]));
-		isTarget(comps[1]);
-		isProtocole(comps[2]);
+		isMethod(list[0]);
+		isTarget(list[1]);
+		isProtocole(list[2]);
 		if ((rules = getConfigFileRules()))
 			reconstructUri(rules);
 		else
 			throw(statusCodeException(404, "Not Found"));
 		return true;
 	}
-	remainingBuffer += line;
+	remainingBuffer = line;//GET / HTTP\0
 	return false;
 }
