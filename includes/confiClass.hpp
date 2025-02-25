@@ -18,16 +18,15 @@ using namespace std;
 #include <netdb.h>
 
 enum  Ser1 {
-	LISTEN, /*ROOT,*/
-	SERNAMES, LIMIT_REQ,
-	ERROR, LOCS
+	LISTEN,		SERNAMES,
+	LIMIT_REQ,	ERROR,
+	LOCS
 };
 
 enum  Ser2 {
 	ALIASRRDI,  METHODS,
 	INDEX,	  AUTOINDEX,
-	CGI,		UPLOADS,
-	USRDIR
+	CGI,		UPLOADS
 };
 
 enum eMethods {
@@ -43,7 +42,6 @@ struct location {
 	string				aliasRed;
 	string				index;
 	string				uploads;
-	string				usrDir;
 	vector<eMethods>	methods;
 	map<string, string>	cgis;
 	bool				isRed;
@@ -90,8 +88,7 @@ void		handleListen(string& line, configuration& kv, ifstream& sFile);
 void		handleHost(string& line, configuration& kv, ifstream& sFile);
 void		handleLocs(string& line, configuration& kv, ifstream& sFile);
 void		handleUploads(string& line, location& kv, ifstream& sFile);
-void		handleUsrDir(string& line, location& kv, ifstream& sFile);
-void		checkLocation(location& kv, int (&locationsFunc)[7]);
+void		checkLocation(location& kv, int (&locationsFunc)[6]);
 eMethods	getMethods(const string& method);
 bool		checkRule(string s1, string s2);
 string		getMethods(eMethods method);

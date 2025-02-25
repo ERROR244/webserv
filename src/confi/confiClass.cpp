@@ -33,7 +33,7 @@ int getSer1(string line) {
 }
 
 void checkServer(configuration& kv, int (&serverFunc)[5]) {
-	int locationsFunc[7] = {0};
+	int locationsFunc[6] = {0};
 
     for (int i = 0; i < 5; ++i) {
         if (serverFunc[i] == -1)

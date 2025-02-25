@@ -23,9 +23,9 @@ void	httpSession::Request::parseMessage(const int clientFd) {
 	delete[] buffer;
 	clientRequest = remainingBuffer + clientRequest;
 	remainingBuffer = NULL;
-	// cerr << "---s-rawdata" << endl;
+	// cerr << "				s-rawdata" << endl;
 	// cerr << clientRequest << endl;
-	// cerr << "---e-rawdata" << endl;
+	// cerr << "				e-rawdata" << endl;
 	while(!parseFunctions.empty()) {
 		const auto& func = parseFunctions.front();
 		if (!(this->*func)(clientRequest))	return;

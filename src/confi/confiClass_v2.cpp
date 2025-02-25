@@ -80,14 +80,6 @@ bool isValidDirectory(const char* path) {
     return false;
 }
 
-// void handleRoot(string& line, configuration& kv, ifstream& sFile) {
-//     int i = checkKey("root:", line);
-    
-//     kv.root = trim(line.substr(i));
-//     if (isValidDirectory(kv.root.c_str()) == false)
-//         throw std::runtime_error("root must be a valid directory");
-// }
-
 void handleSerNames(string& line, configuration& kv, ifstream& sFile) {
     string tmp;
     int i;
@@ -134,20 +126,6 @@ string  trim(const string& str) {
 
 	return str.substr(start, end - start + 1);
 }
-
-
-/////////////////////// locations
-
-// string handleUrl(string& line, location& kv, ifstream& sFile) {
-//     int first_occ = line.find_first_of(' ');
-//     int last_occ = line.find_last_of(' ');
-
-//     kv.url = trim(line.substr(first_occ, last_occ));
-//     if (kv.url.empty())
-//         throw std::runtime_error("location url can't be empty");
-//     cout << "URL--> " << '`' << kv.url << '`' << endl;    
-//     return kv.url;
-// }
 
 void handleAliasRed(string& line, location& kv, ifstream& sFile) {
     int i;
@@ -226,11 +204,6 @@ void handleUploads(string& line, location& kv, ifstream& sFile) {
     kv.uploads = trim(line.substr(i));
 }
 
-void handleUsrDir(string& line, location& kv, ifstream& sFile) {
-    int i = checkKey("usrDir:", line);
-    kv.usrDir = trim(line.substr(i));
-}
-
 void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
     int i = checkKey("autoindex:", line);
     line = trim(line.substr(i));
@@ -276,8 +249,6 @@ int getSer2(string line) {
         return AUTOINDEX;
     else if (line[0] == 'u' && line[1] == 'p')
         return UPLOADS;
-    else if (line[0] == 'u' && line[1] == 's')
-        return USRDIR;
     else if (checkRule(line, "cgi"))
         return CGI;
     throw std::runtime_error("unexpected keyword: `" + line + "`");
@@ -304,8 +275,8 @@ string checkLocationRule(string s1, string s2) {
     return url;
 }
 
-void checkLocation(location& kv, int (&locationsFunc)[7]) {
-    for (int i = 0; i < 7; ++i) {
+void checkLocation(location& kv, int (&locationsFunc)[6]) {
+    for (int i = 0; i < 6; ++i) {
         if (locationsFunc[i] == -1)
             continue;
         else if (i == 0) {
@@ -318,14 +289,9 @@ void checkLocation(location& kv, int (&locationsFunc)[7]) {
             kv.index = "index.html";
         else if (i == 3)
             kv.autoIndex = false;
-        // else if (i == 4)
-        //     kv.cgis;
         else if (i == 5)
             kv.uploads = "";
-        else if (i == 6)
-            kv.usrDir = "";
     }
-    // return kv;
 }
 
 location handleLocation(ifstream& sFile, string line) {
@@ -334,9 +300,8 @@ location handleLocation(ifstream& sFile, string line) {
                                                                      handleIndex,
                                                                      handleAutoIndex,
                                                                      handleCgi,
-                                                                     handleUploads,
-                                                                     handleUsrDir };
-    int locationsFunc[7] = {0};
+                                                                     handleUploads };
+    int locationsFunc[6] = {0};
     location    kv;
     int         index;
 
@@ -428,7 +393,6 @@ void ConfigFileParser::printprint() {
             cout << endl;
             cout << "---------------------------> index:     " << locationIt->second.index << endl;
             cout << "---------------------------> uploads:   " << locationIt->second.uploads << endl;
-            cout << "---------------------------> usrDir:    " << locationIt->second.usrDir << endl;
             cout << "---------------------------> autoIndex: " << (locationIt->second.autoIndex ? "True" : "False") << endl;
             if (!locationIt->second.cgis.empty())
                 cout << "---------------------------> Cgi Scripts:" << endl;

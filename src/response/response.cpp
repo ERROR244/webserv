@@ -67,8 +67,7 @@ string httpSession::Response::deleteDir(const string& dir, const string& connect
 string httpSession::Response::getDeleteRes(const string& path, const string& connection, struct stat& file_stat) {
     string response = "";
 
-    cout << path << endl;
-    if (path.find("www/nginx/uploads") == string::npos) {
+    if (path.find(s.locationRules->uploads) == string::npos) {
         std::cerr << "Directory Traversal Attempt While Deleting.\n";
         response += "HTTP/1.1 403 Forbidden\r\n";
         response += "Content-Type: text/html\r\n";
