@@ -47,12 +47,7 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
         ext[".svg"]   = "Content-Type: image/svg+xml\r\n";
         ext[".sh"]    = "Content-Type: application/x-sh\r\n";
         ext[".sfnt"]  = "Content-Type: font/sfnt\r\n";
-        ext[".txt"]   = "Content-Type: text/plain\r\n";
-        ext[".tiff"]  = "Content-Type: image/tiff\r\n";
-        ext[".tar"]   = "Content-Type: application/x-tar\r\n";
-        ext[".ttf"]   = "Content-Type: font/ttf\r\n";
-        ext[".webp"]  = "Content-Type: image/webp\r\n";
-        ext[".wav"]   = "Content-Type: audio/wav\r\n";
+        ext[".txt"]   = "Content-Type:getSessionCookie audio/wav\r\n";
         ext[".webm"]  = "Content-Type: video/webm\r\n";
         ext[".woff"]  = "Content-Type: font/woff\r\n";
         ext[".woff2"] = "Content-Type: font/woff2\r\n";
@@ -88,7 +83,9 @@ void httpSession::Response::Get(int clientFd, bool smallFile) {
         string body = buffer.str();
         response = "HTTP/1.1 200 OK\r\n" + fileType +
                         "Content-Length: " + toString(body.size()) + "\r\n" + "Connection: " +
-                        (s.headers["connection"].empty() ? "close" : s.headers["connection"]) + string("\r\n\r\n");
+                        (s.headers["connection"].empty() ? "close" : s.headers["connection"]) +
+                        getSessionCookie(s.sessionId) +
+                        string("\r\n\r\n");
         response += body;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
         state = DONE;
@@ -98,7 +95,9 @@ void httpSession::Response::Get(int clientFd, bool smallFile) {
         headerSended = true;
         contentFd = open(s.path.c_str(), O_RDONLY);
         response = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" + fileType + "Connection: " +
-                            (s.headers["connection"].empty() ? "close" : s.headers["connection"]) + string("\r\n\r\n");
+                            (s.headers["connection"].empty() ? "close" : s.headers["connection"]) +
+                            getSessionCookie(s.sessionId) +
+                            string("\r\n\r\n");
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
     }
 }
@@ -156,6 +155,6 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
     } else {
         state = DONE;
 		close(s.cgi->rFd());
-		cerr << "done sending response" << endl;
+		// cerr << "done sending response" << endl;
     }
 }

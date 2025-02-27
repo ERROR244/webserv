@@ -1,8 +1,8 @@
 #include "server.h"
 
-httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), cgi(NULL), locationRules(NULL),statusCode(200), codeMeaning("OK") {}
+httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), cgi(NULL), locationRules(NULL),statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
 
-httpSession::httpSession() : config(NULL), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK") {}
+httpSession::httpSession() : config(NULL), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
 
 void	httpSession::reSetPath(const string& newPath) {
 	path = newPath;
@@ -39,7 +39,7 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		}
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
-		cout << "\ndone sending the response\n" << endl;
+		// cout << "\ndone sending the response\n" << endl;
 	}
 	else if (status == CCLOSEDCON) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
@@ -88,7 +88,7 @@ void	acceptNewClient(const int& epollFd, const int& serverFd) {
 		perror("epoll_ctl faield(setUpserver.cpp): ");
 		throw(statusCodeException(500, "Internal Server Error"));
 	}
-	cerr << "		--------------new client added--------------" << endl;
+	// cerr << "		--------------new client added--------------" << endl;
 }
 
 bool checkTimeOutForEachUsr(std::map<int, time_t> &timeOut) {
@@ -105,9 +105,9 @@ bool checkTimeOutForEachUsr(std::map<int, time_t> &timeOut) {
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
 	map<int, httpSession*>				sessions;					//change httpSession to a pointer so i can be able to free it
+	map<string, string>					sessionStorage;
 	map<int, time_t>					timeOut;
 	int									nfds;
-
 	cerr << "Started the server..." << endl;
 	while (1) {
 		if (checkTimeOutForEachUsr(timeOut) == true) {
@@ -130,6 +130,10 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());
 				}
 				else if (events[i].events & EPOLLOUT) {
+					if (sessions[fd]->cookieSeted == false) {
+						sessions[fd]->cookieSeted = true;
+						setCookie(sessions[fd]->sessionId, sessions[fd]->getHeaders()["cookie"]);
+					}
 					timeOut[fd] = sessions[fd]->res.handelClientRes(fd);
 					resSessionStatus(epollFd, fd, sessions, sessions[fd]->res.status());
 				}

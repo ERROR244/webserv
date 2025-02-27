@@ -94,7 +94,7 @@ string httpSession::Response::getDeleteRes(const string& path, const string& con
 
 void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& file_stat) {
     if (s.method == GET) {
-        cout << "GET method called on " << s.path << endl;
+        // cout << "GET method called on " << s.path << endl;
         if (headerSended == false) {
             Get(clientFd, smallFile);
         }
@@ -103,7 +103,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         }
     }
     if (s.method == POST) {
-        cout << "POST method called on " << s.path << endl;
+        // cout << "POST method called on " << s.path << endl;
         lastActivityTime = time(NULL);
         state = DONE;
     }

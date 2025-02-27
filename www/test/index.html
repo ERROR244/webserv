@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webserv Interactive Test Cases</title>
+  <link href="./styles/style.css" rel="stylesheet" />
+  <link href="https://fonts.cdnfonts.com/css/xirod" rel="stylesheet">
+</head>
+
+<body>
+  <header>
+    <h1>☠️ <span>One</span>Serve ☠️</h1>
+  </header>
+
+  <div class="container">
+    <!-- Simple Form -->
+    <div class="card">
+      <h3>Simple Form</h3>
+      <p>Submit this form to simulate sending data via POST.</p>
+
+      <form id="simple-form" method="POST">
+        <div class="form-group">
+          <label for="login">Login:</label>
+          <input type="text" id="login" name="login" placeholder="Enter your Login">
+        </div>
+        <div class="form-group">
+          <label for="file">Attach a file :</label>
+          <input type="file" id="file" name="file">
+        </div>
+        <div class="form-group">
+          <button type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
+
+
+    <!-- File Upload -->
+    <div class="card">
+      <h3>File Upload</h3>
+      <p>Choose a file to upload.</p>
+      <form id="file-upload-form">
+        <div class="form-group">
+          <input type="file" id="file_uplaod" name="file">
+        </div>
+        <div class="form-group">
+          <button type="submit">Upload File</button>
+        </div>
+      </form>
+      <div id="response-message" style="color : green"></div>
+    </div>
+    <!-- Error Handling -->
+
+    <!-- Delete -->
+    <div class="card">
+      <h3>Delete METHOD</h3>
+      <p>Click the button to simulate a DELETE request.</p>
+      <input type="text" id="delete" placeholder="Enter the file name to delete">
+
+      <button onclick="HandleDeleteFile()">Delete</button>
+    </div>
+
+    <!-- Your Db -->
+    <div class="card">
+      <h3>Your Database</h3>
+      <p>Here you can see the fields you submitted.</p>
+      <ul id="SessionStorage_fields">
+
+      </ul>
+    </div>
+
+    <div class="Footer">
+      <span>abquaoub</span>
+      <span>☠️</span>
+      <span>klakbuic</span>
+      <span>☠️</span>
+      <span>Hkarrach</span>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast" class="toast"></div>
+    <script>
+      // Handle form submission via POST request
+      document.getElementById('simple-form').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Get the form element and create a FormData object
+        const form = event.target;
+        const formData = new FormData(form);  // Capture all form fields including files
+
+        // Send the form data via fetch
+        fetch('/', {
+          method: 'POST',
+          body: formData
+        })
+          .then(response => {
+            if (response.status === 201)
+              return response.json();
+            if (response.status === 500) {
+              throw new Error('Internal server error');
+            }
+            else if (response.status == 413)
+              throw new Error("413 Payload too large.");
+            else if (response.status === 400)
+              throw new Error('Bad request, or file(s) already exists');
+            else
+              throw new Error("i didnt handle that response code yet on the client side.")
+            })
+          .then(data => {
+            console.log(data);
+            showToast(`Success!`);
+          })
+          .catch(error => {
+            // console.error('Error submitting form:', error);
+            showToast(error.message, true);
+          });
+      });
+
+      // Redirect Detection
+      window.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has("redirected")) {
+          setTimeout(() => {
+            showToast("You have been redirected to this page.");
+          }, 500);
+        }
+      });
+      // Handle Delete
+      function HandleDeleteFile() {
+        const file = document.getElementById('delete').value;
+        if (!file) {
+          showToast("Please enter a file name to delete.", true);
+          return;
+        }
+
+        fetch(`/${file}`, {
+          method: 'DELETE'
+        })
+          .then(response => {
+            if (response.status === 404) {
+              throw new Error('File not found');
+            }
+            else if (response.status === 500) {
+              throw new Error('Internal server error');
+            }
+            else if (response.status === 204) {
+              return { status: 'File deleted successfully' };
+            }
+            return response.json();
+          })
+          .then(data => {
+            showToast(`File deleted successfully: ${data.status}`);
+          })
+          .catch(error => {
+            showToast(`Error deleting file: ${error.message}`, true);
+          });
+      }
+
+      // Toast functionality
+      function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+
+        toast.classList.add('show');
+
+        if (isError) {
+          toast.classList.add('error');
+          setTimeout(() => {
+            toast.classList.remove('error');
+          }, 3500);
+        }
+
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      }
+      // Handle File upload
+
+
+      // Handle the file upload
+      document.getElementById('file-upload-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const fileInput = document.getElementById('file_uplaod');
+        const file = fileInput.files[0];
+
+        if (!file) {
+          showToast("Please select a file to upload.", true);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/', {
+          method: 'POST',
+          body: formData
+        })
+          .then(response => {
+            if (response.status === 201)
+              return response.json();
+            else if (response.status == 405)
+              throw new Error('405 Method not allowed.');
+            else if (response.status === 413)
+              throw new Error('413 Payload Too Large');
+            else if (response.status === 500)
+              throw new Error('500 Internal server error.');
+            else if (response.status === 400)
+              throw new Error('Bad request, or a file already exists!')
+            else
+              throw new Error('I didnt handle that response code in the client side.')
+          })
+          .then(data => {
+            console.log(data);
+            showToast(`File uploaded successfully: ${data.data.file}`);
+          })
+          .catch(error => {
+            showToast("Error uploading the file: " + error.message, true);
+          });
+      });
+    </script>
+</body>
+
+</html>

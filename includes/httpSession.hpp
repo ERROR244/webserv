@@ -104,9 +104,17 @@ public:
 	httpSession(int clientFd, configuration* confi);
 	httpSession();
 
-	void		reSetPath(const string& newPath);
+	void				reSetPath(const string& newPath);
+	map<string, string>	getHeaders() { return headers; }
 
+	string	sessionId;
+	bool	cookieSeted;
 };
 
 bool				checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);
+string				getSessionID(const map<string, string>& headers);
+string				generateSessionID();
+string				getSessionCookie(string& sessionID);
+void				setCookie(string& sessionId, const string& cookieId);
+
 

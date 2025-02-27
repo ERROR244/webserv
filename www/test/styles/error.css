@@ -1,0 +1,51 @@
+@import url('./vars.css');
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+body {
+	font-family: 'Arial', sans-serif;
+	background-color: #f4f4f4;
+	color: #333;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	overflow: hidden;
+}
+.container {
+	text-align: center;
+	padding: 20px;
+}
+h1 {
+	font-size: 6rem;
+	color: var(--Main-color);
+}
+p {
+	font-size: 1.2rem;
+	margin: 20px 0;
+}
+a {
+	display: inline-block;
+	margin-top: 20px;
+	padding: 10px 20px;
+	font-size: 1rem;
+	color: white;
+	background-color: var(--Main-color);
+	text-decoration: none;
+	border-radius: 5px;
+	transition: background-color 0.3s ease;
+}
+a:hover {
+	background-color: var(--Main-color-dark);
+}
+@media (max-width: 768px) {
+	h1 {
+		font-size: 4rem;
+	}
+	p {
+		font-size: 1rem;
+	}
+}
