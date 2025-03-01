@@ -1,9 +1,18 @@
 #include "httpSession.hpp"
 
-httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), state(PROCESSING), lastActivityTime(0) {}
+httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), lastActivityTime(0) {}
 
 time_t	httpSession::Response::handelClientRes(const int clientFd) {
-	if (s.cgi == NULL) {
+    if(s.cgi) {
+		if (s.sstat == sHeader) {
+			sendCgiStarterLine(clientFd);
+			if (s.sstat == cclosedcon)
+				return -1;
+			s.sstat = sBody;
+			s.cgi->setupCGIProcess();
+		}
+		sendCgiOutput(clientFd);
+	} else {
 		struct stat file_stat;
 
         if (stat(s.path.c_str(), &file_stat) == -1) {
@@ -15,16 +24,6 @@ time_t	httpSession::Response::handelClientRes(const int clientFd) {
 		else {
 			sendRes(clientFd, false, file_stat);
 		}
-	} else {
-		if (state == PROCESSING) {
-			sendCgiStarterLine(clientFd);
-			if (state == CCLOSEDCON)
-				return 0;
-			state = SHEADER;
-			s.cgi->setupCGIProcess();
-			cerr << "here" << endl;
-		}
-		sendCgiOutput(clientFd);
 	}
     if (s.headers["connection"] != "keep-alive")
         return -1;
@@ -67,7 +66,7 @@ string httpSession::Response::deleteDir(const string& dir, const string& connect
 string httpSession::Response::getDeleteRes(const string& path, const string& connection, struct stat& file_stat) {
     string response = "";
 
-    if (path.find(s.locationRules->uploads) == string::npos) {
+    if (path.find(s.rules->uploads) == string::npos) {
         std::cerr << "Directory Traversal Attempt While Deleting.\n";
         response += "HTTP/1.1 403 Forbidden\r\n";
         response += "Content-Type: text/html\r\n";
@@ -87,7 +86,6 @@ string httpSession::Response::getDeleteRes(const string& path, const string& con
         response += "content-length: 143\r\n";
         response += "Connection: " + (connection.empty() ? "close" : connection);
         response += "\r\n\r\n<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>Forbidden</h1><p>resource is not a file or directory.</p></body></html>";
-
     }
     return response;
 }
@@ -105,7 +103,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
     if (s.method == POST) {
         // cout << "POST method called on " << s.path << endl;
         lastActivityTime = time(NULL);
-        state = DONE;
+        s.sstat = done;
     }
     if (s.method == DELETE) {
         string response = getDeleteRes(s.path, s.headers["connection"], file_stat);
@@ -113,7 +111,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         cout << "response---> " << response << endl;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
         lastActivityTime = time(NULL);
-        state = DONE;
+        s.sstat = done;
     }
 }
 
@@ -132,8 +130,4 @@ bool checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastAct
         timeOut.erase(timeOut.find(clientFd));
     }
     return timedOut;
-}
-
-const t_state&	httpSession::Response::status() const {
-	return state;
 }

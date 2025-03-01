@@ -19,12 +19,39 @@
 #include <ctime>
 
 #define BUFFER_SIZE 8192
+#define URI_MAXSIZE 1024
+#define HEADER_FIELD_MAXSIZE 5120
 #define T 5
 
 using namespace std;
 
+enum e_sstat {//session stat
+	method=0,
+	uri,
+	httpversion,
+	starterlineNl,
+	fieldLine,
+	wssBeforeFieldName,
+	filedName,
+	fieldNl,
+	emptyline,
+	bodyFormat,
+	contentLengthBased,
+	transferEncodingChunkedBased,
+	sHeader,
+	sBody,
+	done,
+	cclosedcon,
+};
+
+enum e_requestStat {
+	headers,
+	body,
+};
+
 class httpSession {
 private:
+	e_sstat				sstat;
 	eMethods			method;
 	string				path;
 	string				query;
@@ -33,43 +60,25 @@ private:
 	int					statusCode;
 	string				codeMeaning;
 	Cgi*				cgi;
-	location*			locationRules;
+	location*			rules;
 public:
-	class Request {
+class Request {
 	private:
-		httpSession&						s;
-		string								prvsFieldName;
-		string								prvsContentFieldName;
-		queue<bool(Request::*)(bstring&)>	parseFunctions;
-		queue<bool(Request::*)(bstring&)>	bodyParseFunctions;
-		map<string, string>					contentHeaders;
-		int									length;
-		ofstream							fd;
-		string								boundaryValue;
-		bstring								remainingBuffer;
-		t_state								state;
+		httpSession&	s;
+		e_requestStat	requestStat;
+		bstring			remainingBody;
+		string			boundary;
+		size_t			length;
+		int				fd;
 
-		void								isCGI(location*);
-		void								reconstructUri(location* rules);
-		void								isProtocole(bstring& httpVersion);
-		void								extractPathQuery(bstring& uri);
-		void								isTarget(bstring& target);
-		void								isMethod(bstring& method);
-		location*							getConfigFileRules();
-		bool								parseStartLine(bstring&);
-		bool								validFieldName(string& str) const;
-		bool								parseFileds(bstring&);
-		void								openTargetFile(const string& filename, ofstream& fd) const;
-		bool								boundary(bstring&);
-		bool								fileHeaders(bstring&);
-		bool								fileContent(bstring&);
-		bool								contentLengthBased(bstring&);
-		bool								transferEncodingChunkedBased(bstring&);
-		bool								parseBody(bstring&);
+		int				parseStarterLine(const bstring& buffer);
+		int				parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
+		void			parseBody(const bstring& buffer, size_t pos);
+		void			isCGI();
+		void			reconstructUri();
 	public:
+		void			readfromsock(const int clientFd);
 		Request(httpSession& session);
-		void								parseMessage(const int clientFd);
-		const t_state&						status() const;
 	};
 
 	class Response {
@@ -77,7 +86,6 @@ public:
 		int				contentFd;
 		bool			headerSended;
 		time_t      	lastActivityTime;
-		t_state			state;
 		httpSession&	s;
 		
 		static string		getSupportedeExtensions(const string&);
@@ -94,7 +102,6 @@ public:
 		Response(httpSession& session);
 
 		time_t				handelClientRes(const int clientFd);
-		const t_state&		status() const;
 	};
 
 	Request		req;
@@ -104,6 +111,7 @@ public:
 	httpSession(int clientFd, configuration* confi);
 	httpSession();
 
+	const e_sstat&	status() const;
 	void				reSetPath(const string& newPath);
 	map<string, string>	getHeaders() { return headers; }
 

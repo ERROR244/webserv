@@ -1,8 +1,12 @@
 #include "server.h"
 
-httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), cgi(NULL), locationRules(NULL),statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
+httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), sstat(e_sstat::method), cgi(NULL), rules(NULL), statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
 
 httpSession::httpSession() : config(NULL), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
+
+const e_sstat& httpSession::status() const {
+	return sstat;
+}
 
 void	httpSession::reSetPath(const string& newPath) {
 	path = newPath;
@@ -27,10 +31,11 @@ void	sendError(const int clientFd, const int statusCode, const string codeMeanin
 }
 
 
-void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession*>& s, const t_state& status) {
+void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession*>& s, const e_sstat& status) {
 	struct epoll_event	ev;
 
-	if (status == DONE) {
+	if (status == done) {
+		cerr << "done sending the response" << endl;
 		ev.events = EPOLLIN;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
@@ -39,12 +44,11 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		}
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
-		// cout << "\ndone sending the response\n" << endl;
 	}
-	else if (status == CCLOSEDCON) {
+	else if (status == cclosedcon) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));		//this throw is not supposed to be here
+			throw(statusCodeException(500, "Internal Server Error"));//this throw is not supposed to be here
 		}
 		close(clientFd);
 		delete s[clientFd];
@@ -52,10 +56,10 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	}
 }
 
-void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession*>& s, const t_state& status) {
+void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession*>& s, const e_sstat& status) {
 	struct epoll_event	ev;
 
-	if (status == DONE) {
+	if (status == sHeader) {
 		ev.events = EPOLLOUT;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
@@ -63,10 +67,10 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 			throw(statusCodeException(500, "Internal Server Error"));
 		}
 	}
-	else if (status == CCLOSEDCON) {
+	else if (status == cclosedcon) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));		//this throw is not supposed to be here
+			throw(statusCodeException(500, "Internal Server Error"));//this throw is not supposed to be here
 		}
 		close(clientFd);
 		delete s[clientFd];
@@ -126,8 +130,8 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				}
 				else if (events[i].events & EPOLLIN) {
 					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)])));
-					sessions[fd]->req.parseMessage(fd);
-					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->req.status());
+					sessions[fd]->req.readfromsock(fd);
+					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->status());
 				}
 				else if (events[i].events & EPOLLOUT) {
 					if (sessions[fd]->cookieSeted == false) {
@@ -135,7 +139,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 						setCookie(sessions[fd]->sessionId, sessions[fd]->getHeaders()["cookie"]);
 					}
 					timeOut[fd] = sessions[fd]->res.handelClientRes(fd);
-					resSessionStatus(epollFd, fd, sessions, sessions[fd]->res.status());
+					resSessionStatus(epollFd, fd, sessions, sessions[fd]->status());
 				}
 			}
 			catch (const statusCodeException& exception) {

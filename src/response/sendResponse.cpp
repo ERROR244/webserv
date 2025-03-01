@@ -88,7 +88,7 @@ void httpSession::Response::Get(int clientFd, bool smallFile) {
                         string("\r\n\r\n");
         response += body;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
-        state = DONE;
+        s.sstat = done;
         lastActivityTime = time(NULL);      // for timeout
     }
     else {
@@ -122,7 +122,7 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
     else {
         buffer[bytesRead] = '\0';
         send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT);
-        state = DONE;
+        s.sstat = done;
         headerSended = false;
         if (contentFd >= 0)
             ft_close(contentFd, "fileFd");
@@ -134,7 +134,7 @@ void    httpSession::Response::sendCgiStarterLine(const int clientFd) {
     string starterLine = s.httpProtocole + " " + to_string(s.statusCode) + " " + s.codeMeaning + "\r\n";
     if (write(clientFd, starterLine.c_str(), starterLine.size()) <= 0) {
 		perror("write failed(sendResponse.cpp 143)");
-		state = CCLOSEDCON;
+		s.sstat = cclosedcon;
 	}
 }
 
@@ -149,11 +149,11 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
     if (byteRead > 0) {
         if (write(clientFd, buff, byteRead) <= 0) {
 			perror("write failed(sendResponse.cpp 157)");
-			state = CCLOSEDCON;
+			s.sstat = cclosedcon;
 			return ;
 		}
     } else {
-        state = DONE;
+        s.sstat = done;
 		close(s.cgi->rFd());
 		// cerr << "done sending response" << endl;
     }

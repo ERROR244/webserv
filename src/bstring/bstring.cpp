@@ -104,10 +104,8 @@ bool	bstring::getheaderline(bstring& line) {
 			}
 		}
 		default:
-			if (br) {
-				cerr << "www" << endl;
-				// throw(statusCodeException(400, "Bad Request"));
-			}
+			if (br)
+				throw(statusCodeException(400, "Bad Request"));
 		}
 	}
 	line = substr(0);

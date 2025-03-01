@@ -1,43 +1,37 @@
 #include "httpSession.hpp"
 
-httpSession::Request::Request(httpSession& session) : s(session), state(PROCESSING), length(0) {
-	parseFunctions.push(&Request::parseStartLine);
-	parseFunctions.push(&Request::parseFileds);
-	parseFunctions.push(&Request::parseBody);
-
-	bodyParseFunctions.push(&Request::boundary);
-	bodyParseFunctions.push(&Request::fileHeaders);
-	bodyParseFunctions.push(&Request::fileContent);
+httpSession::Request::Request(httpSession& session) : s(session), fd(-1), requestStat(e_requestStat::headers) {
+	remainingBody = NULL;
 }
 
-void	httpSession::Request::parseMessage(const int clientFd) {
-	char*	buffer = new char[BUFFER_SIZE];
+void	httpSession::Request::readfromsock(const int clientFd) {
+	char	buffer[BUFFER_SIZE];
 	ssize_t byteread;
+	ssize_t bufferPos = 0;
 
 	if ((byteread = recv(clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT)) <= 0) {
-		state = CCLOSEDCON;
-		return;
+		s.sstat = cclosedcon;
+		return ;
 	}
-	// cerr << "bytesread: " << byteread << endl;
-	bstring clientRequest(buffer, byteread);
-	delete[] buffer;
-	clientRequest = remainingBuffer + clientRequest;
-	remainingBuffer = NULL;
-	cerr << "				s-rawdata" << endl;
-	cerr << clientRequest << endl;
-	cerr << "				e-rawdata" << endl;
-	while(!parseFunctions.empty()) {
-		const auto& func = parseFunctions.front();
-		if (!(this->*func)(clientRequest))	return;
-		parseFunctions.pop();
+	bstring bbuffer(buffer, byteread);
+	// cerr << bbuffer << endl;
+	switch (requestStat)
+	{
+	case e_requestStat::headers: {
+		if ((bufferPos = parseStarterLine(bbuffer)) < 0)
+			throw(statusCodeException(400, "Bad Request"));
+		if ((bufferPos = parseFields(bbuffer, bufferPos, s.headers)) < 0)
+			throw(statusCodeException(400, "Bad Request"));
+		if (s.cgi)
+			s.cgi->prepearingCgiEnvVars(s.headers);
+		if (s.sstat == e_sstat::sHeader)
+			break;
+		requestStat = e_requestStat::body;
 	}
-	state = DONE;
-	// cerr << "done parsing the request" << endl;
+	case e_requestStat::body: {
+		bbuffer = remainingBody + bbuffer;
+		if (bufferPos < bbuffer.size())
+			parseBody(bbuffer, bufferPos);
+	}
+	}
 }
-
-const t_state& httpSession::Request::status() const {
-	return state;
-}
-
-// GET / HTTP1.1\r\n
-//headersbody

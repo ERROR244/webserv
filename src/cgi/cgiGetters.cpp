@@ -7,3 +7,7 @@ int Cgi::wFd() {
 int	Cgi::rFd() {
 	return rPipe[0];
 }
+
+int	Cgi::ppid() {
+	return pid;
+}
