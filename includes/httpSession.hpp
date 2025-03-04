@@ -98,6 +98,7 @@ class Request {
 		void				sendRes(int clientFd, bool smallFile, struct stat& file_stat);
 		void    			Get(int clientFd, bool smallFile);
         void    			sendBodyifChunked(int clientFd);
+		void				handelRedirection(const int clientFd);
 		string				getExt(string path);
 	public:
 		Response(httpSession& session);

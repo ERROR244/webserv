@@ -187,7 +187,7 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
             line = line.substr(1);
     }
     if (kv.methods.size() > 3)
-        throw std::runtime_error("invalid numbers of methods: " + to_string(kv.methods.size()));
+        throw std::runtime_error("invalid numbers of methods: " + toString(kv.methods.size()));
     for (int i = 0; i < kv.methods.size(); ++i) {
         if (kv.methods[i] != GET && kv.methods[i] != DELETE && kv.methods[i] != POST)
             throw std::runtime_error("invalid method: `" + getMethods(kv.methods[i]) + "`");
@@ -200,8 +200,17 @@ void handleIndex(string& line, location& kv, ifstream& sFile) {
 }
 
 void handleUploads(string& line, location& kv, ifstream& sFile) {
-    int i = checkKey("uploads:", line);
+    char    buf[PATH_MAX];
+    char    *uploads;
+    int     i;
+    
+    i = checkKey("uploads:", line);
     kv.uploads = trim(line.substr(i));
+    uploads = realpath(kv.uploads.c_str(), buf);
+    
+    if (uploads == NULL)
+        throw std::runtime_error("invalid path: `" + kv.uploads + "`");
+    kv.uploads = string(uploads);
 }
 
 void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
@@ -360,40 +369,40 @@ void ConfigFileParser::printprint() {
         if (it != kValue.rbegin())
             cout << "\n\n                              ------------------------------------\n\n" << endl;
         cout << "------------------SERVER-" << i << "------------------" << endl;
-        cout << "---------> listen:       " << it->second.host << ":" << it->second.port << endl;
-        cout << "---------> Server Names: ";
+        cout << "---------> listen:         " << it->second.host << ":" << it->second.port << endl;
+        cout << "---------> Server Names:   ";
         for (size_t j = 0; j < it->second.serNames.size(); ++j) {
             cout << " " << it->second.serNames[j];
             if (j + 1 < it->second.serNames.size())
                 cout << ",";
         }
-        cout << endl << "---------> Body Size:     " << it->second.bodySize << "M";
+        cout << endl << "---------> Body Size:       " << it->second.bodySize << "M";
         cout << endl << "---------> Error Pages:" << endl;
         for (it_errorPages = it->second.errorPages.begin(); it_errorPages != it->second.errorPages.end(); ++it_errorPages) {
             cout << "------------------> " << it_errorPages->first << " | " << it_errorPages->second << endl;
         }
         cout << endl << "---------> ADDINFO:" << endl;
-        cout << "---------------------------> ai_addr:       " << it->second.addInfo->ai_addr << endl;
-        cout << "---------------------------> ai_protocol:   " << it->second.addInfo->ai_protocol << endl;
-        cout << "---------------------------> ai_flags:      " << it->second.addInfo->ai_flags << endl;
+        cout << "---------------------------> ai_addr:         " << it->second.addInfo->ai_addr << endl;
+        cout << "---------------------------> ai_protocol:     " << it->second.addInfo->ai_protocol << endl;
+        cout << "---------------------------> ai_flags:        " << it->second.addInfo->ai_flags << endl;
         cout << endl << "---------> locations:" << endl;
         map<string, location>::reverse_iterator locationIt;
         for (locationIt = it->second.locations.rbegin(); locationIt != it->second.locations.rend(); ++locationIt) {
             cout << "------------------> location   `" << locationIt->second.url << "`" << endl;
             if (locationIt->second.isRed == false)
-                cout << "---------------------------> alias:     " << locationIt->second.aliasRed << endl;
+                cout << "---------------------------> alias:       " << locationIt->second.aliasRed << endl;
             else
-                cout << "---------------------------> redir:     " << locationIt->second.aliasRed << endl;
-            cout << "---------------------------> Methods:   ";
+                cout << "---------------------------> Redirection: " << locationIt->second.aliasRed << endl;
+            cout << "---------------------------> Methods:     ";
             for (size_t k = 0; k < locationIt->second.methods.size(); ++k) {
                 cout << getMethods(locationIt->second.methods[k]);
                 if (k + 1 < locationIt->second.methods.size())
                     cout << ", ";
             }
             cout << endl;
-            cout << "---------------------------> index:     " << locationIt->second.index << endl;
-            cout << "---------------------------> uploads:   " << locationIt->second.uploads << endl;
-            cout << "---------------------------> autoIndex: " << (locationIt->second.autoIndex ? "True" : "False") << endl;
+            cout << "---------------------------> index:       " << locationIt->second.index << endl;
+            cout << "---------------------------> uploads:     " << locationIt->second.uploads << endl;
+            cout << "---------------------------> autoIndex:   " << (locationIt->second.autoIndex ? "True" : "False") << endl;
             if (!locationIt->second.cgis.empty())
                 cout << "---------------------------> Cgi Scripts:" << endl;
             map<string, string>::iterator cgiIt;

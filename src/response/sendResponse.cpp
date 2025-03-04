@@ -143,7 +143,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
     int     byteRead;
     if ((byteRead = read(s.cgi->rFd(), buff, BUFFER_SIZE)) < 0) {
         perror("read failed(sendResponse.cpp 152)");
-        throw(statusCodeException(500, "Internal Server Error"));
+        throw(statusCodeException(500, "Internal Server Error (read)"));
     }
     // cerr << buff << endl;
     if (byteRead > 0) {

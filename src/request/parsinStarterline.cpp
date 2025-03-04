@@ -42,8 +42,7 @@ void	httpSession::Request::reconstructUri() {
 			if (s.rules->isRed) {
 				s.statusCode = 301;
 				s.codeMeaning = "Moved Permanently";
-				//adding the location header to the response with the new path;
-				s.codeMeaning = s.rules->aliasRed;
+				s.returnedLocation = s.rules->aliasRed;
 				return ;
 			} else {
 				s.path.erase(s.path.begin(), s.path.begin()+s.rules->url.size()-1);
@@ -139,12 +138,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			{
 			case '/': {
 				string subUri = buffer.substr(i-len, len+1).cppstring();
-				if (s.config->locations.empty())
-					cerr << "`" + subUri + "`" << endl;
-				for (const auto& it : s.config->locations)
-					cerr << it.first << " | " << it.second.url << endl;
 				if (s.config->locations.find(subUri) != s.config->locations.end()) {
-					cout << "YEAGH\n";
 					s.rules = &(s.config->locations.at(subUri));
 				}
 				break;

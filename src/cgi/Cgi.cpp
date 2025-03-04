@@ -11,7 +11,7 @@ Cgi::~Cgi() {
 void	Cgi::createPipes() {
 	if (pipe(wPipe) < 0 || pipe(rPipe) < 0) {
 		perror("pipe failed");
-		throw(statusCodeException(500, "Internal Server Error"));
+		throw(statusCodeException(500, "Internal Server Error (pipe)"));
 	}
 }
 
@@ -85,7 +85,7 @@ void	Cgi::executeScript() {
 	}
 	delete []CGIEnvp;
 	perror("execve failed(cgi.cpp 102)");
-	throw(statusCodeException(500, "Internal Server Errorrr"));
+	throw(statusCodeException(500, "Internal Server Errorrr (execve)"));
 }
 
 void	Cgi::setupCGIProcess() {
@@ -94,14 +94,14 @@ void	Cgi::setupCGIProcess() {
 	pid = fork();
 	if (pid < 0) {
 		perror("fork failed");
-		throw(statusCodeException(500, "Internal Server Error"));
+		throw(statusCodeException(500, "Internal Server Error (fork)"));
 	}
 	else if(pid == 0) {
 		close(rPipe[0]);
 		close(wPipe[1]);
 		if (dup2(rPipe[1], STDOUT_FILENO) < 0 || dup2(wPipe[0], STDIN_FILENO) < 0) {
 			perror("dup2 failed");
-			throw(statusCodeException(500, "Internal Server Error"));
+			throw(statusCodeException(500, "Internal Server Error (dup2)"));
 		}
 		close(rPipe[1]);
 		close(wPipe[0]);

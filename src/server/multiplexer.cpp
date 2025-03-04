@@ -40,7 +40,7 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));
+			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));
 		}
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
@@ -48,7 +48,7 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	else if (status == cclosedcon) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));//this throw is not supposed to be here
+			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));//this throw is not supposed to be here
 		}
 		close(clientFd);
 		delete s[clientFd];
@@ -64,13 +64,13 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));
+			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));
 		}
 	}
 	else if (status == cclosedcon) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error"));//this throw is not supposed to be here
+			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));//this throw is not supposed to be here
 		}
 		close(clientFd);
 		delete s[clientFd];
@@ -84,13 +84,13 @@ void	acceptNewClient(const int& epollFd, const int& serverFd) {
 
 	if ((clientFd = accept(serverFd, NULL, NULL)) < 0) {
 		perror("accept faield: ");
-        throw(statusCodeException(500, "Internal Server Error"));//i can't send the error page//no fd to send to
+        throw(statusCodeException(500, "Internal Server Error (accept)"));//i can't send the error page//no fd to send to
     }
 	ev.events = EPOLLIN;
 	ev.data.fd = clientFd;
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
 		perror("epoll_ctl faield(setUpserver.cpp): ");
-		throw(statusCodeException(500, "Internal Server Error"));
+		throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));
 	}
 	// cerr << "		--------------new client added--------------" << endl;
 }
@@ -129,7 +129,6 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
-					cout << getsockname(fd) << endl;
 					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)])));
 					sessions[fd]->req.readfromsock(fd);
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->status());

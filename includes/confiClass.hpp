@@ -16,6 +16,7 @@ using namespace std;
 # include <cerrno>
 # include <arpa/inet.h>
 #include <netdb.h>
+#include "wrappers.h"
 
 enum  Ser1 {
 	LISTEN,		SERNAMES,

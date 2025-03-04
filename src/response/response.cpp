@@ -2,19 +2,21 @@
 
 httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), lastActivityTime(0) {}
 
+void	httpSession::Response::handelRedirection(const int clientFd) {
+    string response = "HTTP/1.1 301 Moved Permanently\n\r"
+                        "Content-Length: " + toString(34 + s.returnedLocation.size()) + "\n\r"
+                        "Content-Type: text/html; charset=utf-8\n\r"
+                        "Location: " + s.returnedLocation + "\n\r\n\r"
+                        "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n\r";
+
+    send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+    s.sstat = done;
+    lastActivityTime = time(NULL);
+}
+
 time_t	httpSession::Response::handelClientRes(const int clientFd) {
     if (!s.returnedLocation.empty()) {
-        // Response:
-        string response = "HTTP/1.1 301 Moved Permanently\n\r"
-                           "Content-Length: " + toString(34+s.returnedLocation.size()) + "\n\r"
-                           "Content-Type: text/html; charset=utf-8\n\r"
-                           "Location: " + s.returnedLocation + "\n\r\n\r"
-                           "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n\r";
-
-        cout << "response--->" << response << endl;
-        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
-        s.sstat = done;
-        lastActivityTime = time(NULL);      // for timeout
+        handelRedirection(clientFd);
     }
     else if(s.cgi) {
 		if (s.sstat == sHeader) {
@@ -28,15 +30,12 @@ time_t	httpSession::Response::handelClientRes(const int clientFd) {
 	} else {
 		struct stat file_stat;
 
-        if (stat(s.path.c_str(), &file_stat) == -1) {
-			throw (statusCodeException(500, "Internal Server Error"));
-		}
-		else if (file_stat.st_size < BUFFER_SIZE) {
+        if (stat(s.path.c_str(), &file_stat) == -1)
+			throw (statusCodeException(500, "Internal Server Error (stat)"));
+		else if (file_stat.st_size < BUFFER_SIZE)
 			sendRes(clientFd, true, file_stat);
-		}
-		else {
+		else
 			sendRes(clientFd, false, file_stat);
-		}
 	}
     if (s.headers["connection"] != "keep-alive")
         return -1;
