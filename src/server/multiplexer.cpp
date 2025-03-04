@@ -129,6 +129,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
+					cout << getsockname(fd) << endl;
 					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)])));
 					sessions[fd]->req.readfromsock(fd);
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->status());

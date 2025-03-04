@@ -59,6 +59,7 @@ private:
 	map<string, string>	headers;
 	int					statusCode;
 	string				codeMeaning;
+	string				returnedLocation;
 	Cgi*				cgi;
 	location*			rules;
 public:

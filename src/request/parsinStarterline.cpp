@@ -33,46 +33,48 @@ void	httpSession::Request::isCGI() {
 void	httpSession::Request::reconstructUri() {
 	struct stat pathStat;
 
+	s.codeMeaning = "";
 	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
 	switch (s.method)
 	{
-	case GET: {
-		if (s.rules->isRed) {
-			s.statusCode = 301;
-			s.codeMeaning = "Moved Permanently";
-			//adding the location header to the response with the new path;
-			return ;
-		} else {
-			s.path.erase(s.path.begin(), s.path.begin()+s.rules->url.size()-1);
-			s.path = s.rules->aliasRed + s.path;
-		}
-		s.path = w_realpath(("." + s.path).c_str());
-		stat(s.path.c_str(), &pathStat);
-		if (S_ISDIR(pathStat.st_mode)) {
-			s.path += "/" + s.rules->index;
-			if (stat(s.path.c_str(), &pathStat))
-				throw(statusCodeException(404, "Not Found"));
-		}
-		break;
-	}
-	case POST: {
-		if (!s.rules->uploads.empty()) {
-			s.path = s.rules->uploads;
-			s.path.erase(s.path.end()-1);
+		case GET: {
+			if (s.rules->isRed) {
+				s.statusCode = 301;
+				s.codeMeaning = "Moved Permanently";
+				//adding the location header to the response with the new path;
+				s.codeMeaning = s.rules->aliasRed;
+				return ;
+			} else {
+				s.path.erase(s.path.begin(), s.path.begin()+s.rules->url.size()-1);
+				s.path = s.rules->aliasRed + s.path;
+			}
 			s.path = w_realpath(("." + s.path).c_str());
-			if (stat(s.path.c_str(), &pathStat) && !S_ISDIR(pathStat.st_mode))
+			stat(s.path.c_str(), &pathStat);
+			if (S_ISDIR(pathStat.st_mode)) {
+				s.path += "/" + s.rules->index;
+				if (stat(s.path.c_str(), &pathStat))
+					throw(statusCodeException(404, "Not Found"));
+			}
+			break;
+		}
+		case POST: {
+			if (!s.rules->uploads.empty()) {
+				s.path = s.rules->uploads;
+				s.path.erase(s.path.end()-1);
+				s.path = w_realpath(("." + s.path).c_str());
+				if (stat(s.path.c_str(), &pathStat) && !S_ISDIR(pathStat.st_mode))
+					throw(statusCodeException(403, "Forbidden"));
+			} else
 				throw(statusCodeException(403, "Forbidden"));
-		} else
-			throw(statusCodeException(403, "Forbidden"));
-		break;
-	}
-	case DELETE: {
-		if (!s.rules->uploads.empty()) {
-			// s.path = s.rules->uploads + s.path;
-			s.path = w_realpath(("." + s.path).c_str());
-		} else
-			throw(statusCodeException(403, "Forbidden"));
+			break;
+		}
+		case DELETE: {
+			if (!s.rules->uploads.empty()) {
+				// s.path = s.rules->uploads + s.path;
+				s.path = w_realpath(("." + s.path).c_str());
+			} else
+				throw(statusCodeException(403, "Forbidden"));
 		}
 	}
 	isCGI();
@@ -137,8 +139,14 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			{
 			case '/': {
 				string subUri = buffer.substr(i-len, len+1).cppstring();
-				if (s.config->locations.find(subUri) != s.config->locations.end())
+				if (s.config->locations.empty())
+					cerr << "`" + subUri + "`" << endl;
+				for (const auto& it : s.config->locations)
+					cerr << it.first << " | " << it.second.url << endl;
+				if (s.config->locations.find(subUri) != s.config->locations.end()) {
+					cout << "YEAGH\n";
 					s.rules = &(s.config->locations.at(subUri));
+				}
 				break;
 			}
 			case '?': {

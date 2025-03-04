@@ -379,7 +379,7 @@ void ConfigFileParser::printprint() {
         cout << endl << "---------> locations:" << endl;
         map<string, location>::reverse_iterator locationIt;
         for (locationIt = it->second.locations.rbegin(); locationIt != it->second.locations.rend(); ++locationIt) {
-            cout << "------------------> location   " << locationIt->second.url << endl;
+            cout << "------------------> location   `" << locationIt->second.url << "`" << endl;
             if (locationIt->second.isRed == false)
                 cout << "---------------------------> alias:     " << locationIt->second.aliasRed << endl;
             else

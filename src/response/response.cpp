@@ -3,7 +3,20 @@
 httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), lastActivityTime(0) {}
 
 time_t	httpSession::Response::handelClientRes(const int clientFd) {
-    if(s.cgi) {
+    if (!s.returnedLocation.empty()) {
+        // Response:
+        string response = "HTTP/1.1 301 Moved Permanently\n\r"
+                           "Content-Length: " + toString(34+s.returnedLocation.size()) + "\n\r"
+                           "Content-Type: text/html; charset=utf-8\n\r"
+                           "Location: " + s.returnedLocation + "\n\r\n\r"
+                           "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n\r";
+
+        cout << "response--->" << response << endl;
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+        s.sstat = done;
+        lastActivityTime = time(NULL);      // for timeout
+    }
+    else if(s.cgi) {
 		if (s.sstat == sHeader) {
 			sendCgiStarterLine(clientFd);
 			if (s.sstat == cclosedcon)
