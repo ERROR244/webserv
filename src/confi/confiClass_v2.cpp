@@ -12,20 +12,61 @@ int checkKey(const string& key, const string& line) {
     return (key.size());
 }
 
+#include <iostream>
+#include <stdexcept>  // For std::invalid_argument and std::out_of_range
+#include <climits>    // For INT_MAX and INT_MIN
+#include <cctype>     // For isdigit() and isspace()
+
+int my_stoi(const std::string &str, size_t *pos = 0, int base = 10) {
+    if (base != 10)
+        throw std::invalid_argument("stoi only supports base 10");
+
+    size_t i = 0;
+    int sign = 1;
+    long result = 0;
+
+    while (i < str.length() && isspace(str[i]))
+        i++;
+
+    if (i >= str.length())
+        throw std::invalid_argument("stoi: no conversion could be performed");
+  
+    if (str[i] == '-' || str[i] == '+') {
+        if (str[i] == '-')
+            sign = -1;
+        i++;
+    }
+  
+    if (i >= str.length() || !isdigit(str[i]))
+        throw std::invalid_argument("stoi: no valid digits found");
+
+    size_t startPos = i;
+    while (i < str.length() && isdigit(str[i])) {
+        int digit = str[i] - '0';
+        if (result > (INT_MAX - digit) / 10)
+            throw std::out_of_range("stoi: integer overflow");
+        result = result * 10 + digit;
+        i++;
+    }
+    if (pos)
+        *pos = (i > startPos) ? i : 0;
+    return static_cast<int>(sign * result);
+}
+
 int ft_stoi(const std::string &__str) {
     try {
-        int res = stoi(__str);
+        int res = my_stoi(__str);
         return (res);
     }
     catch (exception& e) {
+        cout << e.what() << endl;
         throw std::runtime_error("unvalid number: `" + __str + "`");
     }
 }
 
 bool isNumber(const std::string& str) {  
-    for (char c : str) {
-        int v = c;
-        if (!(c >= 48 && c <= 57)) {
+    for (int i = 0; i < str.size(); ++i) {
+        if (!(str[i] >= 48 && str[i] <= 57)) {
             return false;
         }
     }
@@ -169,7 +210,9 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
 
     line = trim(line.substr(i));
     if (line == "*" || line.empty()) {
-        kv.methods = {GET, DELETE, POST};
+        kv.methods.push_back(GET);
+        kv.methods.push_back(POST);
+        kv.methods.push_back(DELETE);
         return ;
     }
     while (true) {
@@ -292,8 +335,11 @@ void checkLocation(location& kv, int (&locationsFunc)[6]) {
             kv.isRed = false;
             kv.aliasRed = "/";
         }
-        else if (i == 1)
-            kv.methods = {GET, POST, DELETE};
+        else if (i == 1){
+            kv.methods.push_back(GET);
+            kv.methods.push_back(POST);
+            kv.methods.push_back(DELETE);
+        }
         else if (i == 2)
             kv.index = "index.html";
         else if (i == 3)

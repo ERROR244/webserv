@@ -98,7 +98,7 @@ string getMapName(configuration &kv) {
 }
 
 map<string, configuration> ConfigFileParser::parseFile() {
-    ifstream    sFile(file);
+    ifstream    sFile(file.c_str());
     string      line;
     string      key;
 	int			serverFunc[5];

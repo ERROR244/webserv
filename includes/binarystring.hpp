@@ -18,7 +18,7 @@ public:
 		const std::string msg;
 	public:
 		virtual const char* what() const throw();
-		virtual ~bstringExceptions();
+		virtual ~bstringExceptions();	// throw();
 		bstringExceptions(std::string);
 	};
 

@@ -2,6 +2,13 @@
 
 httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), sstat(e_sstat::method), cgi(NULL), rules(NULL), statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
 
+// httpSession::httpSession(int clientFd, configuration* config)
+//     : config(config), req(*this), res(*this), sstat(e_sstat::method), cgi(NULL), rules(NULL) {
+//     statusCode = 200;
+//     codeMeaning = "OK";
+//     cookieSeted = false;
+// }
+
 httpSession::httpSession() : config(NULL), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
 
 const e_sstat& httpSession::status() const {
@@ -14,7 +21,7 @@ void	httpSession::reSetPath(const string& newPath) {
 
 void	sendError(const int clientFd, const int statusCode, const string codeMeaning) {
 	string msg;
-	msg += "HTTP/1.1 " + to_string(statusCode) + " " + codeMeaning + "\r\n"; 
+	msg += "HTTP/1.1 " + toString(statusCode) + " " + codeMeaning + "\r\n"; 
 	msg += "Content-type: text/html\r\n";
 	msg += "Transfer-Encoding: chunked\r\n";
 	msg += "Connection: close\r\n";
@@ -129,7 +136,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
-					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)])));
+					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)]))); // insert
 					sessions[fd]->req.readfromsock(fd);
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->status());
 				}

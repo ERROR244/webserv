@@ -1,9 +1,10 @@
 #include "wrappers.h"
+#include <cerrno>
 
 string	w_realpath(const char * file_name) {
 	char absolutePath[1024];
 
-	if (realpath(file_name, absolutePath) == nullptr)
+	if (!realpath(file_name, absolutePath))
 		throw(statusCodeException(404, "Not Found"));
 	return string(absolutePath);
 }

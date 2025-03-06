@@ -1,4 +1,3 @@
-#include <random>
 #include <sstream>
 #include "httpSession.hpp"
 
@@ -25,12 +24,11 @@ void setCookie(string& sessionId, const string& cookieId) {
 
 string generateSessionID() {
     stringstream ss;
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<> dist(0, 15);
+    srand(time(0));
 
     for (int i = 0; i < 32; ++i) {
-        ss << hex << dist(gen);
+        int randomValue = rand() % 16;
+        ss << hex << randomValue;
     }
     return ss.str();
 }

@@ -1,6 +1,10 @@
 #include "cgi.hpp"
 
-Cgi::Cgi(const cgiInfo& infos): infos(infos), rPipe{-1}, wPipe{-1}{
+Cgi::Cgi(const cgiInfo& infos): infos(infos) {
+	rPipe[0] = -1;
+	rPipe[1] = -1;
+	wPipe[0] = -1;
+	wPipe[1] = -1;
 	createPipes();
 }
 
