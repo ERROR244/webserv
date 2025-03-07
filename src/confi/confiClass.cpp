@@ -48,7 +48,7 @@ void checkServer(configuration& kv, int (&serverFunc)[5]) {
         else if (i == 4) {
 			location defaultLoc;
 			checkLocation(defaultLoc, locationsFunc);
-			defaultLoc.url = "/";
+			defaultLoc.uri = "/";
 			kv.locations["/"] = defaultLoc;
 		}
     }

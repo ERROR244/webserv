@@ -14,23 +14,6 @@ void signalHandler( int signum ) {
    exit(signum);
 }
 
-void getConfi(char *fileName, map<string, configuration>& config, int& epollFd, vector<int> &serverFds) {
-    try {
-        ConfigFileParser confi(fileName);
-        config = confi.parseFile();
-        // confi.printprint();
-        epollFd = createSockets(config, serverFds);
-    }
-    catch (const exception& e) {
-        cerr << e.what() << endl;
-        exit(-1);
-    }
-    catch (...) {
-        cerr << "ERROR" << endl;
-        exit(-1);
-    }
-}
-
 int main(int ac, char **av) {
     map<string, configuration> config;
     vector<int> serverFds;
@@ -42,13 +25,20 @@ int main(int ac, char **av) {
         //config file
         disableEchoCtrl();
         signal(SIGINT, signalHandler);
-        getConfi(av[1], config, epollFd, serverFds);       
         //multiplexer
         try {
-            multiplexerSytm(serverFds, epollFd, config);
+            ConfigFileParser confi(av[1]);
+            config = confi.parseFile();
+            confi.printprint();
+            epollFd = createSockets(config, serverFds);     
+            while (1) {                                                 //this loop is here if epoll fd somehow got closed and epoll wait fails and i have to create and instance of epoll fd;
+                multiplexerSytm(serverFds, epollFd, config);
+                epollFd = startEpoll(serverFds);
+            }
         }
-        catch (...) {
-            cerr << "server error" << endl;
+        catch (const exception& msg) {
+            cerr << msg.what() << endl;
+            return -1;
         }
 	}
     return 0;

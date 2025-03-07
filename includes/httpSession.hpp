@@ -14,7 +14,6 @@
 #include "wrappers.h"
 #include "confiClass.hpp"
 #include "binarystring.hpp"
-#include "stringManipulation.h"
 #include "statusCodeException.hpp"
 #include <ctime>
 
@@ -35,9 +34,7 @@ enum e_sstat {//session stat
 	filedName,
 	fieldNl,
 	emptyline,
-	bodyFormat,
-	contentLengthBased,
-	transferEncodingChunkedBased,
+	body,
 	sHeader,
 	sBody,
 	done,
@@ -45,49 +42,57 @@ enum e_sstat {//session stat
 };
 
 enum e_requestStat {
-	headers,
-	body,
+	headers=0,
+	bodyFormat,
+	handleBody,
 };
 
 class httpSession {
 private:
+	const int			clientFd;
 	e_sstat				sstat;
-	eMethods			method;
+	e_methods			method;
 	string				path;
 	string				query;
-	string				httpProtocole;
 	map<string, string>	headers;
+	configuration*		config;
+	location*			rules;
+	Cgi*				cgi;
+	bstring				cgiBody;
 	int					statusCode;
 	string				codeMeaning;
 	string				returnedLocation;
-	Cgi*				cgi;
-	location*			rules;
+
 public:
-class Request {
+	class Request {
 	private:
 		httpSession&	s;
 		e_requestStat	requestStat;
+		void			(httpSession::Request::*bodyHandlerFunc)(const bstring&, size_t);
 		bstring			remainingBody;
 		string			boundary;
 		size_t			length;
 		int				fd;
 
 		int				parseStarterLine(const bstring& buffer);
-		int				parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
-		void			parseBody(const bstring& buffer, size_t pos);
+		void			contentlength(const bstring&, size_t);
+		void			unchunkBody(const bstring&, size_t);
+		void			bufferTheBody(const bstring&, size_t);
+		void			bodyFormat();
 		void			isCGI();
 		void			reconstructUri();
 	public:
-		void			readfromsock(const int clientFd);
+		void			readfromsock();
 		Request(httpSession& session);
 	};
 
 	class Response {
 	private:
+		httpSession&	s;
 		int				contentFd;
+		bool			cgiHeadersParsed;
 		bool			headerSended;
 		time_t      	lastActivityTime;
-		httpSession&	s;
 		
 		static string		getSupportedeExtensions(const string&);
 		void				sendCgiStarterLine(const int);
@@ -108,12 +113,14 @@ class Request {
 
 	Request		req;
 	Response	res;
-	configuration*		config;
 
 	httpSession(int clientFd, configuration* confi);
 	httpSession();
 
-	const e_sstat&	status() const;
+	int				parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
+	configuration*		clientConfiguration() const;
+	int					fd() const;
+	const e_sstat&		status() const;
 	void				reSetPath(const string& newPath);
 	map<string, string>	getHeaders() { return headers; }
 

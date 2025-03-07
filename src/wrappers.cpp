@@ -16,6 +16,17 @@ string toString(const int& nbr) {
     return (oss.str());
 }
 
+int w_stoi(const string& snum) {
+    int num;
+    try {
+        num = stoi(snum);//it will throw incase of invalid arg
+    } catch (...) {
+        perror("stoi failed");
+        throw(statusCodeException(400, "Bad Request"));
+    }
+    return num;
+}
+
 string getsockname(int clientFd) {
     struct sockaddr_in addr;
     socklen_t addrLen = sizeof(addr);

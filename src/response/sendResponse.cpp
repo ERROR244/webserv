@@ -129,32 +129,3 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
         lastActivityTime = time(NULL);      // for timeout
     }
 }
-
-void    httpSession::Response::sendCgiStarterLine(const int clientFd) {
-    string starterLine = s.httpProtocole + " " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n";
-    if (write(clientFd, starterLine.c_str(), starterLine.size()) <= 0) {
-		perror("write failed(sendResponse.cpp 143)");
-		s.sstat = cclosedcon;
-	}
-}
-
-void    httpSession::Response::sendCgiOutput(const int clientFd) {
-    char    buff[BUFFER_SIZE+1] = {0};
-    int     byteRead;
-    if ((byteRead = read(s.cgi->rFd(), buff, BUFFER_SIZE)) < 0) {
-        perror("read failed(sendResponse.cpp 152)");
-        throw(statusCodeException(500, "Internal Server Error (read)"));
-    }
-    // cerr << buff << endl;
-    if (byteRead > 0) {
-        if (write(clientFd, buff, byteRead) <= 0) {
-			perror("write failed(sendResponse.cpp 157)");
-			s.sstat = cclosedcon;
-			return ;
-		}
-    } else {
-        s.sstat = done;
-		close(s.cgi->rFd());
-		// cerr << "done sending response" << endl;
-    }
-}

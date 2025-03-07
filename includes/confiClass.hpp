@@ -30,7 +30,7 @@ enum  Ser2 {
 	CGI,		UPLOADS
 };
 
-enum eMethods {
+enum e_methods {
 	GET,
 	DELETE,
 	POST,
@@ -39,13 +39,13 @@ enum eMethods {
 
 
 struct location {
-	string				url;
-	string				aliasRed;
+	string				uri;
+	string				reconfigurer;
 	string				index;
 	string				uploads;
-	vector<eMethods>	methods;
+	vector<e_methods>	methods;
 	map<string, string>	cgis;
-	bool				isRed;
+	bool				redirection;
 	bool				autoIndex;
 };
 
@@ -90,9 +90,9 @@ void		handleHost(string& line, configuration& kv, ifstream& sFile);
 void		handleLocs(string& line, configuration& kv, ifstream& sFile);
 void		handleUploads(string& line, location& kv, ifstream& sFile);
 void		checkLocation(location& kv, int (&locationsFunc)[6]);
-eMethods	getMethods(const string& method);
+e_methods	getMethods(const string& method);
 bool		checkRule(string s1, string s2);
-string		getMethods(eMethods method);
+string		getMethods(e_methods method);
 string  	trim(const string& str);
 
 #endif

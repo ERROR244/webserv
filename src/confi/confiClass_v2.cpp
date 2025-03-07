@@ -172,19 +172,19 @@ void handleAliasRed(string& line, location& kv, ifstream& sFile) {
     int i;
     
     if (line[0] == 'a') {
-        kv.isRed = false;
+        kv.redirection = false;
         i = checkKey("alias:", line);
     }
     else {
-        kv.isRed = true;
+        kv.redirection = true;
         i = checkKey("return:", line);
     }
-    kv.aliasRed = trim(line.substr(i));
-    if (kv.aliasRed.empty())
+    kv.reconfigurer = trim(line.substr(i));
+    if (kv.reconfigurer.empty())
         throw std::runtime_error("location alias can't be empty");
 }
 
-eMethods getMethods(const string& method) {
+e_methods getMethods(const string& method) {
     if (method == "GET")
         return GET;
     else if (method == "DELETE")
@@ -194,7 +194,7 @@ eMethods getMethods(const string& method) {
     return NONE;
 }
 
-string getMethods(eMethods method) {
+string getMethods(e_methods method) {
     if (method == GET)
         return "GET";
     else if (method == DELETE)
@@ -332,8 +332,8 @@ void checkLocation(location& kv, int (&locationsFunc)[6]) {
         if (locationsFunc[i] == -1)
             continue;
         else if (i == 0) {
-            kv.isRed = false;
-            kv.aliasRed = "/";
+            kv.redirection = false;
+            kv.reconfigurer = "/";
         }
         else if (i == 1){
             kv.methods.push_back(GET);
@@ -360,7 +360,7 @@ location handleLocation(ifstream& sFile, string line) {
     location    kv;
     int         index;
 
-    kv.url = line;
+    kv.uri = line;
     while (getline(sFile, line)) {
         line = trim(line);
         if (line == "}") {
@@ -399,7 +399,7 @@ void handleLocs(string& line, configuration& kv, ifstream& sFile) {
         }
         else {
             rt = handleLocation(sFile, url);
-            kv.locations[rt.url] = rt;
+            kv.locations[rt.uri] = rt;
         }
     }
     throw std::runtime_error("`}` is expected at the end of each rule");
@@ -434,11 +434,11 @@ void ConfigFileParser::printprint() {
         cout << endl << "---------> locations:" << endl;
         map<string, location>::reverse_iterator locationIt;
         for (locationIt = it->second.locations.rbegin(); locationIt != it->second.locations.rend(); ++locationIt) {
-            cout << "------------------> location   `" << locationIt->second.url << "`" << endl;
-            if (locationIt->second.isRed == false)
-                cout << "---------------------------> alias:       " << locationIt->second.aliasRed << endl;
+            cout << "------------------> location   `" << locationIt->second.uri << "`" << endl;
+            if (locationIt->second.redirection == false)
+                cout << "---------------------------> alias:       " << locationIt->second.reconfigurer << endl;
             else
-                cout << "---------------------------> Redirection: " << locationIt->second.aliasRed << endl;
+                cout << "---------------------------> Redirection: " << locationIt->second.reconfigurer << endl;
             cout << "---------------------------> Methods:     ";
             for (size_t k = 0; k < locationIt->second.methods.size(); ++k) {
                 cout << getMethods(locationIt->second.methods[k]);

@@ -1,15 +1,21 @@
 #include "server.h"
 
-httpSession::httpSession(int clientFd, configuration* config) : config(config), req(Request(*this)), res(Response(*this)), sstat(e_sstat::method), cgi(NULL), rules(NULL), statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
+httpSession::httpSession(int clientFd, configuration* config)
+	: clientFd(clientFd), config(config), req(Request(*this)), res(Response(*this))
+	, sstat(e_sstat::method), cgi(NULL), rules(NULL), statusCode(200)
+	, codeMeaning("OK") {}
 
-// httpSession::httpSession(int clientFd, configuration* config)
-//     : config(config), req(*this), res(*this), sstat(e_sstat::method), cgi(NULL), rules(NULL) {
-//     statusCode = 200;
-//     codeMeaning = "OK";
-//     cookieSeted = false;
-// }
+httpSession::httpSession()
+	: clientFd(clientFd), config(NULL), req(Request(*this)), res(Response(*this))
+	, cgi(NULL), sstat(e_sstat::method), statusCode(200), codeMeaning("OK") {}
 
-httpSession::httpSession() : config(NULL), req(Request(*this)), res(Response(*this)), cgi(NULL), statusCode(200), codeMeaning("OK"), cookieSeted(false) {}
+configuration*	httpSession::clientConfiguration() const {
+	return config;
+}
+
+int	httpSession::fd() const {
+	return clientFd;
+}
 
 const e_sstat& httpSession::status() const {
 	return sstat;
@@ -19,25 +25,6 @@ void	httpSession::reSetPath(const string& newPath) {
 	path = newPath;
 }
 
-void	sendError(const int clientFd, const int statusCode, const string codeMeaning) {
-	string msg;
-	msg += "HTTP/1.1 " + toString(statusCode) + " " + codeMeaning + "\r\n"; 
-	msg += "Content-type: text/html\r\n";
-	msg += "Transfer-Encoding: chunked\r\n";
-	msg += "Connection: close\r\n";
-	msg += "Server: bngn/0.1\r\n";
-	msg += "\r\n";
-	write(clientFd, msg.c_str(), msg.size());
-	string body = "<!DOCTYPE html><html><body><h1>" + codeMeaning + "</h1></body></html>";
-	ostringstream chunkSize;
-	chunkSize << hex << body.size() << "\r\n";
-	write(clientFd, chunkSize.str().c_str(), chunkSize.str().size());
-	write(clientFd, body.c_str(), body.size());
-	write(clientFd, "\r\n", 2);
-	write(clientFd, "0\r\n\r\n", 5);
-}
-
-
 void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession*>& s, const e_sstat& status) {
 	struct epoll_event	ev;
 
@@ -45,18 +32,15 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		cerr << "done sending the response" << endl;
 		ev.events = EPOLLIN;
 		ev.data.fd = clientFd;
-		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
-			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));
-		}
+		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1)
+			perror("epoll_ctl failed");
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
 	else if (status == cclosedcon) {
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
-			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));//this throw is not supposed to be here
-		}
+		cerr << "client closed the connection" << endl;
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
+			perror("epoll_ctl failed");
 		close(clientFd);
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
@@ -70,15 +54,14 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		ev.events = EPOLLOUT;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
-			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));
+			perror("epoll_ctl failed");
+			throw(statusCodeException(500, "Internal Server Error"));
 		}
 	}
 	else if (status == cclosedcon) {
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
-			perror("epoll_ctl failed: ");
-			throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));//this throw is not supposed to be here
-		}
+		cerr << "client closed the connection" << endl;
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
+			perror("epoll_ctl failed");
 		close(clientFd);
 		delete s[clientFd];
 		s.erase(s.find(clientFd));
@@ -90,16 +73,17 @@ void	acceptNewClient(const int& epollFd, const int& serverFd) {
 	int					clientFd;
 
 	if ((clientFd = accept(serverFd, NULL, NULL)) < 0) {
-		perror("accept faield: ");
-        throw(statusCodeException(500, "Internal Server Error (accept)"));//i can't send the error page//no fd to send to
+		perror("accept faield");
+        return;
     }
 	ev.events = EPOLLIN;
 	ev.data.fd = clientFd;
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
-		perror("epoll_ctl faield(setUpserver.cpp): ");
-		throw(statusCodeException(500, "Internal Server Error (epoll_ctl)"));
+		perror("epoll_ctl faield");
+		close(clientFd);
+		return;
 	}
-	// cerr << "		--------------new client added--------------" << endl;
+	cerr << "--------------new client added--------------" << endl;
 }
 
 bool checkTimeOutForEachUsr(std::map<int, time_t> &timeOut) {
@@ -119,25 +103,37 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 	map<string, string>					sessionStorage;
 	map<int, time_t>					timeOut;
 	int									nfds;
+
 	cerr << "Started the server..." << endl;
 	while (1) {
-		if (checkTimeOutForEachUsr(timeOut) == true) {
-			continue ;
-		}
-		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
-			//send the internal error page to all current clients
-			//close all connections and start over
-			perror("epoll_wait failed(setUpserver.cpp): ");
+		// if (checkTimeOutForEachUsr(timeOut) == true) {
+		// 	continue ;
+		// }
+		// if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
+		// 	//send the internal error page to all current clients
+		// 	//close all connections and start over
+		// 	perror("epoll_wait failed(setUpserver.cpp): ");
+		// }
+		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1)) == -1) {
+			perror("epoll_wait failed");
+			if (errno == EBADF || errno == ENOMEM) {
+				//close all client's connections
+				// for (map<int, httpSession*>::iterator it = sessions.begin(); it != sessions.end(); ++it) {
+				// }
+				close(epollFd);
+				return;
+			}
+			continue;
 		}
 		for (int i = 0; i < nfds; ++i) {
-			int fd = events[i].data.fd;
+			const int fd = events[i].data.fd;
 			try {
 				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end()) {
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
 					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)]))); // insert
-					sessions[fd]->req.readfromsock(fd);
+					sessions[fd]->req.readfromsock();
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->status());
 				}
 				else if (events[i].events & EPOLLOUT) {
@@ -150,25 +146,8 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				}
 			}
 			catch (const statusCodeException& exception) {
-				struct epoll_event	ev;
-				cerr << "code--> " << exception.code() << endl;
-				cerr << "reason--> " << exception.meaning() << endl;
-				if (false && sessions[fd]->config->errorPages.find(exception.code()) != sessions[fd]->config->errorPages.end()) {
-					sessions[fd]->reSetPath(w_realpath(("." + sessions[fd]->config->errorPages.at(exception.code())).c_str()));
-					ev.events = EPOLLOUT;
-					ev.data.fd = fd;
-					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
-						perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
-					}
-				} else {
-					sendError(fd, exception.code(), exception.meaning());
-					ev.events = EPOLLIN;
-					ev.data.fd = fd;
-					if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1) {
-						perror("epoll_ctl faield(setUpserver.cpp): "); exit(-1);
-					}
+				if (errorResponse(epollFd, exception, sessions[fd]) < 0)
 					sessions.erase(sessions.find(fd));
-				}
 			}
 		}
 	}

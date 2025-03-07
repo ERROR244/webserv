@@ -1,6 +1,6 @@
 #include "httpSession.hpp"
 
-httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), lastActivityTime(0) {}
+httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), lastActivityTime(0), cgiHeadersParsed(false) {}
 
 void	httpSession::Response::handelRedirection(const int clientFd) {
     string response = "HTTP/1.1 301 Moved Permanently\n\r"
@@ -20,13 +20,12 @@ time_t	httpSession::Response::handelClientRes(const int clientFd) {
     }
     else if(s.cgi) {
 		if (s.sstat == sHeader) {
-			sendCgiStarterLine(clientFd);
-			if (s.sstat == cclosedcon)
-				return -1;
-			s.sstat = sBody;
+			s.cgi->prepearingCgiEnvVars(s.headers);
 			s.cgi->setupCGIProcess();
+			s.sstat = sBody;
 		}
 		sendCgiOutput(clientFd);
+        //incase of client closin the connection what will you do
 	} else {
 		struct stat file_stat;
 
@@ -68,7 +67,7 @@ string httpSession::Response::deleteDir(const string& dir, const string& connect
     else {
         response += "HTTP/1.1 204 No Content\r\n";
         response += "Content-Type: text/html\r\n";
-        response += "Content-Length: 134\r\n";
+        response += "Content-Length: 0\r\n";
         response += "Connection: " + (connection.empty() ? "close" : connection);
         response += "\r\n\r\n";
     }
@@ -114,6 +113,13 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
     }
     if (s.method == POST) {
         // cout << "POST method called on " << s.path << endl;
+        string response;
+        response += "HTTP/1.1 204 No Content\r\n";
+        // response += "Content-Type: text/html\r\n";
+        response += "content-length: 0\r\n";
+        response += "Connection: " + (s.getHeaders()["connection"].empty() ? "close" : s.getHeaders()["connection"]) + "\r\n\r\n";
+        cout << "HERE: " << response << endl;
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
         lastActivityTime = time(NULL);
         s.sstat = done;
     }
