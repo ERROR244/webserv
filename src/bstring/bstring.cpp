@@ -70,7 +70,7 @@ vector<bstring>	bstring::split(const char* seperator) const {
 bstring	bstring::substr(size_t start, size_t len) const {
 	size_t	i = 0;
 
-	if (__string == NULL || start >= stringsize || len == start)
+	if (__string == NULL || start >= stringsize)
 		return bstring();//default constructer just like returning NULL;
 	if (len > stringsize - start || len == std::string::npos)
 		len = stringsize - start;
@@ -81,37 +81,6 @@ bstring	bstring::substr(size_t start, size_t len) const {
 	}
 	return bstring(substring, len);
 }
-
-// bool	bstring::getheaderline(bstring& line) {
-// 	char	ch;
-// 	bool	br = false;
-// 	for (size_t i = 0; i < stringsize; ++i) {
-// 		ch = __string[i];
-// 		switch (static_cast<int>(ch))
-// 		{
-// 		case 10: {
-// 			if (br == true)
-// 				line = substr(0, i-1);
-// 			else
-// 				line = substr(0, i);
-// 			erase(0, i+1);
-// 			return true;
-// 		}
-// 		case 13: {
-// 			if (br == false) {
-// 				br = true;
-// 				break;
-// 			}
-// 		}
-// 		default:
-// 			if (br)
-// 				throw(statusCodeException(400, "Bad Request"));
-// 		}
-// 	}
-// 	line = substr(0);
-// 	erase(0, std::string::npos);
-// 	return false;
-// }
 
 bool	bstring::getline(bstring& line) {
 	char	ch;

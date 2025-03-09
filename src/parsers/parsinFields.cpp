@@ -6,7 +6,6 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 	size_t	headerFieldsLen = 0;
 	string	fieldline;
 	char	ch;
-
 	while (pos < size) {
 		ch = buffer[pos];
 		switch (sstat)
@@ -26,7 +25,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 				break;
 			default: {
 				if (!iswalnum(ch))
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request2"));
 			}
 			}
 			++len;
@@ -79,7 +78,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		}
 		case e_sstat::fieldNl: {
 			if (ch != '\n')
-				throw(statusCodeException(400, "Bad Request"));
+				throw(statusCodeException(400, "Bad Request3"));
 			sstat = e_sstat::emptyline;
 			len = 0;
 			break;
@@ -89,7 +88,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			{
 			case '\r': {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request4"));
 				break;
 			}
 			case '\n': {
@@ -104,13 +103,13 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 				}
 				cerr << "----headers----" << endl;
 				for (const auto& it : headers)
-					cerr << it.first << ": " << it.second << endl;
-				cerr << "----headers----" << endl;
+					cerr << it.first << ": " << it.second << "|" <<  endl;
+				cerr << "--------------" << endl;
 				return pos+1;
 			}
 			default: {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request5"));
 				sstat = e_sstat::fieldLine;
 				len = 0;
 				continue;
@@ -124,6 +123,5 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		if (++headerFieldsLen > HEADER_FIELD_MAXSIZE)
 			throw(statusCodeException(431, "Request Header Fields Too Large"));
 	}
-	throw(statusCodeException(400, "Bad Request"));
 	return -1;
 }

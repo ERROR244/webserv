@@ -53,73 +53,92 @@ static int	openFile(const string& value, const string& path) {
 	return fd;
 }
 
-void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
-	size_t	len = 0;
-	size_t	contentStartinPos = pos;
-	size_t	size = buffer.size();
+static bool	roundedByNl(const bstring& buffer, const size_t start, const size_t len) {
+	// cerr << "is correct boundary" << endl;
 	char	ch;
-	
-	while (pos < size) {
-		ch = buffer[pos];
-		if (ch == '\n') {
-			bool	crInLine = false;
 
-			if (pos && buffer[pos-1] == '\r')
-				crInLine = true;
-			if (!buffer.ncmp(boundary.c_str(), len-crInLine, pos-len)) {
-				size_t				newPos;
-				size_t				boundaryStartinIndex = pos-len;
+	if (start && buffer[start-1] != '\n')
+		return false;
+	for (size_t i = start+len; i < buffer.size(); ++i) {
+		ch = buffer[i];
+		// cerr << (int)ch << endl;
+		switch (ch)
+		{
+		case '\r': {
+			if (i != start+len)
+				return false;
+			break;
+		}
+		case '\n':
+			return i+1;
+		default:
+			return false;
+		}
+	}
+	return true;
+}
+
+void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
+	size_t	contentStartinPos = pos;
+
+	if (length >= buffer.size())
+		length -= buffer.size();
+	else {
+		cerr << "more content than content length" << endl;
+		buffer.substr(0, length);
+		length = 0;
+	}
+	cerr << length << endl;
+	while (true) {
+		size_t	boundaryStartinPos = buffer.find(boundary.c_str(), pos);
+		int		sepBoundary = 0;
+
+		//checking the type of boundary;
+		if (boundaryStartinPos == string::npos)
+			break;
+		if(!buffer.ncmp((boundary+"--").c_str(), boundary.size()+2, boundaryStartinPos)) {
+			sepBoundary = 2;
+		}
+		//check if boundary is rounded by newlines;
+		if (roundedByNl(buffer, boundaryStartinPos, boundary.size()+sepBoundary)) {
+			if (boundaryStartinPos)
+				--boundaryStartinPos;
+			if (boundaryStartinPos && buffer[boundaryStartinPos-1] == '\r')
+				--boundaryStartinPos;
+			if (sepBoundary == 0) {
 				map<string, string>	contentHeaders;
-
-				if (fd != -1) {
-					++len;//including pre boundary nl
-					if (pos && buffer[pos-len-1] == '\r')
-						++len;//includin the CR if it exist
-					write(fd, &(buffer[contentStartinPos]), pos-contentStartinPos-len);
-				}
+				if (fd != -1)
+					write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos);
 				s.sstat = e_sstat::emptyline;
-				if ((newPos = s.parseFields(buffer, pos+1, contentHeaders)) < 0) {
-					remainingBody = buffer.substr(boundaryStartinIndex);
+				if ((contentStartinPos = s.parseFields(buffer, buffer.find('\n', boundaryStartinPos+boundary.size())+1, contentHeaders)) < 0) {
+					cerr << "unfinished body headers" << endl;
+					remainingBody = buffer.substr(boundaryStartinPos);
 					length += remainingBody.size();
 					fd = -1;
 					return;
 				}
 				s.sstat = e_sstat::body;
-				length -= newPos - pos;
-				pos = newPos;
-				contentStartinPos = pos;
 				fd = openFile(contentHeaders["content-disposition"], s.rules->uploads);
-			} else if (!buffer.ncmp((boundary+"--").c_str(), len-crInLine, pos-len)) {
-				++len;//including pre boundary nl
-				if (pos && buffer[pos-len-1] == '\r')
-					++len;
-				write(fd, &(buffer[contentStartinPos]), pos-contentStartinPos-len);
-				if (length - 1)
+			} else {
+				cerr << "end boundary" << endl;
+				write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos);
+				if (length)
 					throw(statusCodeException(400, "Bad Request"));
 			}
-			len = 0;
-			if (--length == 0) {
-				s.sstat = e_sstat::sHeader; return;
-			}
-			++pos;
-			continue;
 		}
-		if (--length == 0) {
-			s.sstat = e_sstat::sHeader; return;
-		}
-		++len;
-		++pos;
+		pos = boundaryStartinPos+boundary.size();
 	}
-	remainingBody = NULL;
-	if (len <= boundary.size()+2) {//check if the line is smaller than the boundary
-		++len;
-		if (pos && pos-len-1 == '\r')
-			++len;
-		remainingBody = buffer.substr(pos-len);
+	size_t lastlinePos = buffer.rfind('\n');
+	if (length == 0)
+		s.sstat = e_sstat::sHeader;
+	else if (buffer.size()-lastlinePos <= boundary.size()+2) {
+		if (lastlinePos && buffer[lastlinePos-1] == '\r')
+			--pos;
+		remainingBody = buffer.substr(lastlinePos);
 		length += remainingBody.size();
-		write(fd, &(buffer[contentStartinPos]), pos-contentStartinPos-len);
+		write(fd, &(buffer[contentStartinPos]), lastlinePos);
 	} else {
-		write(fd, &(buffer[contentStartinPos]), pos-contentStartinPos);
+		write(fd, &(buffer[contentStartinPos]), buffer.size()-contentStartinPos);
 	}
 }
 
@@ -141,7 +160,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 					s.headers["content-length"] = to_string(s.cgiBody.size());
 					s.headers.erase(s.headers.find("transfer-encoding"));
 					s.sstat = e_sstat::sHeader;
-					cerr << "unchunked body" << endl;
+					cerr << "cgi's body(unchunked)" << endl;
 					cerr << s.cgiBody << endl;
 					cerr << "------------------------------------" << endl;
 					return ;
@@ -169,10 +188,8 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 
 void	httpSession::Request::bufferTheBody(const bstring& buffer, size_t pos) {
 	if (length) {
-		cerr << length << endl;
 		s.cgiBody += buffer.substr(pos);
 		length -= buffer.size()-pos;
-		cerr << length << endl;
 	}
 	if (length == 0) {
 		cerr << "cgi's body" << endl;
@@ -187,8 +204,6 @@ void	httpSession::Request::bodyFormat() {
 		if (s.headers.find("content-length") != s.headers.end()) {
 			length = w_stoi(s.headers["content-length"]);
 			bodyHandlerFunc = &Request::bufferTheBody;
-			// (this->*bodyHandlerFunc)(bstring("aaa", 3), 0);
-			cerr << "here" << endl;
 		}
 		else if (s.headers.find("transfer-encoding") != s.headers.end() && s.headers["transfer-encoding"] == "chunked")
 			bodyHandlerFunc = &Request::unchunkBody;
@@ -203,4 +218,6 @@ void	httpSession::Request::bodyFormat() {
 		// 	bodyHandlerFunc = &Request::contentlength;
 	} else
 		throw(statusCodeException(501, "Not Implemented"));
+	s.statusCode = 204;
+	s.codeMeaning = "No Content";
 }

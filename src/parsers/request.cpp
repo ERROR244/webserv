@@ -12,6 +12,8 @@ void	httpSession::Request::readfromsock() {
 		return ;
 	}
 	bstring bbuffer(buffer, byteread);
+	bbuffer = remainingBody + bbuffer;
+	remainingBody = NULL;//reseting to null be filled w new content in this iteration
 	// cerr << "raw buffer" << endl;
 	// cerr << bbuffer << endl;
 	// cerr << "---" << endl;
@@ -19,7 +21,8 @@ void	httpSession::Request::readfromsock() {
 	{
 	case e_requestStat::headers: {
 		bufferPos = parseStarterLine(bbuffer);
-		bufferPos = s.parseFields(bbuffer, bufferPos, s.headers);
+		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)
+			throw(statusCodeException(400, "Bad Request"));
 		if (s.sstat == e_sstat::sHeader)
 			break;
 		requestStat = e_requestStat::bodyFormat;
@@ -29,7 +32,6 @@ void	httpSession::Request::readfromsock() {
 		requestStat = e_requestStat::handleBody;
 	}
 	case e_requestStat::handleBody: {
-		bbuffer = remainingBody + bbuffer;
 		if (bufferPos < bbuffer.size())
 			(this->*bodyHandlerFunc)(bbuffer, bufferPos);
 	}
