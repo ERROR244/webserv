@@ -63,6 +63,7 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
 }
 
 string httpSession::Response::getExt(string path) {
+    (void)path;
     size_t size = s.path.find_last_of(".");
     string ext;
 

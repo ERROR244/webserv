@@ -1,16 +1,20 @@
 #include "httpSession.hpp"
 
-inline void	validLocation(configuration* config, location** rules, const string& location) {
-	if (config->locations.find(location) != config->locations.end())
-		*rules = (&config->locations.at(location));
+inline void	validLocation(configuration& config, location** rules, const string& location) {
+	cerr << location << endl;
+	if (config.locations.find(location) != config.locations.end()) {
+		*rules = &config.locations.at(location);
+		cerr << "match" << endl;
+	} else
+		cerr <<"not match" << endl;
 }
 
-inline void matchSubUriToConfigRules(configuration* config, location** rules, const bstring& bbuf, size_t start, size_t len) {
+inline void matchSubUriToConfigRules(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
 	string subUri = bbuf.substr(start, len).cppstring();
 	validLocation(config, rules, subUri);
 }
 
-inline string	extractPath(configuration* config, location** rules, const bstring& bbuf, size_t start, size_t& len) {
+inline string	extractPath(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t& len) {
 	string path = bbuf.substr(start, len).cppstring();
 	if (path[path.size()-1] != '/') {
 		validLocation(config, rules, path + "/");
@@ -55,7 +59,7 @@ void	httpSession::Request::reconstructUri() {
 	struct stat pathStat;
 
 	if (s.rules == NULL)
-		throw(statusCodeException(404, "Not Found"));
+		throw(statusCodeException(404, "Not Found1"));
 	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
 	if (s.rules->redirection) {
@@ -80,7 +84,7 @@ void	httpSession::Request::reconstructUri() {
 		if (S_ISDIR(pathStat.st_mode)) {
 			s.path += "/" + s.rules->index;
 			if (stat(s.path.c_str(), &pathStat))
-				throw(statusCodeException(404, "Not Found"));
+				throw(statusCodeException(404, "Not Found2"));
 		}
 		break;
 	}
@@ -98,7 +102,10 @@ void	httpSession::Request::reconstructUri() {
 			s.path = w_realpath(("." + s.path).c_str());
 		} else
 			throw(statusCodeException(403, "Forbidden"));
+		break;
 	}
+	default:
+		throw(statusCodeException(400, "Bad Request"));
 	}
 }
 
@@ -126,14 +133,17 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				case 4:{
 					if (buffer.ncmp("POST", 4, i-len))
 						throw(statusCodeException(400, "Bad Request"));
-						s.method = POST;
+					s.method = POST;
 					break;
 				}
 				case 6:{
 					if (buffer.ncmp("DELETE", 6, i-len))
 						throw(statusCodeException(400, "Bad Request"));
 					s.method = DELETE;
+					break;
 				}
+				default:
+					throw(statusCodeException(400, "Bad Request"));
 				}
 				s.sstat = e_sstat::uri;
 				len = 0;
@@ -155,6 +165,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			case 0: {
 				if (buffer[i] != '/')
 					throw(statusCodeException(400, "Bad Request"));
+				// break;
 			}
 			default: {
 				switch (ch)
@@ -174,6 +185,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 					else
 						s.query = buffer.substr(i-len+1, len).cppstring();
 					reconstructUri();
+					cerr << "PATH: " << s.path << endl;
 					s.sstat = e_sstat::httpversion;
 					len = 0;
 					continue;
@@ -228,6 +240,8 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			++len;
 			break;
 		}
+		default:
+			break;
 		}
 	}
 	throw(statusCodeException(400, "Bad Request"));

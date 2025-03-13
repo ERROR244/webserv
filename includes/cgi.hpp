@@ -25,8 +25,8 @@ class Cgi {
 	private:
 		const cgiInfo		infos;
 		pid_t				pid;
-		int					wPipe[2];
 		int					rPipe[2];
+		int					wPipe[2];
 		map<string, string>	scriptEnvs;
 
 		void	createPipes();

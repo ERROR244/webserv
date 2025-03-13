@@ -16,7 +16,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			case ':': { //test-> : field name ? valid?
 				fieldline = buffer.substr(pos-len, len).cppstring();
 				sstat = e_sstat::wssBeforeFieldName;
-				for (int i = 0; i < fieldline.size(); ++i)
+				for (size_t i = 0; i < fieldline.size(); ++i)
 					fieldline[i] = tolower(fieldline[i]);
 				break;
 			}
@@ -118,6 +118,11 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			++len;
 			break;
 		}
+		default:
+			break;
+		// case e_sstat::uri: case e_sstat::httpversion: case e_sstat::starterlineNl:
+		// case e_sstat::body: case e_sstat::sHeader: case e_sstat::sBody:
+		// case e_sstat::done: case e_sstat::cclosedcon: case e_sstat::method: break;
 		}
 		++pos;
 		if (++headerFieldsLen > HEADER_FIELD_MAXSIZE)

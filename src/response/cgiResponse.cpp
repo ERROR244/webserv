@@ -53,7 +53,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
     
         if (cgiHeadersParsed == false) {
             map<string, string>	cgiHeaders;
-            size_t  bodyStartPos = 0;
+            ssize_t  bodyStartPos = 0;
 
             s.sstat = e_sstat::emptyline;
             try {

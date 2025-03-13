@@ -182,7 +182,7 @@ bool	bstring::cmp(const char* str) const {
 }
 
 bool	bstring::ncmp(const char* str1, const size_t n, const size_t startpos) const {
-	int i = 0;
+	size_t	i = 0;
 
 	if (startpos >= stringsize)
 		return true;
@@ -247,8 +247,8 @@ const char*	bstring::operator=(const char* newstring) {
 	return __string;
 }
 
-const char&	bstring::operator[](const int index) const{
-	if (index < 0 || index >= stringsize)
+const char&	bstring::operator[](const size_t index) const{
+	if (index >= stringsize)
 		throw(bstringExceptions("index out of range"));
 	return __string[index];
 }

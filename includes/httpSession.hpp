@@ -15,6 +15,7 @@
 #include "confiClass.hpp"
 #include "binarystring.hpp"
 #include "statusCodeException.hpp"
+// #include <pair>
 #include <ctime>
 
 #define BUFFER_SIZE 8192
@@ -55,7 +56,7 @@ private:
 	string				path;
 	string				query;
 	map<string, string>	headers;
-	configuration*		config;
+	configuration		config;
 	location*			rules;
 	Cgi*				cgi;
 	bstring				cgiBody;
@@ -89,9 +90,9 @@ public:
 	class Response {
 	private:
 		httpSession&	s;
+		bool			headerSended;
 		int				contentFd;
 		bool			cgiHeadersParsed;
-		bool			headerSended;
 		time_t      	lastActivityTime;
 		
 		static string		getSupportedeExtensions(const string&);
@@ -114,11 +115,13 @@ public:
 	Request		req;
 	Response	res;
 
-	httpSession(int clientFd, configuration* confi);
+	httpSession(int clientFd, configuration& confi);
+	httpSession(const httpSession& other);
 	httpSession();
+	~httpSession();
 
-	int				parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
-	configuration*		clientConfiguration() const;
+	int					parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
+	configuration		clientConfiguration() const;
 	int					fd() const;
 	const e_sstat&		status() const;
 	void				reSetPath(const string& newPath);

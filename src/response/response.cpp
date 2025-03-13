@@ -1,6 +1,6 @@
 #include "httpSession.hpp"
 
-httpSession::Response::Response(httpSession& session) : headerSended(false), s(session), contentFd(-1), lastActivityTime(0), cgiHeadersParsed(false) {}
+httpSession::Response::Response(httpSession& session) : s(session), headerSended(false), contentFd(-1), cgiHeadersParsed(false), lastActivityTime(0) {}
 
 void	httpSession::Response::handelRedirection(const int clientFd) {
     string response = "HTTP/1.1 301 Moved Permanently\n\r"

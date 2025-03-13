@@ -133,8 +133,8 @@ map<string, configuration> ConfigFileParser::parseFile() {
 
 
 bool checkRule(string s1, string s2) {
-    int first_occ = s1.find_first_of(' ');
-    int last_occ = s1.find_last_of(' ');
+    size_t first_occ = s1.find_first_of(' ');
+    size_t last_occ = s1.find_last_of(' ');
 
     if (first_occ == string::npos || last_occ == string::npos)
         throw std::runtime_error("checkRule::unexpected keyword: `" + s1 + "`");

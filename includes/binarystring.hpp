@@ -10,8 +10,8 @@
 
 class bstring {
 protected:
-	size_t	stringsize;
 	char*	__string;
+	size_t	stringsize;
 public:
 	class bstringExceptions : std::exception {
 	private:
@@ -46,7 +46,7 @@ public:
 	bool			empty() const;
 	const char* 	operator=(const char*);
 	const bstring& 	operator=(const bstring&);
-	const char& 	operator[](const int) const;
+	const char& 	operator[](const size_t) const;
 	const bstring&	operator+=(const bstring&);
 	const char*		operator+=(const char*);
 	const bstring	operator+(const bstring&);

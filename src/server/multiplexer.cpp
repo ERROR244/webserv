@@ -1,15 +1,40 @@
 #include "server.h"
 
-httpSession::httpSession(int clientFd, configuration* config)
-	: clientFd(clientFd), config(config), req(Request(*this)), res(Response(*this))
-	, sstat(e_sstat::method), cgi(NULL), rules(NULL), statusCode(200)
-	, codeMeaning("OK") {}
+httpSession::httpSession(int clientFd, configuration& config)
+	: clientFd(clientFd), sstat(e_sstat::method), config(config), rules(NULL)
+	, cgi(NULL), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {
+	// cerr << clientFd << " http session constructor called" << endl;
+}
 
 httpSession::httpSession()
-	: clientFd(clientFd), config(NULL), req(Request(*this)), res(Response(*this))
-	, cgi(NULL), sstat(e_sstat::method), statusCode(200), codeMeaning("OK") {}
+	: clientFd(-1), sstat(e_sstat::method), config(configuration()), rules(NULL)
+	, cgi(NULL), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {
+	// cerr << clientFd << " http session default constructor called" << endl;
+	}
 
-configuration*	httpSession::clientConfiguration() const {
+httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd),
+	req(Request(*this)), res(Response(*this))
+{
+	// cerr << clientFd << " http session copy constructor called" << endl;
+	sstat = other.sstat;
+	method = other.method;
+	path = other.path;
+	query = other.query;
+	headers = other.headers;
+	config = other.config;
+	rules = other.rules ? new location(*other.rules) : NULL;
+	cgi = other.cgi ? new Cgi(*other.cgi) : NULL;
+	cgiBody = other.cgiBody;
+	statusCode = other.statusCode;
+	codeMeaning = other.codeMeaning;
+	returnedLocation = other.returnedLocation;
+}
+
+httpSession::~httpSession() {
+	// cerr << clientFd << " http session destructor called" << endl;
+}
+
+configuration	httpSession::clientConfiguration() const {
 	return config;
 }
 
@@ -25,7 +50,7 @@ void	httpSession::reSetPath(const string& newPath) {
 	path = newPath;
 }
 
-void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession*>& s, const e_sstat& status) {
+void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
 	struct epoll_event	ev;
 
 	if (status == done) {
@@ -34,7 +59,7 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
-		delete s[clientFd];
+		// delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
 	else if (status == cclosedcon) {
@@ -42,12 +67,12 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
 		close(clientFd);
-		delete s[clientFd];
+		// delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
 }
 
-void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession*>& s, const e_sstat& status) {
+void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
 	struct epoll_event	ev;
 
 	if (status == sHeader) {
@@ -63,7 +88,7 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
 		close(clientFd);
-		delete s[clientFd];
+		// delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
 }
@@ -97,9 +122,16 @@ bool checkTimeOutForEachUsr(std::map<int, time_t> &timeOut) {
 	return false;
 }
 
+class A {
+	const int aa;
+	const int bb;
+	public:
+		A(int aa, int bb) : aa(aa), bb(bb) {}
+};
+
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
-	map<int, httpSession*>				sessions;					//change httpSession to a pointer so i can be able to free it
+	map<int, httpSession>				sessions;
 	map<string, string>					sessionStorage;
 	map<int, time_t>					timeOut;
 	int									nfds;
@@ -132,17 +164,18 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
-					sessions.try_emplace(fd, new httpSession(fd, &(config[getsockname(fd)]))); // insert
-					sessions[fd]->req.readfromsock();
-					reqSessionStatus(epollFd, fd, sessions, sessions[fd]->status());
+					if (sessions.find(fd) == sessions.end())
+						sessions.insert({fd, httpSession(fd, config[getsockname(fd)])});
+					sessions[fd].req.readfromsock();
+					reqSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}
 				else if (events[i].events & EPOLLOUT) {
-					if (sessions[fd]->cookieSeted == false) {
-						sessions[fd]->cookieSeted = true;
-						setCookie(sessions[fd]->sessionId, sessions[fd]->getHeaders()["cookie"]);
+					if (sessions[fd].cookieSeted == false) {
+						sessions[fd].cookieSeted = true;
+						setCookie(sessions[fd].sessionId, sessions[fd].getHeaders()["cookie"]);
 					}
-					timeOut[fd] = sessions[fd]->res.handelClientRes(fd);
-					resSessionStatus(epollFd, fd, sessions, sessions[fd]->status());
+					timeOut[fd] = sessions[fd].res.handelClientRes(fd);
+					resSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}
 			}
 			catch (const statusCodeException& exception) {

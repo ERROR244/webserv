@@ -18,7 +18,7 @@ void	Cgi::createPipes() {
 static string	proccesHeaderValue(const string& key) {
 	string proccesedKey = "HTTP_";
 
-	for (int i = 0; i < key.size(); ++i) {
+	for (size_t i = 0; i < key.size(); ++i) {
 		char ch = toupper(key[i]);
 		if (ch == '-')
 			ch = '_';

@@ -20,15 +20,15 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 	send(clientFd, msg.c_str(), msg.size(), MSG_DONTWAIT);
 }
 
-int	errorResponse(const int epollFd, const statusCodeException& exception, httpSession* session) {
+int	errorResponse(const int epollFd, const statusCodeException& exception, httpSession session) {
 	cerr << "code--> " << exception.code() << endl;
 	cerr << "reason--> " << exception.meaning() << endl;
 	struct epoll_event	ev;
-	configuration* config = session->clientConfiguration();
-	int	clientFd = session->fd();
+	configuration config = session.clientConfiguration();
+	int	clientFd = session.fd();
 
-	if (config->errorPages.find(exception.code()) != config->errorPages.end()) {
-		session->reSetPath(w_realpath(("." + config->errorPages.at(exception.code())).c_str()));//use syscall realpath and not the wrapper
+	if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
+		session.reSetPath(w_realpath(("." + config.errorPages.at(exception.code())).c_str()));//use syscall realpath and not the wrapper
 		ev.events = EPOLLOUT;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
@@ -50,7 +50,7 @@ int	errorResponse(const int epollFd, const statusCodeException& exception, httpS
 			}
 			close(clientFd);
 		}
-		delete session;
+		// delete session;
 		return -1;
 	}
 	return 0;

@@ -79,7 +79,7 @@ static bool	roundedByNl(const bstring& buffer, const size_t start, const size_t 
 }
 
 void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
-	size_t	contentStartinPos = pos;
+	ssize_t	contentStartinPos = pos;
 
 	if (length >= buffer.size())
 		length -= buffer.size();
