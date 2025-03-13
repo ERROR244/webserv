@@ -1,7 +1,7 @@
 #include "httpSession.hpp"
 
 inline void	validLocation(configuration& config, location** rules, const string& location) {
-	cerr << location << endl;
+	cerr << "suburi: " << location << endl;
 	if (config.locations.find(location) != config.locations.end()) {
 		*rules = &config.locations.at(location);
 		cerr << "match" << endl;
@@ -14,14 +14,13 @@ inline void matchSubUriToConfigRules(configuration& config, location** rules, co
 	validLocation(config, rules, subUri);
 }
 
-inline string	extractPath(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t& len) {
+inline string	extractPath(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
 	string path = bbuf.substr(start, len).cppstring();
 	if (path[path.size()-1] != '/') {
 		validLocation(config, rules, path + "/");
 	} else {
 		path.erase(path.end()-1);
 	}
-	len = 0;
 	return path;
 }
 
@@ -164,43 +163,41 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				throw(statusCodeException(414, "URI Too Long"));
 			case 0: {
 				if (buffer[i] != '/')
-					throw(statusCodeException(400, "Bad Request"));
-				// break;
+					throw(statusCodeException(400, "Bad Requesttt"));
 			}
-			default: {
-				switch (ch)
-				{
-				case '/': {
-					matchSubUriToConfigRules(s.config, &s.rules, buffer, i-len, len+1);
-					break;
-				}
-				case '?': {
-					if (s.path.empty())
-						s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
-					continue;
-				}
-				case ' ': {
-					if (s.path.empty())
-						s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
-					else
-						s.query = buffer.substr(i-len+1, len).cppstring();
-					reconstructUri();
-					cerr << "PATH: " << s.path << endl;
-					s.sstat = e_sstat::httpversion;
+			}
+			switch (ch)
+			{
+			case '/': {
+				matchSubUriToConfigRules(s.config, &s.rules, buffer, i-len, len+1);
+				break;
+			}
+			case '?': {
+				if (s.path.empty()) {
+					s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
 					len = 0;
-					continue;
 				}
-				case '-': case '.': case '_': case '~':
-				case ':': case '#': case '[': case ']':
-				case '@': case '!': case '$': case '&':
-				case '\'': case '(': case ')': case '*':
-				case '+': case ',': case ';': case '=':
-					break;
-				default:
-					if (!iswalnum(ch))
-						throw(statusCodeException(400, "Bad Request"));
-				}
+				continue;
 			}
+			case ' ': {
+				if (s.path.empty())
+					s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
+				else
+					s.query = buffer.substr(i-len+1, len).cppstring();
+				reconstructUri();
+				s.sstat = e_sstat::httpversion;
+				len = 0;
+				continue;
+			}
+			case '-': case '.': case '_': case '~':
+			case ':': case '#': case '[': case ']':
+			case '@': case '!': case '$': case '&':
+			case '\'': case '(': case ')': case '*':
+			case '+': case ',': case ';': case '=':
+				break;
+			default:
+				if (!iswalnum(ch))
+					throw(statusCodeException(400, "Bad Request"));
 			}
 			++len;
 			break;
