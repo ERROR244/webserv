@@ -1,12 +1,13 @@
 #include "httpSession.hpp"
 
 inline void	validLocation(configuration& config, location** rules, const string& location) {
-	cerr << "suburi: " << location << endl;
+	// cerr << "suburi: " << location << endl;
 	if (config.locations.find(location) != config.locations.end()) {
 		*rules = &config.locations.at(location);
-		cerr << "match" << endl;
-	} else
-		cerr <<"not match" << endl;
+		// cerr << "match" << endl;
+	}
+	// else
+	// 	cerr <<"not match" << endl;
 }
 
 inline void matchSubUriToConfigRules(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
@@ -228,7 +229,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			}
 			case '\n': {
 				s.sstat = e_sstat::emptyline;
-				cerr << "uri -> " << s.path << endl;
+				// cerr << "uri -> " << s.path << endl;
 				return i+1;
 			}
 			default:

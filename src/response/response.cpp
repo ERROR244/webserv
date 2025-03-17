@@ -136,7 +136,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
 bool checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime) {
 	bool timedOut = false;
 
-    if (lastActivityTime != 0 && time(NULL) - lastActivityTime >= T) {
+    if ((lastActivityTime != 0 && time(NULL) - lastActivityTime >= T)) {
         if (lastActivityTime == -1) {
             cout << "Client " << clientFd << " connection closed." << endl;
         }

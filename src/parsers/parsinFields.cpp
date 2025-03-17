@@ -101,10 +101,10 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 					default:
 						sstat = e_sstat::sHeader;
 				}
-				cerr << "----headers----" << endl;
-				for (const auto& it : headers)
-					cerr << it.first << ": " << it.second << "|" <<  endl;
-				cerr << "--------------" << endl;
+				// cerr << "----headers----" << endl;
+				// for (const auto& it : headers)
+				// 	cerr << it.first << ": " << it.second << "|" <<  endl;
+				// cerr << "--------------" << endl;
 				return pos+1;
 			}
 			default: {

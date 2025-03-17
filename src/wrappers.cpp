@@ -117,3 +117,13 @@ int ft_epoll_wait(int __epfd, epoll_event *__events, int __maxevents, int __time
     }
     return nfds;
 }
+
+int ft_epoll__ctl(int __epfd, int __fd, epoll_event* ev) {
+    if (epoll_ctl(__epfd, EPOLL_CTL_MOD, __fd, ev) == -1) {
+        perror("epoll_ctl failed");
+        close(__fd);
+        return -1;
+    }
+    return 0;
+}
+

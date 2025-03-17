@@ -138,15 +138,10 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 
 	cerr << "Started the server..." << endl;
 	while (1) {
-		// if (checkTimeOutForEachUsr(timeOut) == true) {
-		// 	continue ;
-		// }
-		// if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
-		// 	//send the internal error page to all current clients
-		// 	//close all connections and start over
-		// 	perror("epoll_wait failed(setUpserver.cpp): ");
-		// }
-		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1)) == -1) {
+		if (checkTimeOutForEachUsr(timeOut) == true) {
+			continue ;
+		}
+		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
 			perror("epoll_wait failed");
 			if (errno == EBADF || errno == ENOMEM) {
 				//close all client's connections

@@ -77,7 +77,6 @@ void	Cgi::executeScript() {
 	vecArgv.push_back(infos.scriptUri);
 	argv = transformVectorToChar(vecArgv);
 	CGIEnvp = transformVectorToChar(vecEnvp);
-	int i = 0;
 	execve(argv[0], argv, CGIEnvp);
 	// for (size_t i = 0; argv[i]; ++i) {//need to be fixed its not bein freed properly
 	// 	delete argv[i];

@@ -144,6 +144,17 @@ void handleSerNames(string& line, configuration& kv, ifstream& sFile) {
 	}
 }
 
+string getRPath(string path) {
+	char    buf[PATH_MAX];
+	char    *uploads;
+
+	uploads = realpath(path.c_str(), buf);
+	
+	if (uploads == NULL)
+		throw std::runtime_error("invalid path: `" + path + "`");
+	return string(uploads);
+}
+
 void handleBodyLimit(string& line, configuration& kv, ifstream& sFile) {
 	(void)sFile;
 	int i = checkKey("limit_req:", line);
@@ -159,7 +170,8 @@ void handleError(string& line, configuration& kv, ifstream& sFile) {
 		if (line == "}") { return ; }
 		else if (line.empty() || line[0] == '#' || line[0] == ';')
 			continue;
-		kv.errorPages[ft_stoi(line.substr(0, 3))] = line.substr(4);
+		// kv.errorPages[ft_stoi(line.substr(0, 3))] = line.substr(4);
+		kv.errorPages[ft_stoi(line.substr(0, 3))] = getRPath(trim(line.substr(4)));
 	}
 }
 
@@ -252,17 +264,10 @@ void handleIndex(string& line, location& kv, ifstream& sFile) {
 
 void handleUploads(string& line, location& kv, ifstream& sFile) {
 	(void)sFile;
-	char    buf[PATH_MAX];
-	char    *uploads;
 	int     i;
 	
 	i = checkKey("uploads:", line);
-	kv.uploads = trim(line.substr(i));
-	uploads = realpath(kv.uploads.c_str(), buf);
-	
-	if (uploads == NULL)
-		throw std::runtime_error("invalid path: `" + kv.uploads + "`");
-	kv.uploads = string(uploads);
+	kv.uploads = getRPath(trim(line.substr(i)));
 }
 
 void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
