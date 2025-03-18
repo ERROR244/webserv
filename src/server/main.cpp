@@ -29,7 +29,7 @@ int main(int ac, char **av) {
         try {
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
-            confi.printprint();
+            // confi.printprint();
             epollFd = createSockets(config, serverFds);     
             while (1) {                                                 //this loop is here if epoll fd somehow got closed and epoll wait fails and i have to create and instance of epoll fd;
                 multiplexerSytm(serverFds, epollFd, config);

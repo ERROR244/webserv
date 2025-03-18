@@ -159,8 +159,9 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				}
 				else if (events[i].events & EPOLLIN) {
-					if (sessions.find(fd) == sessions.end())
+					if (sessions.find(fd) == sessions.end()) {
 						sessions.insert({fd, httpSession(fd, config[getsockname(fd)])});
+					}
 					sessions[fd].req.readfromsock();
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}

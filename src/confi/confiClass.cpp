@@ -33,8 +33,12 @@ int getSer1(string line) {
 }
 
 void checkServer(configuration& kv, int (&serverFunc)[5]) {
-	int locationsFunc[6] = {0};
-
+    int locationsFunc[6] = {0};
+    struct addrinfo hints;
+    
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
     for (int i = 0; i < 5; ++i) {
         if (serverFunc[i] == -1)
             continue;
@@ -53,7 +57,7 @@ void checkServer(configuration& kv, int (&serverFunc)[5]) {
 		}
     }
 	kv.addInfo = NULL;
-	getaddrinfo(kv.host.c_str(), kv.port.c_str(), NULL, &kv.addInfo);
+    getaddrinfo(kv.host.c_str(), kv.port.c_str(), &hints, &kv.addInfo);
 	if (kv.addInfo == NULL)
 		throw std::runtime_error("handleServer::kv.addInfo is NULL");
 }
