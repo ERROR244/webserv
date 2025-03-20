@@ -8,7 +8,6 @@ void	httpSession::Response::handelRedirection(const int clientFd) {
                         "Content-Type: text/html; charset=utf-8\n\r"
                         "Location: " + s.returnedLocation + "\n\r\n\r"
                         "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n\r";
-
     send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
     s.sstat = done;
     lastActivityTime = time(NULL);

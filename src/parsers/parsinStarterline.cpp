@@ -65,6 +65,7 @@ void	httpSession::Request::reconstructUri() {
 	if (s.rules->redirection) {
 		s.statusCode = 301;
 		s.codeMeaning = "Moved Permanently";
+		s.returnedLocation = s.rules->reconfigurer;
 		s.sstat = e_sstat::sHeader;
 		return ;
 	} else {
