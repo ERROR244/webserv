@@ -31,6 +31,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
     if (!s.cgiBody.empty()) {
         int     byteWrite;
 
+        cerr << s.cgi->wFd() << endl;
         if ((byteWrite = write(s.cgi->wFd(), s.cgiBody.c_str(), s.cgiBody.size())) < 0) {
             perror("write failed(sendResponse.cpp 185)");
             s.sstat = cclosedcon;

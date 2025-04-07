@@ -19,8 +19,8 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 }
 
 int	errorResponse(const int epollFd, const statusCodeException& exception, httpSession& session) {
-	// cerr << "code--> " << exception.code() << endl;
-	// cerr << "reason--> " << exception.meaning() << endl;
+	cerr << "code--> " << exception.code() << endl;
+	cerr << "reason--> " << exception.meaning() << endl;
 	struct epoll_event	ev;
 	configuration config = session.clientConfiguration();
 	int	clientFd = session.fd();

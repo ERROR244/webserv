@@ -1,6 +1,10 @@
 #include "cgi.hpp"
 
-Cgi::Cgi(const cgiInfo& infos): infos(infos), rPipe{-1}, wPipe{-1}{
+Cgi::Cgi(const cgiInfo& infos): infos(infos){
+	rPipe[0] = -1;
+	rPipe[1] = -1;
+	wPipe[0] = -1;
+	wPipe[1] = -1;
 	createPipes();
 }
 
@@ -36,7 +40,7 @@ void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
 	scriptEnvs["GATEWAY_INTERFACE"] = "CGI/1.1";
 	scriptEnvs["SERVER_PROTOCOL"] = "http/1.1";
 	scriptEnvs["SERVER_NAME"] = "127.0.0.2";
-	scriptEnvs["REMOTE_METHODE"] = "GET";
+	scriptEnvs["REMOTE_METHODE"] = infos.method;
 	scriptEnvs["PATH_INFO"] = infos.path;
 	scriptEnvs["QUERY_STRING"] = infos.query;
 	scriptEnvs["SCRIPT_NAME"] = infos.scriptName;
@@ -109,7 +113,7 @@ void	Cgi::setupCGIProcess() {
 		close(wPipe[0]);
 		executeScript();
 	}
+	
 	close(rPipe[1]);
 	close(wPipe[0]);
-	// close(wPipe[1]);
 }

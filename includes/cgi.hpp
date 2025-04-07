@@ -19,6 +19,7 @@ struct cgiInfo {
 	string	exec;
 	string	path;
 	string	query;
+	string	method;
 };
 
 class Cgi {

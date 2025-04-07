@@ -84,11 +84,13 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 	if (length >= buffer.size())
 		length -= buffer.size();
 	else {
-		cerr << "more content than content length" << endl;
+		// cerr << buffer << endl;
+		// cerr << "more content than content length" << endl;
 		buffer.substr(0, length);
+		// cerr << buffer << endl;
 		length = 0;
 	}
-	cerr << length << endl;
+	// cerr << length << endl;
 	while (true) {
 		size_t	boundaryStartinPos = buffer.find(boundary.c_str(), pos);
 		int		sepBoundary = 0;
@@ -123,7 +125,8 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				cerr << "end boundary" << endl;
 				write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos);
 				if (length)
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request19"));
+				break;//extin out of the loop cause i found the end boundary
 			}
 		}
 		pos = boundaryStartinPos+boundary.size();
@@ -150,7 +153,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 		bool			crInLine = false;
 		size_t			nlPos;
 	
-		// if (length == 0) {//dones;t wrk
+		if (length == 0) {
 			nlPos = buffer.find('\n', pos);
 			if (nlPos != string::npos) {
 				if (nlPos && buffer[nlPos-1] == '\r')
@@ -172,11 +175,13 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 				return;
 			}
 			pos = nlPos+1;
-		// }
-		nlPos = buffer.find('\n', pos+length);
+		}
+		nlPos = buffer.find('\n', nlPos+length);//skipping the length of the length to start from the new chunked data
 		if (nlPos != string::npos) {
 			s.cgiBody += buffer.substr(pos, length);
-			// length = 0;
+			if (static_cast<off_t>(s.cgiBody.size()) < s.config.bodySize)
+				throw(statusCodeException(413, "Request Entity Too Large"));
+			length = 0;
 			pos = nlPos;//so i can start next iteration from the line that has the content
 		} else {
 			remainingBody = buffer.substr(pos+1);
@@ -203,6 +208,8 @@ void	httpSession::Request::bodyFormat() {
 	if (s.cgi) {
 		if (s.headers.find("content-length") != s.headers.end()) {
 			length = w_stoi(s.headers["content-length"]);
+			if (static_cast<off_t>(length) < s.config.bodySize)
+				throw(statusCodeException(413, "Request Entity Too Large"));
 			bodyHandlerFunc = &Request::bufferTheBody;
 		}
 		else if (s.headers.find("transfer-encoding") != s.headers.end() && s.headers["transfer-encoding"] == "chunked")
@@ -214,10 +221,11 @@ void	httpSession::Request::bodyFormat() {
 			length = w_stoi(s.headers["content-length"]);
 			bodyHandlerFunc = &Request::contentlength;
 		}
-		// else if (s.headers.find("transfer-encoding") != s.headers.end() && s.headers["transfer-encoding"] == "chunked")
-		// 	bodyHandlerFunc = &Request::contentlength;
+		if (static_cast<off_t>(length) < s.config.bodySize)
+			throw(statusCodeException(413, "Request Entity Too Large"));
 	} else
 		throw(statusCodeException(501, "Not Implemented"));
+	//bad  request in case content length and transfer encoding doesn't exist
 	s.statusCode = 204;
 	s.codeMeaning = "No Content";
 }

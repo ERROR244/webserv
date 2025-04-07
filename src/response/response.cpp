@@ -117,7 +117,6 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         // response += "Content-Type: text/html\r\n";
         response += "content-length: 0\r\n";
         response += "Connection: " + (s.getHeaders()["connection"].empty() ? "close" : s.getHeaders()["connection"]) + "\r\n\r\n";
-        cout << "HERE: " << response << endl;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
         lastActivityTime = time(NULL);
         s.sstat = done;

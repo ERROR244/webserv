@@ -1,13 +1,23 @@
 #include "httpSession.hpp"
 
-inline void	validLocation(configuration& config, location** rules, const string& location) {
-	// cerr << "suburi: " << location << endl;
-	if (config.locations.find(location) != config.locations.end()) {
-		*rules = &config.locations.at(location);
-		// cerr << "match" << endl;
+inline string methodStringRepresentation(e_methods method) {
+	switch (method)
+	{
+	case e_methods::GET:
+		return "GET";
+	case e_methods::POST:
+		return "POST";
+	case e_methods::DELETE:
+		return "DELETE";
+	case e_methods::NONE:
+		return "unvalid";
 	}
-	// else
-	// 	cerr <<"not match" << endl;
+	return "unvalid";
+}
+
+inline void	validLocation(configuration& config, location** rules, const string& location) {
+	if (config.locations.find(location) != config.locations.end())
+		*rules = &config.locations.at(location);
 }
 
 inline void matchSubUriToConfigRules(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
@@ -45,6 +55,7 @@ void	httpSession::Request::isCGI() {
 				if (s.path.size() > subUri.size()+1)
 					cgiVars.path = s.path.substr(pos);
 				cgiVars.query = s.query;
+				cgiVars.method = methodStringRepresentation(s.method);
 				foundAMatch = true;
 			}
 		}
@@ -60,8 +71,6 @@ void	httpSession::Request::reconstructUri() {
 
 	if (s.rules == NULL)
 		throw(statusCodeException(404, "Not Found1"));
-	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
-		throw(statusCodeException(405, "Method Not Allowed"));
 	if (s.rules->redirection) {
 		s.statusCode = 301;
 		s.codeMeaning = "Moved Permanently";
@@ -73,9 +82,11 @@ void	httpSession::Request::reconstructUri() {
 		s.path = s.rules->reconfigurer + s.path;
 		s.path = w_realpath(("." + s.path).c_str());
 	}
+	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
+		throw(statusCodeException(405, "Method Not Allowed"));
 	isCGI();
 	if (s.cgi) {
-		cerr << "CGIIIIIIIIIIIIIIII" << endl;
+		cerr << "---CGIIIIIIIIIIIIIIII---" << endl;
 		return;
 	}
 	switch (s.method)
@@ -106,7 +117,7 @@ void	httpSession::Request::reconstructUri() {
 		break;
 	}
 	default:
-		throw(statusCodeException(400, "Bad Request"));
+		throw(statusCodeException(400, "Bad Request1"));
 	}
 }
 
@@ -127,24 +138,24 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				{
 				case 3: {
 					if (buffer.ncmp("GET", 3, i-len))
-						throw(statusCodeException(400, "Bad Request"));
+						throw(statusCodeException(400, "Bad Request2"));
 					s.method = GET;
 					break;
 				}
 				case 4:{
 					if (buffer.ncmp("POST", 4, i-len))
-						throw(statusCodeException(400, "Bad Request"));
+						throw(statusCodeException(400, "Bad Request3"));
 					s.method = POST;
 					break;
 				}
 				case 6:{
 					if (buffer.ncmp("DELETE", 6, i-len))
-						throw(statusCodeException(400, "Bad Request"));
+						throw(statusCodeException(400, "Bad Request4"));
 					s.method = DELETE;
 					break;
 				}
 				default:
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request5"));
 				}
 				s.sstat = e_sstat::uri;
 				len = 0;
@@ -152,7 +163,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			}
 			default: {
 				if (len > 6)
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request6"));
 			}
 			}
 			++len;
@@ -165,7 +176,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				throw(statusCodeException(414, "URI Too Long"));
 			case 0: {
 				if (buffer[i] != '/')
-					throw(statusCodeException(400, "Bad Requesttt"));
+					throw(statusCodeException(400, "Bad Request7"));
 			}
 			}
 			switch (ch)
@@ -199,7 +210,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				break;
 			default:
 				if (!iswalnum(ch))
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request8"));
 			}
 			++len;
 			break;
@@ -209,13 +220,13 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			{
 			case 7: {
 				if (buffer.ncmp("HTTP/1.1", 8, i-len))
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request9"));
 				s.sstat = e_sstat::starterlineNl;
 				len = 0;
 				continue;
 			}
 			case 8:
-				throw(statusCodeException(400, "Bad Request"));
+				throw(statusCodeException(400, "Bad Request10"));
 			}
 			++len;
 			break;
@@ -225,7 +236,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			{
 			case '\r': {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request"));
+					throw(statusCodeException(400, "Bad Request11"));
 				break;
 			}
 			case '\n': {
@@ -234,7 +245,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				return i+1;
 			}
 			default:
-				throw(statusCodeException(400, "Bad Request"));
+				throw(statusCodeException(400, "Bad Request12"));
 			}
 			++len;
 			break;
@@ -243,6 +254,6 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			break;
 		}
 	}
-	throw(statusCodeException(400, "Bad Request"));
+	throw(statusCodeException(400, "Bad Request13"));
 	return(-1);
 }

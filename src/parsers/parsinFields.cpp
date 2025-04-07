@@ -25,7 +25,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 				break;
 			default: {
 				if (!iswalnum(ch))
-					throw(statusCodeException(400, "Bad Request2"));
+					throw(statusCodeException(400, "Bad Request15"));
 			}
 			}
 			++len;
@@ -78,7 +78,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		}
 		case e_sstat::fieldNl: {
 			if (ch != '\n')
-				throw(statusCodeException(400, "Bad Request3"));
+				throw(statusCodeException(400, "Bad Request16"));
 			sstat = e_sstat::emptyline;
 			len = 0;
 			break;
@@ -88,7 +88,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			{
 			case '\r': {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request4"));
+					throw(statusCodeException(400, "Bad Request17"));
 				break;
 			}
 			case '\n': {
@@ -109,7 +109,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			}
 			default: {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request5"));
+					throw(statusCodeException(400, "Bad Request18"));
 				sstat = e_sstat::fieldLine;
 				len = 0;
 				continue;
