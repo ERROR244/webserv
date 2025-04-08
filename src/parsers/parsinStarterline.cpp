@@ -38,13 +38,13 @@ void	httpSession::Request::isCGI() {
 
 	while (1) {
 		pos = s.path.find('/', pos);
-		string subUri = s.path.substr(0, (pos != string::npos) ? pos+1 : pos);
+		string subUri = s.path.substr(0, pos);
 		size_t	dotPos = subUri.rfind('.');
 		string subUriExt;
 		if (dotPos != string::npos) {
 			subUriExt = subUri.substr(dotPos);
-			if (s.rules->cgis.find(subUriExt) != s.rules->cgis.end() && !access(subUri.c_str() ,F_OK)) {
-				cgiVars.scriptUri = w_realpath(subUri.c_str());
+			if (s.rules->cgis.find(subUriExt) != s.rules->cgis.end() && !access(("."+subUri).c_str() ,F_OK)) {
+				cgiVars.scriptUri = w_realpath(("."+subUri).c_str());
 				size_t barPos = subUri.rfind('/');
 				cgiVars.scriptName = subUri.substr(barPos+1);
 				cgiVars.exec = s.rules->cgis[subUriExt];
@@ -58,8 +58,10 @@ void	httpSession::Request::isCGI() {
 		if (pos++ == string::npos)
 			break;
 	}
-	if (foundAMatch == true)
+	if (foundAMatch == true) {
 		s.cgi = new Cgi(cgiVars);
+		s.path = cgiVars.scriptUri;
+	}
 }
 
 void	httpSession::Request::reconstructUri() {
@@ -74,30 +76,30 @@ void	httpSession::Request::reconstructUri() {
 		s.sstat = e_sstat::sHeader;
 		return ;
 	} else {
-		cerr << "bb: " << s.path << endl;
-		cerr << s.rules->reconfigurer << endl;
-		s.path.erase(s.path.begin(), s.path.begin()+s.rules->uri.size()-1);
+		string tmpOriginalPath = s.path;
+		s.path.erase(s.path.begin(), s.path.begin()+s.rules->uri.size());
 		s.path = s.rules->reconfigurer + s.path;
-		cerr << "aff: " << s.path << endl;
-		stat(s.path.c_str(), &pathStat);
-		cerr << s.path[s.path.size()-1] << endl;
-		if (S_ISDIR(pathStat.st_mode)) {
-			cerr << "path-> " << s.path << endl;
+		if (s.path.find("/../") != string::npos || s.path.find("/..\0") != string::npos)
+			throw(statusCodeException(403, "Forbidden"));
+		isCGI();
+		if (s.cgi) {
+			cerr << "---CGIIIIIIIIIIIIIIII---" << endl;
+			return;
+		}
+		stat(("."+s.path).c_str(), &pathStat);
+		if (S_ISDIR(pathStat.st_mode) && s.path[s.path.size()-1] != '/') {
 			s.statusCode = 301;
 			s.codeMeaning = "Moved Permanently";
-			s.returnedLocation = s.path + "/";
+			s.returnedLocation = tmpOriginalPath + "/";
 			s.sstat = e_sstat::sHeader;
 			return ;
 		}
+		cerr << s.path << endl;
 		s.path = w_realpath(("." + s.path).c_str());
+		cerr << s.path << endl;
 	}
 	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
-	isCGI();
-	if (s.cgi) {
-		cerr << "---CGIIIIIIIIIIIIIIII---" << endl;
-		return;
-	}
 	switch (s.method)
 	{
 	case GET: {

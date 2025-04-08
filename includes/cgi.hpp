@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include "wrappers.h"
 #include "statusCodeException.hpp"
 
 using namespace std;

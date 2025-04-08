@@ -37,17 +37,23 @@ void	Cgi::getHeaders(const map<string, string>& headers) {
 }	
 
 void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
+	char absolutePath[1024];
+
 	scriptEnvs["GATEWAY_INTERFACE"] = "CGI/1.1";
 	scriptEnvs["SERVER_PROTOCOL"] = "http/1.1";
-	scriptEnvs["SERVER_NAME"] = "127.0.0.2";
 	scriptEnvs["REMOTE_METHODE"] = infos.method;
 	scriptEnvs["PATH_INFO"] = infos.path;
 	scriptEnvs["QUERY_STRING"] = infos.query;
 	scriptEnvs["SCRIPT_NAME"] = infos.scriptName;
 	scriptEnvs["SCRIPT_FILENAME"] = infos.scriptUri;
-	scriptEnvs["REDIRECT_STATUS"] = "1";
+	scriptEnvs["REDIRECT_STATUS"] = "1";//this is just a work around to make php work because it needs
+	//the request to be redirected to it and not passed to it directly so when i set the var to 1
+	//its like i am sayin yas this request is bein redirected to you just execute it
 	getHeaders(headers);
-	// scriptEnvs["PATH_TRANSLATED"] = "";//idk
+	if (realpath(("."+infos.path).c_str(), absolutePath) == NULL || infos.path.empty())
+		scriptEnvs["PATH_TRANSLATED"] = "";
+	else
+		scriptEnvs["PATH_TRANSLATED"] = string(absolutePath);
 	cerr << "CGI headers" << endl;
 	for (const auto& it : scriptEnvs)
 		cerr << it.first << ": " << it.second << endl;
