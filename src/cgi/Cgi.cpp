@@ -32,8 +32,12 @@ static string	proccesHeaderValue(const string& key) {
 }
 
 void	Cgi::getHeaders(const map<string, string>& headers) {
-	for (map<string, string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
-		scriptEnvs[proccesHeaderValue(it->first)] = it->second;
+	for (map<string, string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+		string key = proccesHeaderValue(it->first);
+		if (key == "HTTP_CONTENT_LENGTH" || key == "HTTP_CONTENT_TYPE")
+			key.erase(key.begin(), key.begin()+5);
+		scriptEnvs[key] = it->second;
+	}
 }	
 
 void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
