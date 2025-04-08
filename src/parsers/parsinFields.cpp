@@ -1,5 +1,10 @@
 #include "httpSession.hpp"
 
+inline string  trimTrailinWs(const string& str) {
+	size_t  end = str.find_last_not_of(" \t\n\r\f\v");
+	return str.substr(0, end + 1);
+}
+
 int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, string>& headers) {
 	size_t	size = buffer.size();
 	size_t	len = 0;
@@ -61,12 +66,12 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			switch (ch)
 			{
 			case '\r': {
-				headers[fieldline] = buffer.substr(pos-len, len).cppstring();
+				headers[fieldline] = trimTrailinWs(buffer.substr(pos-len, len).cppstring());
 				sstat = e_sstat::fieldNl;
 				break;
 			}
 			case '\n': {
-				headers[fieldline] = buffer.substr(pos-len, len).cppstring();
+				headers[fieldline] = trimTrailinWs(buffer.substr(pos-len, len).cppstring());
 				sstat = e_sstat::emptyline;
 				len = 0;
 				++pos;

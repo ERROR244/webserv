@@ -1,6 +1,6 @@
 #include "httpSession.hpp"
 
-httpSession::Request::Request(httpSession& session) : s(session), requestStat(e_requestStat::headers), length(0), fd(-1) {}
+httpSession::Request::Request(httpSession& session) : s(session), length(0), fd(-1) {}
 
 void	httpSession::Request::readfromsock() {
 	char	buffer[BUFFER_SIZE];
@@ -20,12 +20,9 @@ void	httpSession::Request::readfromsock() {
 		bufferPos = parseStarterLine(bbuffer);
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)
 			throw(statusCodeException(400, "Bad Request14"));
-		if (s.sstat == e_sstat::body) {
+		if (s.sstat == e_sstat::body)
 			bodyFormat();
-			if (static_cast<size_t>(bufferPos) < bbuffer.size())
-				(this->*bodyHandlerFunc)(bbuffer, bufferPos);
-		}
 	}
-	else if (static_cast<size_t>(bufferPos) < bbuffer.size())
+	if (static_cast<size_t>(bufferPos) < bbuffer.size())
 		(this->*bodyHandlerFunc)(bbuffer, bufferPos);
 }

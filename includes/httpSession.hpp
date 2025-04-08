@@ -42,12 +42,6 @@ enum e_sstat {//session stat
 	cclosedcon,
 };
 
-enum e_requestStat {
-	headers=0,
-	bodyFormat,
-	handleBody,
-};
-
 class httpSession {
 private:
 	const int			clientFd;
@@ -68,7 +62,6 @@ public:
 	class Request {
 	private:
 		httpSession&	s;
-		e_requestStat	requestStat;
 		void			(httpSession::Request::*bodyHandlerFunc)(const bstring&, size_t);
 		bstring			remainingBody;
 		string			boundary;

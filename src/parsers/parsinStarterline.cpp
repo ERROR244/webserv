@@ -27,11 +27,11 @@ inline void matchSubUriToConfigRules(configuration& config, location** rules, co
 
 inline string	extractPath(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
 	string path = bbuf.substr(start, len).cppstring();
-	if (path[path.size()-1] != '/') {
-		validLocation(config, rules, path + "/");
-	} else {
-		path.erase(path.end()-1);
-	}
+	validLocation(config, rules, path + "/");
+	// if (path[path.size()-1] != '/') {
+	// } else {
+	// 	path.erase(path.end()-1);//fix this shiittttttt
+	// }
 	return path;
 }
 
@@ -80,6 +80,16 @@ void	httpSession::Request::reconstructUri() {
 	} else {
 		s.path.erase(s.path.begin(), s.path.begin()+s.rules->uri.size()-1);
 		s.path = s.rules->reconfigurer + s.path;
+		stat(s.path.c_str(), &pathStat);
+		cerr << s.path[s.path.size()-1] << endl;
+		if (S_ISDIR(pathStat.st_mode)) {
+			cerr << "path-> " << s.path << endl;
+			s.statusCode = 301;
+			s.codeMeaning = "Moved Permanently";
+			s.returnedLocation = s.path + "/";
+			s.sstat = e_sstat::sHeader;
+			return ;
+		}
 		s.path = w_realpath(("." + s.path).c_str());
 	}
 	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
