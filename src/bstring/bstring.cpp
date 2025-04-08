@@ -301,6 +301,7 @@ const bstring	bstring::operator+(const bstring& buff) {
 	if (buff.empty())
 		return *this;
 	char* newstring = new char[stringsize+buff.size()];
+	// char newstring[stringsize+buff.size()];
 	int	newstringpos = 0;
 	for (size_t i = 0; i < stringsize; ++i) {
 		newstring[newstringpos] = __string[i];
@@ -310,5 +311,7 @@ const bstring	bstring::operator+(const bstring& buff) {
 		newstring[newstringpos] = buff[i];
 		++newstringpos;
 	}
-	return bstring(newstring, stringsize+buff.size());
+	const bstring joinedBstring = bstring(newstring, stringsize+buff.size());
+	delete[]newstring;
+	return joinedBstring;
 }
