@@ -27,11 +27,7 @@ inline void matchSubUriToConfigRules(configuration& config, location** rules, co
 
 inline string	extractPath(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
 	string path = bbuf.substr(start, len).cppstring();
-	validLocation(config, rules, path + "/");
-	// if (path[path.size()-1] != '/') {
-	// } else {
-	// 	path.erase(path.end()-1);//fix this shiittttttt
-	// }
+	validLocation(config, rules, path);
 	return path;
 }
 
@@ -78,8 +74,11 @@ void	httpSession::Request::reconstructUri() {
 		s.sstat = e_sstat::sHeader;
 		return ;
 	} else {
+		cerr << "bb: " << s.path << endl;
+		cerr << s.rules->reconfigurer << endl;
 		s.path.erase(s.path.begin(), s.path.begin()+s.rules->uri.size()-1);
 		s.path = s.rules->reconfigurer + s.path;
+		cerr << "aff: " << s.path << endl;
 		stat(s.path.c_str(), &pathStat);
 		cerr << s.path[s.path.size()-1] << endl;
 		if (S_ISDIR(pathStat.st_mode)) {
@@ -251,7 +250,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			}
 			case '\n': {
 				s.sstat = e_sstat::emptyline;
-				// cerr << "uri -> " << s.path << endl;
+				cerr << "uri -> " << s.path << endl;
 				return i+1;
 			}
 			default:
