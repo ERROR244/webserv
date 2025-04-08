@@ -1,0 +1,125 @@
+body {
+	margin: 0;
+	background: #eee7;
+	font-family: "Courier New", Courier, monospace;
+	padding: 0 144px;
+}
+
+header {
+	padding: 12px 0;
+	height: 600px;
+}
+
+nav {
+	display: flex;
+	justify-content: space-between;
+	font-size: 32px;
+}
+
+ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+li {
+	display: inline-block;
+	padding: 12px 0;
+	padding-left: 10px;
+}
+
+li a {
+	text-decoration: none;
+	color: #000;
+}
+
+.logo {
+	padding: 12px 0;
+	color: rgb(0, 0, 158);
+	font-size: 36px;
+}
+
+main {
+	padding: 36px 0;
+	min-height: 100vh;
+	display: flex;
+	justify-content: space-between;
+}
+
+main div {
+	width: 48%;
+	height: 300px;
+}
+
+main p {
+	font-size: 24px;
+}
+
+.hero {
+	width: 100%;
+	height: 550px;
+	background-image: url("/assets/willian-justen-de-vasconcellos-T_Qe4QlMIvQ-unsplash.jpg");
+	background-position: center;
+	background-size: cover;
+}
+
+.side-img {
+	background-image: url("/assets/simon-berger-AiwWrn575c8-unsplash.jpg");
+	background-position: center;
+	background-size: cover;
+}
+footer {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 12px 0;
+	border-top: 1px solid #6663;
+}
+
+@media screen and (max-width: 1100px) {
+	body {
+		padding: 0 72px;
+	}
+	main p {
+		font-size: 22px;
+	}
+
+	.logo {
+		font-size: 32px;
+	}
+
+	nav {
+		font-size: 24px;
+	}
+}
+
+@media screen and (max-width: 768px) {
+	body {
+		padding: 0 12px;
+	}
+	header {
+		padding: 12px 0;
+		height: 300px;
+	}
+	.hero {
+		height: 250px;
+	}
+	main p {
+		font-size: 18px;
+	}
+
+	.logo {
+		font-size: 28px;
+	}
+
+	nav {
+		font-size: 20px;
+	}
+	main {
+		flex-direction: column;
+		justify-content: center;
+	}
+	main div {
+		width: 100%;
+	}
+}

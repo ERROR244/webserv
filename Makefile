@@ -9,8 +9,8 @@ CPPFLAGS = -g3 -Wall -Wextra -Werror #-fsanitize=address #-std=c++98
 	$(CPP) $(INC) $(CPPFLAGS) -c -o $@ $<
 
 all: $(NAME)
-	clear
-	./webServ confi.conf
+# clear
+# ./webServ confi.conf
 
 $(NAME): $(OBJ)
 	$(CPP) $(CPPFLAGS) $(OBJ) -o $(NAME)
