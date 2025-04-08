@@ -8,7 +8,7 @@ void	httpSession::Response::handelRedirection(const int clientFd) {
                         "Content-Type: text/html; charset=utf-8\n\r"
                         "Location: " + s.returnedLocation + "\n\r\n\r"
                         "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n\r";
-    send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+    send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
     s.sstat = done;
     lastActivityTime = time(NULL);
 }
@@ -117,7 +117,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         // response += "Content-Type: text/html\r\n";
         response += "content-length: 0\r\n";
         response += "Connection: " + (s.getHeaders()["connection"].empty() ? "close" : s.getHeaders()["connection"]) + "\r\n\r\n";
-        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         lastActivityTime = time(NULL);
         s.sstat = done;
     }
@@ -125,7 +125,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         string response = getDeleteRes(s.path, s.headers["connection"], file_stat);
 
         cout << "response---> " << response << endl;
-        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         lastActivityTime = time(NULL);
         s.sstat = done;
     }

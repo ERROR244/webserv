@@ -88,7 +88,7 @@ void httpSession::Response::Get(int clientFd, bool smallFile) {
                         getSessionCookie(s.sessionId) +
                         string("\r\n\r\n");
         response += body;
-        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         s.sstat = done;
         lastActivityTime = time(NULL);      // for timeout
     }
@@ -99,7 +99,7 @@ void httpSession::Response::Get(int clientFd, bool smallFile) {
                             (s.headers["connection"].empty() ? "close" : s.headers["connection"]) +
                             getSessionCookie(s.sessionId) +
                             string("\r\n\r\n");
-        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT);
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
     }
 }
 
@@ -116,13 +116,13 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
         std::ostringstream BUFFER_SIZEStream;
         BUFFER_SIZEStream << std::hex << bytesRead << "\r\n";
         std::string BUFFER_SIZEStr = BUFFER_SIZEStream.str();
-        send(clientFd, BUFFER_SIZEStr.c_str(), BUFFER_SIZEStr.size(), MSG_DONTWAIT);
-        send(clientFd, buffer, bytesRead, MSG_DONTWAIT);
-        send(clientFd, "\r\n", 2, MSG_DONTWAIT);
+        send(clientFd, BUFFER_SIZEStr.c_str(), BUFFER_SIZEStr.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
+        send(clientFd, buffer, bytesRead, MSG_DONTWAIT | MSG_NOSIGNAL);
+        send(clientFd, "\r\n", 2, MSG_DONTWAIT | MSG_NOSIGNAL);
     }
     else {
         buffer[bytesRead] = '\0';
-        send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT);
+        send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT | MSG_NOSIGNAL);
         s.sstat = done;
         headerSended = false;
         if (contentFd >= 0)

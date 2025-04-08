@@ -25,12 +25,13 @@ int main(int ac, char **av) {
         //config file
         disableEchoCtrl();
         signal(SIGINT, signalHandler);
+        // signal(SIGPIPE, SIG_IGN);
         //multiplexer
         try {
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
-            // confi.printprint();
             epollFd = createSockets(config, serverFds);     
+            confi.printprint();
             while (1) {                                                 //this loop is here if epoll fd somehow got closed and epoll wait fails and i have to create and instance of epoll fd;
                 multiplexerSytm(serverFds, epollFd, config);
                 epollFd = startEpoll(serverFds);
@@ -40,6 +41,9 @@ int main(int ac, char **av) {
             cerr << msg.what() << endl;
             cerr << "msg.what()" << endl;
             return -1;
+        }
+        catch (...) {
+            cout << "HERE\n";
         }
 	}
     return 0;
