@@ -2,13 +2,13 @@
 
 httpSession::httpSession(int clientFd, configuration& config)
 	: clientFd(clientFd), sstat(e_sstat::method), config(config), rules(NULL)
-	, cgi(NULL), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {
+	, cgi(NULL), statusCode(200), codeMeaning("OK"), closeAutoIndex(false), req(Request(*this)), res(Response(*this)) {
 	// cerr << clientFd << " http session constructor called" << endl;
 }
 
 httpSession::httpSession()
 	: clientFd(-1), sstat(e_sstat::method), config(configuration()), rules(NULL)
-	, cgi(NULL), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {
+	, cgi(NULL), statusCode(200), codeMeaning("OK"), closeAutoIndex(false), req(Request(*this)), res(Response(*this)) {
 	// cerr << clientFd << " http session default constructor called" << endl;
 	}
 
@@ -16,6 +16,7 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd),
 	req(Request(*this)), res(Response(*this))
 {
 	// cerr << clientFd << " http session copy constructor called" << endl;
+	closeAutoIndex = other.closeAutoIndex;
 	sstat = other.sstat;
 	method = other.method;
 	path = other.path;
@@ -145,8 +146,9 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 			perror("epoll_wait failed");
 			if (errno == EBADF || errno == ENOMEM) {
 				//close all client's connections
-				// for (map<int, httpSession*>::iterator it = sessions.begin(); it != sessions.end(); ++it) {
-				// }
+				for (map<int, httpSession>::iterator it = sessions.begin(); it != sessions.end(); ++it) {
+					close(it->first);
+				}
 				close(epollFd);
 				return;
 			}
@@ -166,10 +168,6 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}
 				else if (events[i].events & EPOLLOUT) {
-					if (sessions[fd].cookieSeted == false) {
-						sessions[fd].cookieSeted = true;
-						setCookie(sessions[fd].sessionId, sessions[fd].getHeaders()["cookie"]);
-					}
 					timeOut[fd] = sessions[fd].res.handelClientRes(fd);
 					resSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}

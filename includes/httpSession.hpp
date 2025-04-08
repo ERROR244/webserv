@@ -18,6 +18,8 @@
 // #include <pair>
 #include <ctime>
 
+
+
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
@@ -57,6 +59,7 @@ private:
 	int					statusCode;
 	string				codeMeaning;
 	string				returnedLocation;
+	bool				closeAutoIndex;
 
 public:
 	class Request {
@@ -104,14 +107,14 @@ public:
 
 		time_t				handelClientRes(const int clientFd);
 	};
-
-	Request		req;
-	Response	res;
-
 	httpSession(int clientFd, configuration& confi);
 	httpSession(const httpSession& other);
 	httpSession();
 	~httpSession();
+
+	Request		req;
+	Response	res;
+
 
 	int					parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
 	configuration		clientConfiguration() const;
@@ -119,15 +122,8 @@ public:
 	const e_sstat&		status() const;
 	void				reSetPath(const string& newPath);
 	map<string, string>	getHeaders() { return headers; }
-
-	string	sessionId;
-	bool	cookieSeted;
 };
 
 bool				checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);
-string				getSessionID(const map<string, string>& headers);
-string				generateSessionID();
-string				getSessionCookie(string& sessionID);
-void				setCookie(string& sessionId, const string& cookieId);
-
-
+string				generate_autoindex_html(const string& dir_path, const string& uri_path);
+bool				write_to_file(const string& filename, const string& content);

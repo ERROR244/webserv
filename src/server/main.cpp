@@ -39,7 +39,6 @@ int main(int ac, char **av) {
         }
         catch (const exception& msg) {
             cerr << msg.what() << endl;
-            cerr << "msg.what()" << endl;
             return -1;
         }
         catch (...) {

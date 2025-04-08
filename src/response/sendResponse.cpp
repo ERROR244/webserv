@@ -21,22 +21,17 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
         ext[".html"]  = "Content-Type: text/html\r\n";
         ext[".ico"]   = "Content-Type: image/x-icon\r\n";
         ext[".iso"]   = "Content-Type: application/octet-stream\r\n";
-        ext[".js"]    = "Content-Type: text/javascript\r\n";
-        ext[".jpg"]   = "Content-Type: images/jpeg\r\n";
+        ext[".jpg"]   = "Content-Type: image/jpeg\r\n";
         ext[".jpeg"]  = "Content-Type: image/jpeg\r\n";
         ext[".json"]  = "Content-Type: application/json\r\n";
-        ext[".java"]  = "Content-Type: text/x-java-source\r\n";
         ext[".mjs"]   = "Content-Type: text/javascript\r\n";
         ext[".mp3"]   = "Content-Type: audio/mpeg\r\n";
         ext[".mp4"]   = "Content-Type: video/mp4\r\n";
         ext[".mov"]   = "Content-Type: video/quicktime\r\n";
         ext[".mkv"]   = "Content-Type: video/x-matroska\r\n";
         ext[".ogg"]   = "Content-Type: audio/ogg\r\n";
-        ext[".odt"]   = "Content-Type: application/vnd.oasis->opendocument.text\r\n";
-        ext[".ods"]   = "Content-Type: application/vnd.oasis->opendocument.spreadsheet\r\n";
-        ext[".odp"]   = "Content-Type: application/vnd.oasis->opendocument.presentation\r\n";
         ext[".otf"]   = "Content-Type: font/otf\r\n";
-        ext[".png"]   = "Content-Type: images/png\r\n";
+        ext[".png"]   = "Content-Type: image/png\r\n";
         ext[".pdf"]   = "Content-Type: application/pdf\r\n";
         ext[".ppt"]   = "Content-Type: application/vnd.ms-powerpoint\r\n";
         ext[".pptx"]  = "Content-Type: application/vnd.openxmlformats-officedocument.presentationml.presentation\r\n";
@@ -47,7 +42,6 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
         ext[".svg"]   = "Content-Type: image/svg+xml\r\n";
         ext[".sh"]    = "Content-Type: application/x-sh\r\n";
         ext[".sfnt"]  = "Content-Type: font/sfnt\r\n";
-        ext[".txt"]   = "Content-Type:getSessionCookie audio/wav\r\n";
         ext[".webm"]  = "Content-Type: video/webm\r\n";
         ext[".woff"]  = "Content-Type: font/woff\r\n";
         ext[".woff2"] = "Content-Type: font/woff2\r\n";
@@ -55,6 +49,12 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
         ext[".xls"]   = "Content-Type: application/vnd.ms-excel\r\n";
         ext[".xlsx"]  = "Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n";
         ext[".zip"]   = "Content-Type: application/zip\r\n";
+        ext[".odt"]   = "Content-Type: application/vnd.oasis.opendocument.text\r\n"; // FIXED
+        ext[".ods"]   = "Content-Type: application/vnd.oasis.opendocument.spreadsheet\r\n"; // FIXED
+        ext[".odp"]   = "Content-Type: application/vnd.oasis.opendocument.presentation\r\n"; // FIXED
+        ext[".txt"]   = "Content-Type: text/plain\r\n"; // FIXED - was gibberish before
+        ext[".js"]    = "Content-Type: application/javascript\r\n"; // More modern than text/javascript
+        ext[".java"]  = "Content-Type: text/java\r\n"; // Alternative to x-java-source
     }
     if (ext.find(key) != ext.end()) {
         return ext[key];
@@ -85,19 +85,21 @@ void httpSession::Response::Get(int clientFd, bool smallFile) {
         response = "HTTP/1.1 200 OK\r\n" + fileType +
                         "Content-Length: " + toString(body.size()) + "\r\n" + "Connection: " +
                         (s.headers["connection"].empty() ? "close" : s.headers["connection"]) +
-                        getSessionCookie(s.sessionId) +
                         string("\r\n\r\n");
         response += body;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         s.sstat = done;
         lastActivityTime = time(NULL);      // for timeout
+        if (s.closeAutoIndex == true) {
+            cout << "=====================YEAH" << endl;
+            unlink(s.path.c_str());
+        }
     }
     else {
         headerSended = true;
         contentFd = open(s.path.c_str(), O_RDONLY);
         response = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" + fileType + "Connection: " +
                             (s.headers["connection"].empty() ? "close" : s.headers["connection"]) +
-                            getSessionCookie(s.sessionId) +
                             string("\r\n\r\n");
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
     }
@@ -128,5 +130,9 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
         if (contentFd >= 0)
             ft_close(contentFd, "fileFd");
         lastActivityTime = time(NULL);      // for timeout
+        if (s.closeAutoIndex == true) {
+            cout << "=====================YEAH" << endl;
+            unlink(s.path.c_str());
+        }
     }
 }

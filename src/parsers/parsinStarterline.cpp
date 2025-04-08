@@ -66,6 +66,7 @@ void	httpSession::Request::isCGI() {
 
 void	httpSession::Request::reconstructUri() {
 	struct stat pathStat;
+	string tmpOriginalPath;
 
 	if (s.rules == NULL)
 		throw(statusCodeException(404, "Not Found1"));
@@ -76,7 +77,7 @@ void	httpSession::Request::reconstructUri() {
 		s.sstat = e_sstat::sHeader;
 		return ;
 	} else {
-		string tmpOriginalPath = s.path;
+		tmpOriginalPath = s.path;
 		s.path.erase(s.path.begin(), s.path.begin()+s.rules->uri.size());
 		s.path = s.rules->reconfigurer + s.path;
 		if (s.path.find("/../") != string::npos || s.path.find("/..\0") != string::npos)
@@ -105,9 +106,22 @@ void	httpSession::Request::reconstructUri() {
 	case GET: {
 		stat(s.path.c_str(), &pathStat);
 		if (S_ISDIR(pathStat.st_mode)) {
+			string tmp = s.path;
 			s.path += "/" + s.rules->index;
-			if (stat(s.path.c_str(), &pathStat))
-				throw(statusCodeException(404, "Not Found2"));
+			if (stat(s.path.c_str(), &pathStat) && s.rules->autoIndex == false) {
+				throw(statusCodeException(403, "Forbidden"));
+			}
+			else {
+				string html = generate_autoindex_html(tmp, tmpOriginalPath);
+				s.path = tmp + "/.index.html";
+				if (html.empty()) {
+					cout << "Failed to generate the HTML\n";
+				} else {
+					if (write_to_file(s.path, html)) {
+						s.closeAutoIndex = true;
+					}
+				}
+			}
 		}
 		break;
 	}
