@@ -10,8 +10,8 @@ void disableEchoCtrl() {
 }
 
 void signalHandler( int signum ) {
-   cout << "Interrupt signal (" << signum << ") received.\n";
-   exit(signum);
+    cout << "Interrupt signal (" << signum << ") received.\n";
+    throw "";
 }
 
 int main(int ac, char **av) {
@@ -22,12 +22,12 @@ int main(int ac, char **av) {
     if (ac != 2) {
         cerr << "invalid number of argument" << endl;
     } else {
-        //config file
-        disableEchoCtrl();
-        signal(SIGINT, signalHandler);
-        // signal(SIGPIPE, SIG_IGN);
-        //multiplexer
         try {
+            //config file
+            disableEchoCtrl();
+            signal(SIGINT, signalHandler);
+            // signal(SIGPIPE, SIG_IGN);
+            //multiplexer
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
             epollFd = createSockets(config, serverFds);     
@@ -43,7 +43,7 @@ int main(int ac, char **av) {
             return -1;
         }
         catch (...) {
-            cout << "HERE\n";
+            cout << "the server has been stoped\n";
         }
 	}
     return 0;
