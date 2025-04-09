@@ -108,17 +108,23 @@ void	httpSession::Request::reconstructUri() {
 		if (S_ISDIR(pathStat.st_mode)) {
 			string tmp = s.path;
 			s.path += "/" + s.rules->index;
-			if (stat(s.path.c_str(), &pathStat) && s.rules->autoIndex == false) {
-				throw(statusCodeException(403, "Forbidden"));
-			}
+			cout << "to_check: " << s.path << endl;
+			if (access(s.path.c_str(), F_OK) != -1)
+				break;
 			else {
-				string html = generate_autoindex_html(tmp, tmpOriginalPath);
-				s.path = tmp + "/.index.html";
-				if (html.empty()) {
-					cout << "Failed to generate the HTML\n";
-				} else {
-					if (write_to_file(s.path, html)) {
-						s.closeAutoIndex = true;
+				// false means off
+				if (s.rules->autoIndex == false) {
+					throw(statusCodeException(403, "Forbidden"));
+				}
+				else {
+					string html = generate_autoindex_html(tmp, tmpOriginalPath);
+					s.path = tmp + "/.index.html";
+					if (html.empty()) {
+						cout << "Failed to generate the HTML\n";
+					} else {
+						if (write_to_file(s.path, html) == true) {
+							s.closeAutoIndex = true;
+						}
 					}
 				}
 			}

@@ -3,11 +3,13 @@
 httpSession::Response::Response(httpSession& session) : s(session), headerSended(false), contentFd(-1), cgiHeadersParsed(false), lastActivityTime(0) {}
 
 void	httpSession::Response::handelRedirection(const int clientFd) {
-    string response = "HTTP/1.1 301 Moved Permanently\n\r"
-                        "Content-Length: " + toString(34 + s.returnedLocation.size()) + "\n\r"
-                        "Content-Type: text/html; charset=utf-8\n\r"
-                        "Location: " + s.returnedLocation + "\n\r\n\r"
-                        "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n\r";
+    std::string body = "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n";
+    std::string response = "HTTP/1.1 301 Moved Permanently\r\n"
+                        "Content-Length: " + toString(body.length()) + "\r\n"
+                        "Content-Type: text/html; charset=utf-8\r\n"
+                        "Location: " + s.returnedLocation + "\r\n"
+                        "\r\n" + body;
+    
     send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
     s.sstat = done;
     lastActivityTime = time(NULL);
