@@ -1,13 +1,13 @@
 #include "server.h"
 
 httpSession::httpSession(int clientFd, configuration& config)
-	: clientFd(clientFd), sstat(e_sstat::method), config(config), rules(NULL)
+	: clientFd(clientFd), sstat(ss_method), config(config), rules(NULL)
 	, cgi(NULL), statusCode(200), codeMeaning("OK"), closeAutoIndex(false), req(Request(*this)), res(Response(*this)) {
 	// cerr << clientFd << " http session constructor called" << endl;
 }
 
 httpSession::httpSession()
-	: clientFd(-1), sstat(e_sstat::method), config(configuration()), rules(NULL)
+	: clientFd(-1), sstat(ss_method), config(configuration()), rules(NULL)
 	, cgi(NULL), statusCode(200), codeMeaning("OK"), closeAutoIndex(false), req(Request(*this)), res(Response(*this)) {
 	// cerr << clientFd << " http session default constructor called" << endl;
 	}
@@ -54,7 +54,7 @@ void	httpSession::reSetPath(const string& newPath) {
 void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
 	struct epoll_event	ev;
 
-	if (status == done) {
+	if (status == ss_done) {
 		cerr << "done sending the response" << endl;
 		ev.events = EPOLLIN;
 		ev.data.fd = clientFd;
@@ -63,7 +63,7 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		// delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
-	else if (status == cclosedcon) {
+	else if (status == ss_cclosedcon) {
 		cerr << "client closed the connection" << endl;
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
@@ -76,7 +76,7 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
 	struct epoll_event	ev;
 
-	if (status == sHeader) {
+	if (status == ss_sHeader) {
 		ev.events = EPOLLOUT;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
@@ -84,7 +84,7 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 			throw(statusCodeException(500, "Internal Server Error"));
 		}
 	}
-	else if (status == cclosedcon) {
+	else if (status == ss_cclosedcon) {
 		cerr << "client closed the connection" << endl;
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");

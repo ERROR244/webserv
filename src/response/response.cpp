@@ -11,7 +11,7 @@ void	httpSession::Response::handelRedirection(const int clientFd) {
                         "\r\n" + body;
     
     send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
-    s.sstat = done;
+    s.sstat = ss_done;
     lastActivityTime = time(NULL);
 }
 
@@ -20,10 +20,10 @@ time_t	httpSession::Response::handelClientRes(const int clientFd) {
         handelRedirection(clientFd);
     }
     else if(s.cgi) {
-		if (s.sstat == sHeader) {
+		if (s.sstat == ss_sHeader) {
 			s.cgi->prepearingCgiEnvVars(s.headers);
 			s.cgi->setupCGIProcess();
-			s.sstat = sBody;
+			s.sstat = ss_sBody;
 		}
 		sendCgiOutput(clientFd);
         //incase of client closin the connection what will you do
@@ -121,7 +121,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         response += "Connection: " + (s.getHeaders()["connection"].empty() ? "close" : s.getHeaders()["connection"]) + "\r\n\r\n";
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         lastActivityTime = time(NULL);
-        s.sstat = done;
+        s.sstat = ss_done;
     }
     if (s.method == DELETE) {
         string response = getDeleteRes(s.path, s.headers["connection"], file_stat);
@@ -129,7 +129,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         cout << "response---> " << response << endl;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         lastActivityTime = time(NULL);
-        s.sstat = done;
+        s.sstat = ss_done;
     }
 }
 

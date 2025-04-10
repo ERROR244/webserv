@@ -15,12 +15,12 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		ch = buffer[pos];
 		switch (sstat)
 		{
-		case e_sstat::fieldLine: {
+		case ss_fieldLine: {
 			switch (ch)
 			{
 			case ':': { //test-> : field name ? valid?
 				fieldline = buffer.substr(pos-len, len).cppstring();
-				sstat = e_sstat::wssBeforeFieldName;
+				sstat = ss_wssBeforeFieldName;
 				for (size_t i = 0; i < fieldline.size(); ++i)
 					fieldline[i] = tolower(fieldline[i]);
 				break;
@@ -36,17 +36,17 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			++len;
 			break;
 		}
-		case e_sstat::wssBeforeFieldName: {
+		case ss_wssBeforeFieldName: {
 			switch (ch)
 			{
 			case '\r': {
 				headers[fieldline] = "";
-				sstat = e_sstat::fieldNl;
+				sstat = ss_fieldNl;
 				break;
 			}
 			case '\n': {
 				headers[fieldline] = "";
-				sstat = e_sstat::emptyline;
+				sstat = ss_emptyline;
 				len = 0;
 				++pos;
 				continue;
@@ -55,24 +55,24 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			case '\f': case '\v':
 				break;
 			default: {
-				sstat = e_sstat::filedName;
+				sstat = ss_filedName;
 				len = 0;
 				continue;
 			}
 			}
 			break;
 		}
-		case e_sstat::filedName: {
+		case ss_filedName: {
 			switch (ch)
 			{
 			case '\r': {
 				headers[fieldline] = trimTrailinWs(buffer.substr(pos-len, len).cppstring());
-				sstat = e_sstat::fieldNl;
+				sstat = ss_fieldNl;
 				break;
 			}
 			case '\n': {
 				headers[fieldline] = trimTrailinWs(buffer.substr(pos-len, len).cppstring());
-				sstat = e_sstat::emptyline;
+				sstat = ss_emptyline;
 				len = 0;
 				++pos;
 				continue;
@@ -81,14 +81,14 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			++len;
 			break ;
 		}
-		case e_sstat::fieldNl: {
+		case ss_fieldNl: {
 			if (ch != '\n')
 				throw(statusCodeException(400, "Bad Request16"));
-			sstat = e_sstat::emptyline;
+			sstat = ss_emptyline;
 			len = 0;
 			break;
 		}
-		case e_sstat::emptyline: {
+		case ss_emptyline: {
 			switch (ch)
 			{
 			case '\r': {
@@ -100,11 +100,11 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 				switch (method)
 				{
 					case POST: {
-						sstat = e_sstat::body;
+						sstat = ss_body;
 						break;
 					}
 					default:
-						sstat = e_sstat::sHeader;
+						sstat = ss_sHeader;
 				}
 				// cerr << "----headers----" << endl;
 				// for (const auto& it : headers)
@@ -115,7 +115,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			default: {
 				if (len != 0)
 					throw(statusCodeException(400, "Bad Request18"));
-				sstat = e_sstat::fieldLine;
+				sstat = ss_fieldLine;
 				len = 0;
 				continue;
 			}
@@ -125,9 +125,9 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		}
 		default:
 			break;
-		// case e_sstat::uri: case e_sstat::httpversion: case e_sstat::starterlineNl:
-		// case e_sstat::body: case e_sstat::sHeader: case e_sstat::sBody:
-		// case e_sstat::done: case e_sstat::cclosedcon: case e_sstat::method: break;
+		// case ss_uri: case ss_httpversion: case ss_starterlineNl:
+		// case ss_body: case ss_sHeader: case ss_sBody:
+		// case ss_done: case ss_cclosedcon: case ss_method: break;
 		}
 		++pos;
 		if (++headerFieldsLen > HEADER_FIELD_MAXSIZE)

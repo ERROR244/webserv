@@ -74,7 +74,7 @@ void	httpSession::Request::reconstructUri() {
 		s.statusCode = 301;
 		s.codeMeaning = "Moved Permanently";
 		s.returnedLocation = s.rules->reconfigurer;
-		s.sstat = e_sstat::sHeader;
+		s.sstat = ss_sHeader;
 		return ;
 	} else {
 		tmpOriginalPath = s.path;
@@ -94,7 +94,7 @@ void	httpSession::Request::reconstructUri() {
 			s.statusCode = 301;
 			s.codeMeaning = "Moved Permanently";
 			s.returnedLocation = tmpOriginalPath + "/";
-			s.sstat = e_sstat::sHeader;
+			s.sstat = ss_sHeader;
 			return ;
 		}
 		cerr << s.path << endl;
@@ -163,7 +163,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 		ch = buffer[i];
 		switch (s.sstat)
 		{
-		case e_sstat::method: {
+		case ss_method: {
 			switch (ch)
 			{
 			case ' ': {
@@ -190,7 +190,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				default:
 					throw(statusCodeException(400, "Bad Request5"));
 				}
-				s.sstat = e_sstat::uri;
+				s.sstat = ss_uri;
 				len = 0;
 				continue;
 			}
@@ -202,7 +202,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			++len;
 			break;
 		}
-		case e_sstat::uri: {
+		case ss_uri: {
 			switch (len)
 			{
 			case URI_MAXSIZE:
@@ -231,7 +231,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				else
 					s.query = buffer.substr(i-len+1, len).cppstring();
 				reconstructUri();
-				s.sstat = e_sstat::httpversion;
+				s.sstat = ss_httpversion;
 				len = 0;
 				continue;
 			}
@@ -248,13 +248,13 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			++len;
 			break;
 		}
-		case e_sstat::httpversion: {
+		case ss_httpversion: {
 			switch (len)
 			{
 			case 7: {
 				if (buffer.ncmp("HTTP/1.1", 8, i-len))
 					throw(statusCodeException(400, "Bad Request9"));
-				s.sstat = e_sstat::starterlineNl;
+				s.sstat = ss_starterlineNl;
 				len = 0;
 				continue;
 			}
@@ -264,7 +264,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			++len;
 			break;
 		}
-		case e_sstat::starterlineNl: {
+		case ss_starterlineNl: {
 			switch (ch)
 			{
 			case '\r': {
@@ -273,7 +273,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				break;
 			}
 			case '\n': {
-				s.sstat = e_sstat::emptyline;
+				s.sstat = ss_emptyline;
 				cerr << "uri -> " << s.path << endl;
 				return i+1;
 			}
