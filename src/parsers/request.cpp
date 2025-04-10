@@ -7,7 +7,7 @@ void	httpSession::Request::readfromsock() {
 	ssize_t byteread;
 	ssize_t bufferPos = 0;
 	if ((byteread = recv(s.clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT)) <= 0) {
-		s.sstat = cclosedcon;
+		s.sstat = ss_cclosedcon;
 		return ;
 	}
 	bstring bbuffer(buffer, byteread);
@@ -20,7 +20,7 @@ void	httpSession::Request::readfromsock() {
 		bufferPos = parseStarterLine(bbuffer);
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)
 			throw(statusCodeException(400, "Bad Request14"));
-		if (s.sstat == e_sstat::body)
+		if (s.sstat == ss_body)
 			bodyFormat();
 	}
 	if (static_cast<size_t>(bufferPos) < bbuffer.size())

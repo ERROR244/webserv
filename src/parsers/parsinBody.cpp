@@ -110,11 +110,11 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 			if (sepBoundary == 0) {
 				map<string, string>	contentHeaders;
 				if (fd != -1) {
-					if (write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) < 0) {
+					if (boundaryStartinPos-contentStartinPos && write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) <= 0) {
 						throw(statusCodeException(500, "Internal Server Error"));
 					}
 				}
-				s.sstat = e_sstat::emptyline;
+				s.sstat = ss_emptyline;
 				if ((contentStartinPos = s.parseFields(buffer, buffer.find('\n', boundaryStartinPos+boundary.size())+1, contentHeaders)) < 0) {
 					cerr << "unfinished body headers" << endl;
 					remainingBody = buffer.substr(boundaryStartinPos);
@@ -122,11 +122,11 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 					fd = -1;
 					return;
 				}
-				s.sstat = e_sstat::body;
+				s.sstat = ss_body;
 				fd = openFile(contentHeaders["content-disposition"], s.rules->uploads);
 			} else {
 				cerr << "end boundary" << endl;
-				if (write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) < 0) {
+				if (boundaryStartinPos-contentStartinPos && write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) <= 0) {
 					throw(statusCodeException(500, "Internal Server Error"));
 				}
 				if (length)
@@ -138,17 +138,17 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 	}
 	size_t lastlinePos = buffer.rfind('\n');
 	if (length == 0)
-		s.sstat = e_sstat::sHeader;
+		s.sstat = ss_sHeader;
 	else if (buffer.size()-lastlinePos <= boundary.size()+2) {
 		if (lastlinePos && buffer[lastlinePos-1] == '\r')
 			--pos;
 		remainingBody = buffer.substr(lastlinePos);
 		length += remainingBody.size();
-		if (write(fd, &(buffer[contentStartinPos]), lastlinePos) < 0) {
+		if (lastlinePos && write(fd, &(buffer[contentStartinPos]), lastlinePos) <= 0) {
 			throw(statusCodeException(500, "Internal Server Error"));
 		}
 	} else {
-		if (write(fd, &(buffer[contentStartinPos]), buffer.size()-contentStartinPos) < 0)
+		if (buffer.size()-contentStartinPos && write(fd, &(buffer[contentStartinPos]), buffer.size()-contentStartinPos) <= 0)
 			throw(statusCodeException(500, "Internal Server Error"));
 	}
 }
@@ -170,7 +170,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 				if (hexLength == "0") {
 					s.headers["content-length"] = to_string(s.cgiBody.size());
 					s.headers.erase(s.headers.find("transfer-encoding"));
-					s.sstat = e_sstat::sHeader;
+					s.sstat = ss_sHeader;
 					cerr << "cgi's body(unchunked)" << endl;
 					cerr << s.cgiBody << endl;
 					cerr << "------------------------------------" << endl;
@@ -207,7 +207,7 @@ void	httpSession::Request::bufferTheBody(const bstring& buffer, size_t pos) {
 	if (length == 0) {
 		cerr << "cgi's body" << endl;
 		cerr << s.cgiBody << endl;
-		s.sstat = e_sstat::sHeader;
+		s.sstat = ss_sHeader;
 		cerr << "--------" << endl;
 	}
 }

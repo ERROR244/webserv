@@ -32,9 +32,9 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
         int     byteWrite;
 
         cerr << s.cgi->wFd() << endl;
-        if ((byteWrite = write(s.cgi->wFd(), s.cgiBody.c_str(), s.cgiBody.size())) < 0) {
+        if ((byteWrite = write(s.cgi->wFd(), s.cgiBody.c_str(), s.cgiBody.size())) <= 0) {
             perror("write failed(sendResponse.cpp 185)");
-            s.sstat = cclosedcon;
+            s.sstat = ss_cclosedcon;
             return;
         }
         cerr << "byte write: " << byteWrite << endl;
@@ -44,7 +44,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
     }
     else if ((byteRead = read(s.cgi->rFd(), buff, BUFFER_SIZE)) < 0) {
         perror("read failed(sendResponse.cpp 152)");
-        s.sstat = cclosedcon;
+        s.sstat = ss_cclosedcon;
         return;
     }
     bstring bbuffer(buff, byteRead);
@@ -56,18 +56,18 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
             map<string, string>	cgiHeaders;
             ssize_t  bodyStartPos = 0;
 
-            s.sstat = e_sstat::emptyline;
+            s.sstat = ss_emptyline;
             try {
                 if ((bodyStartPos = s.parseFields(bbuffer, 0, cgiHeaders)) < 0) { // i might use a buffer here in case of incomplete fields
                     perror("write failed(sendResponse.cpp 143)");
-		            s.sstat = cclosedcon;
+		            s.sstat = ss_cclosedcon;
                     return;
                 }
             } catch (...) {
-                s.sstat = cclosedcon;
+                s.sstat = ss_cclosedcon;
                 return;
             }
-            s.sstat = e_sstat::sBody;
+            s.sstat = ss_sBody;
             chunkedResponse += ("HTTP/1.1 " + to_string(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
             chunkedResponse += tweakAndCheckHeaders(cgiHeaders);
             bbuffer = bbuffer.substr(bodyStartPos);
@@ -82,16 +82,16 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
         cerr << "-------------" << endl;
         if (send(clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT) <= 0) {
             perror("send failed(sendResponse.cpp 50)");
-			s.sstat = cclosedcon;
+			s.sstat = ss_cclosedcon;
 			return ;
         }
-    } else if (waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
+    } else if (byteRead == 0 && waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
         if (send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT) <= 0) {
 			perror("write failed(sendResponse.cpp 56)");
-			s.sstat = cclosedcon;
+			s.sstat = ss_cclosedcon;
 			return ;
 		}
-        s.sstat = done;
+        s.sstat = ss_done;
 		close(s.cgi->rFd());
 		close(s.cgi->wFd());
     }

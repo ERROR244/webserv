@@ -88,7 +88,7 @@ void httpSession::Response::Get(int clientFd, bool smallFile) {
                         string("\r\n\r\n");
         response += body;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
-        s.sstat = done;
+        s.sstat = ss_done;
         lastActivityTime = time(NULL);      // for timeout
         if (s.closeAutoIndex == true) {
             cout << "=====================YEAH" << endl;
@@ -111,7 +111,6 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
 
     if (bytesRead < 0) {
         cout << contentFd << endl;
-        //remove client
         perror("ba33");
     }
     else if (bytesRead > 0) {
@@ -126,7 +125,7 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
     else {
         buffer[bytesRead] = '\0';
         send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT | MSG_NOSIGNAL);
-        s.sstat = done;
+        s.sstat = ss_done;
         headerSended = false;
         if (contentFd >= 0)
             ft_close(contentFd, "fileFd");

@@ -28,20 +28,20 @@
 using namespace std;
 
 enum e_sstat {//session stat
-	method=0,
-	uri,
-	httpversion,
-	starterlineNl,
-	fieldLine,
-	wssBeforeFieldName,
-	filedName,
-	fieldNl,
-	emptyline,
-	body,
-	sHeader,
-	sBody,
-	done,
-	cclosedcon,
+	ss_method=0,
+	ss_uri,
+	ss_httpversion,
+	ss_starterlineNl,
+	ss_fieldLine,
+	ss_wssBeforeFieldName,
+	ss_filedName,
+	ss_fieldNl,
+	ss_emptyline,
+	ss_body,
+	ss_sHeader,
+	ss_sBody,
+	ss_done,
+	ss_cclosedcon,
 };
 
 class httpSession {
