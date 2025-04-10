@@ -5,7 +5,7 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 	string			msg;
 	string			body;
 
-	msg += "HTTP/1.1 " + to_string(statusCode) + " " + codeMeaning + "\r\n"; 
+	msg += "HTTP/1.1 " + toString(statusCode) + " " + codeMeaning + "\r\n"; 
 	msg += "Content-type: text/html\r\n";
 	if (statusCode >= 500)
 		msg += "Connection: close";

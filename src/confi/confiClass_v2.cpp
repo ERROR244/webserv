@@ -275,6 +275,7 @@ void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
 	int i = checkKey("autoindex:", line);
 	line = trim(line.substr(i));
 
+	kv.autoIndex = false;
 	if (line == "on")
 		kv.autoIndex = true;
 }

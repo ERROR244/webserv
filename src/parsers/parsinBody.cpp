@@ -168,7 +168,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 					crInLine = true;
 				string hexLength = buffer.substr(pos, nlPos-pos-crInLine).cppstring();//incase of unvalid number then whatttttttttt;
 				if (hexLength == "0") {
-					s.headers["content-length"] = to_string(s.cgiBody.size());
+					s.headers["content-length"] = toString(s.cgiBody.size());
 					s.headers.erase(s.headers.find("transfer-encoding"));
 					s.sstat = ss_sHeader;
 					cerr << "cgi's body(unchunked)" << endl;

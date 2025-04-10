@@ -87,8 +87,10 @@ void	httpSession::Request::reconstructUri() {
 			cerr << "---CGIIIIIIIIIIIIIIII---" << endl;
 			return;
 		}
-		stat(("."+s.path).c_str(), &pathStat);
-		if (S_ISDIR(pathStat.st_mode) && s.path[s.path.size()-1] != '/') {
+		if (stat(("." + s.path).c_str(), &pathStat) != 0) {
+			throw statusCodeException(404, "Not Found"); // or something else
+		}
+		else if (S_ISDIR(pathStat.st_mode) && s.path.back() != '/') {
 			s.statusCode = 301;
 			s.codeMeaning = "Moved Permanently";
 			s.returnedLocation = tmpOriginalPath + "/";

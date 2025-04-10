@@ -47,7 +47,7 @@ std::string generate_autoindex_html(const std::string &dir_path, const std::stri
         html_stream << "<a href=\"" << uri_path << "/" << entry->d_name << "\">"
             << std::left << std::setw(32) << entry->d_name << "</a>  "
             << timebuf << "  "
-            << (S_ISDIR(st.st_mode) ? "<DIR>" : std::to_string(st.st_size)) << "\n";
+            << (S_ISDIR(st.st_mode) ? "<DIR>" : toString(st.st_size)) << "\n";
     }
 
 
