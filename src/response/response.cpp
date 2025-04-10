@@ -16,6 +16,7 @@ void	httpSession::Response::handelRedirection(const int clientFd) {
 }
 
 time_t	httpSession::Response::handelClientRes(const int clientFd) {
+    cout << "HHHHHEAR-------> " << s.path << endl;
     if (!s.returnedLocation.empty()) {
         handelRedirection(clientFd);
     }
@@ -112,7 +113,7 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
             sendBodyifChunked(clientFd);
         }
     }
-    if (s.method == POST) {
+    else if (s.method == POST) {
         // cout << "POST method called on " << s.path << endl;
         string response;
         response += "HTTP/1.1 204 No Content\r\n";
@@ -123,7 +124,8 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         lastActivityTime = time(NULL);
         s.sstat = ss_done;
     }
-    if (s.method == DELETE) {
+    else if (s.method == DELETE) {
+        cout << "HHHHHEAR-------> " << s.path << endl;
         string response = getDeleteRes(s.path, s.headers["connection"], file_stat);
 
         cout << "response---> " << response << endl;

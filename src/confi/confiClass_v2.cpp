@@ -200,7 +200,7 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
 		throw std::runtime_error("invalid numbers of methods: " + toString(kv.methods.size()));
 	for (size_t i = 0; i < kv.methods.size(); ++i) {
 		if (kv.methods[i] != GET && kv.methods[i] != DELETE && kv.methods[i] != POST)
-			throw std::runtime_error("invalid method: `" + getMethods(kv.methods[i]) + "`");
+			throw std::runtime_error("invalid method at index: `" + toString(i) + "`");
 	}
 }
 

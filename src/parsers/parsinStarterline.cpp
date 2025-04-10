@@ -101,8 +101,12 @@ void	httpSession::Request::reconstructUri() {
 		s.path = w_realpath(("." + s.path).c_str());
 		cerr << s.path << endl;
 	}
-	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
+	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end()) {
+		cerr << "my m:  " << s.method << endl;
+		for (const auto& m : s.rules->methods)
+			cerr << m << endl;
 		throw(statusCodeException(405, "Method Not Allowed"));
+	}
 	switch (s.method)
 	{
 	case GET: {
@@ -142,10 +146,7 @@ void	httpSession::Request::reconstructUri() {
 		break;
 	}
 	case DELETE: {
-		if (!s.rules->uploads.empty()) {
-			s.path = s.rules->uploads + s.path;
-			s.path = w_realpath(("." + s.path).c_str());
-		} else
+		if (s.rules->uploads.empty())
 			throw(statusCodeException(403, "Forbidden"));
 		break;
 	}

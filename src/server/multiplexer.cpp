@@ -49,6 +49,7 @@ const e_sstat& httpSession::status() const {
 
 void	httpSession::reSetPath(const string& newPath) {
 	path = newPath;
+	method = GET;
 }
 
 void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
