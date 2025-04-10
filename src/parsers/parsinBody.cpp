@@ -48,7 +48,7 @@ static int	openFile(const string& value, const string& path) {
 		throw(statusCodeException(422, "Unprocessable Entity"));
 	if ((fd = open((path + "/" + keyvalue[1]).c_str(), O_CREAT | O_WRONLY, 0644)) < 0) {
 		perror("open failed");
-		throw(statusCodeException(500, "Internal Server Error"));
+		throw (statusCodeException(500, "Internal Server Error"));
 	}
 	return fd;
 }
@@ -111,7 +111,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				map<string, string>	contentHeaders;
 				if (fd != -1) {
 					if (write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) < 0) {
-						throw(statusCodeException(500, "Internal Server Error"));
+						throw (statusCodeException(500, "Internal Server Error"));
 					}
 				}
 				s.sstat = e_sstat::emptyline;
@@ -127,10 +127,10 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 			} else {
 				cerr << "end boundary" << endl;
 				if (write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) < 0) {
-					throw(statusCodeException(500, "Internal Server Error"));
+					throw (statusCodeException(500, "Internal Server Error"));
 				}
 				if (length)
-					throw(statusCodeException(400, "Bad Request19"));
+					throw (statusCodeException(400, "Bad Request19"));
 				break;//extin out of the loop cause i found the end boundary
 			}
 		}
@@ -145,11 +145,11 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 		remainingBody = buffer.substr(lastlinePos);
 		length += remainingBody.size();
 		if (write(fd, &(buffer[contentStartinPos]), lastlinePos) < 0) {
-			throw(statusCodeException(500, "Internal Server Error"));
+			throw (statusCodeException(500, "Internal Server Error"));
 		}
 	} else {
 		if (write(fd, &(buffer[contentStartinPos]), buffer.size()-contentStartinPos) < 0)
-			throw(statusCodeException(500, "Internal Server Error"));
+			throw (statusCodeException(500, "Internal Server Error"));
 	}
 }
 

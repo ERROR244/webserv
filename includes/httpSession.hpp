@@ -127,3 +127,4 @@ public:
 bool				checkTimeOut(map<int, time_t>& timeOut, const int& clientFd, time_t lastActivityTime);
 string				generate_autoindex_html(const string& dir_path, const string& uri_path);
 bool				write_to_file(const string& filename, const string& content);
+int		    		ft_epoll_wait(int __epfd, epoll_event *__events, int __maxevents, int __timeout, map<int, httpSession> serverFd, int epollFd);
