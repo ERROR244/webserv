@@ -109,8 +109,11 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				--boundaryStartinPos;
 			if (sepBoundary == 0) {
 				map<string, string>	contentHeaders;
-				if (fd != -1)
-					write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos);
+				if (fd != -1) {
+					if (write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) < 0) {
+						throw(statusCodeException(500, "Internal Server Error"));
+					}
+				}
 				s.sstat = e_sstat::emptyline;
 				if ((contentStartinPos = s.parseFields(buffer, buffer.find('\n', boundaryStartinPos+boundary.size())+1, contentHeaders)) < 0) {
 					cerr << "unfinished body headers" << endl;
@@ -123,7 +126,9 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				fd = openFile(contentHeaders["content-disposition"], s.rules->uploads);
 			} else {
 				cerr << "end boundary" << endl;
-				write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos);
+				if (write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) < 0) {
+					throw(statusCodeException(500, "Internal Server Error"));
+				}
 				if (length)
 					throw(statusCodeException(400, "Bad Request19"));
 				break;//extin out of the loop cause i found the end boundary
@@ -139,9 +144,12 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 			--pos;
 		remainingBody = buffer.substr(lastlinePos);
 		length += remainingBody.size();
-		write(fd, &(buffer[contentStartinPos]), lastlinePos);
+		if (write(fd, &(buffer[contentStartinPos]), lastlinePos) < 0) {
+			throw(statusCodeException(500, "Internal Server Error"));
+		}
 	} else {
-		write(fd, &(buffer[contentStartinPos]), buffer.size()-contentStartinPos);
+		if (write(fd, &(buffer[contentStartinPos]), buffer.size()-contentStartinPos) < 0)
+			throw(statusCodeException(500, "Internal Server Error"));
 	}
 }
 

@@ -111,6 +111,7 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
 
     if (bytesRead < 0) {
         cout << contentFd << endl;
+        //remove client
         perror("ba33");
     }
     else if (bytesRead > 0) {
