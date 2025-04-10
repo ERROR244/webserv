@@ -68,7 +68,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
                 return;
             }
             s.sstat = e_sstat::sBody;
-            chunkedResponse += ("HTTP/1.1 " + to_string(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
+            chunkedResponse += ("HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
             chunkedResponse += tweakAndCheckHeaders(cgiHeaders);
             bbuffer = bbuffer.substr(bodyStartPos);
             cgiHeadersParsed = true;
