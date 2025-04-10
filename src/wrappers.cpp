@@ -27,13 +27,24 @@ int w_stoi(const string& snum) {
     return num;
 }
 
+string ft_inet_ntoa(struct in_addr addr) {
+    char buffer[16];
+    uint32_t ip = ntohl(addr.s_addr);
+    snprintf(buffer, sizeof(buffer), "%u.%u.%u.%u",
+                (ip >> 24) & 0xFF,
+                (ip >> 16) & 0xFF,
+                (ip >> 8)  & 0xFF,
+                ip & 0xFF);
+    return string(buffer);
+}
+
 string getsockname(int clientFd) {
     struct sockaddr_in addr;
     socklen_t addrLen = sizeof(addr);
     string res;
 
     if (getsockname(clientFd, (struct sockaddr*)&addr, &addrLen) == 0) {
-        res = string(inet_ntoa(addr.sin_addr)) + ":" + toString(ntohs(addr.sin_port));
+        res = ft_inet_ntoa(addr.sin_addr) + ":" + toString(ntohs(addr.sin_port));
         return res;
     } else {
         throw "getsockname failed";

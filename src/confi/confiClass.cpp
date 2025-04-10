@@ -69,8 +69,8 @@ void ConfigFileParser::handleServer(ifstream& sFile) {
                                                                           	 handleError,
                                                                           	 handleLocs };
     string  line;
-    int     index;
-    int		serverFunc[5];
+    int     index = 0;
+    int		serverFunc[5] = {0};
 
     while (getline(sFile, line)) {
         line = trim(line);
