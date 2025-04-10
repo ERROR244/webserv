@@ -57,8 +57,7 @@ int ft_stoi(const std::string &__str) {
 	}
 	catch (exception& e) {
 		cout << e.what() << endl;
-		throw std::runtime_error("unvalid number: `" + __str + "`");
-	}
+		throw std::runtime_error("invalid number: `" + __str + "`");
 }
 
 int w_stoi(const string& snum) {
