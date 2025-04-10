@@ -78,14 +78,24 @@ string httpSession::Response::deleteDir(const string& dir, const string& connect
 
 string httpSession::Response::getDeleteRes(const string& path, const string& connection, struct stat& file_stat) {
     string response = "";
+    string body;
 
     if (path.find(s.rules->uploads) == string::npos) {
         std::cerr << "Directory Traversal Attempt While Deleting.\n";
+        body = "<!DOCTYPE html><html><head><title>409 Conflict</title></head><body><h1>Conflict</h1><p>you don't have access to resource.</p></body></html>";
         response += "HTTP/1.1 403 Forbidden\r\n";
         response += "Content-Type: text/html\r\n";
-        response += "content-length: 139\r\n";
-        response += "Connection: " + (connection.empty() ? "close" : connection);
-        response += "\r\n\r\n<!DOCTYPE html><html><head><title>409 Conflict</title></head><body><h1>Conflict</h1><p>you don't have access to resource.</p></body></html>";
+        response += "content-length: " + toString(body.size()) + "\r\n";
+        response += "Connection: " + (connection.empty() ? "close" : connection) + "\r\n\r\n";
+        response += body;
+    }
+    else if (!(file_stat.st_mode & S_IWUSR)) {
+        body = "<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>Forbidden</h1><p>user doesn't have write permission.</p></body></html>";
+        response += "HTTP/1.1 403 Forbidden\r\n";
+        response += "Content-Type: text/html\r\n";
+        response += "content-length: " + toString(body.size()) + "\r\n";
+        response += "Connection: " + (connection.empty() ? "close" : connection) + "\r\n\r\n";
+        response += body;
     }
     else if (S_ISDIR(file_stat.st_mode) != 0) {
         response = deleteDir(path, connection);
@@ -94,11 +104,12 @@ string httpSession::Response::getDeleteRes(const string& path, const string& con
         response = deleteFile(path, connection);
     }
     else {
+        body = "<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>Forbidden</h1><p>resource is not a file or directory.</p></body></html>";
         response += "HTTP/1.1 403 Forbidden\r\n";
         response += "Content-Type: text/html\r\n";
-        response += "content-length: 143\r\n";
-        response += "Connection: " + (connection.empty() ? "close" : connection);
-        response += "\r\n\r\n<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>Forbidden</h1><p>resource is not a file or directory.</p></body></html>";
+        response += "content-length: " + toString(body.size()) + "\r\n";
+        response += "Connection: " + (connection.empty() ? "close" : connection) + "\r\n\r\n";
+        response += body;
     }
     return response;
 }
@@ -125,10 +136,10 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         s.sstat = ss_done;
     }
     else if (s.method == DELETE) {
-        cout << "HHHHHEAR-------> " << s.path << endl;
+        // cout << "HHHHHEAR-------> " << s.path << endl;
         string response = getDeleteRes(s.path, s.headers["connection"], file_stat);
 
-        cout << "response---> " << response << endl;
+        // cout << "response---> " << response << endl;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         lastActivityTime = time(NULL);
         s.sstat = ss_done;
