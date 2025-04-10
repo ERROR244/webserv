@@ -142,17 +142,8 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 		if (checkTimeOutForEachUsr(timeOut) == true) {
 			continue ;
 		}
-		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
-			perror("epoll_wait failed");
-			if (errno == EBADF || errno == ENOMEM) {
-				//close all client's connections
-				for (map<int, httpSession>::iterator it = sessions.begin(); it != sessions.end(); ++it) {
-					close(it->first);
-				}
-				close(epollFd);
+		if ((nfds = ft_epoll_wait(epollFd, events, MAX_EVENTS, 0, sessions, epollFd)) == -1) {
 				return;
-			}
-			continue;
 		}
 		for (int i = 0; i < nfds; ++i) {
 			const int fd = events[i].data.fd;

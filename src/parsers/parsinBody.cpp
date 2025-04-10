@@ -48,7 +48,7 @@ static int	openFile(const string& value, const string& path) {
 		throw(statusCodeException(422, "Unprocessable Entity"));
 	if ((fd = open((path + "/" + keyvalue[1]).c_str(), O_CREAT | O_WRONLY, 0644)) < 0) {
 		perror("open failed");
-		throw(statusCodeException(500, "Internal Server Error"));
+		throw (statusCodeException(500, "Internal Server Error"));
 	}
 	return fd;
 }
@@ -130,7 +130,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 					throw(statusCodeException(500, "Internal Server Error"));
 				}
 				if (length)
-					throw(statusCodeException(400, "Bad Request19"));
+					throw (statusCodeException(400, "Bad Request19"));
 				break;//extin out of the loop cause i found the end boundary
 			}
 		}
