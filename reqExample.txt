@@ -1,0 +1,18 @@
+POST / HTTP/1.1
+Content-Type: multipart/form-data; boundary=--------------------------816074112567811307125415
+Content-Length: 452
+
+----------------------------816074112567811307125415
+Content-Disposition: form-data; name=""; filename="README.md"
+Content-Type: text/markdown
+
+# react-components-training
+
+A simple page built with HTML, CSS, & Js-> 
+
+## Todo: 
+[] Clone the project
+[] Run create-react-app
+[] Decide which code chunks need to be enclosed in an individual component 
+[] Convert the project into a react app.
+----------------------------816074112567811307125415--
