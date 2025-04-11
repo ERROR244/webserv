@@ -5,6 +5,10 @@ inline string  trimTrailinWs(const string& str) {
 	return str.substr(0, end + 1);
 }
 
+// bool	httpSession::Request::checkNecessaryHeaders() {
+// 	if (s.headers.find("host"))
+// }
+
 int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, string>& headers) {
 	size_t	size = buffer.size();
 	size_t	len = 0;
@@ -125,9 +129,6 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		}
 		default:
 			break;
-		// case ss_uri: case ss_httpversion: case ss_starterlineNl:
-		// case ss_body: case ss_sHeader: case ss_sBody:
-		// case ss_done: case ss_cclosedcon: case ss_method: break;
 		}
 		++pos;
 		if (++headerFieldsLen > HEADER_FIELD_MAXSIZE)

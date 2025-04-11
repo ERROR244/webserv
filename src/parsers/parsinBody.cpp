@@ -118,6 +118,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 					remainingBody = buffer.substr(boundaryStartinPos);
 					length += remainingBody.size();
 					fd = -1;
+					s.sstat = ss_body;
 					return;
 				}
 				s.sstat = ss_body;
@@ -128,7 +129,11 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				if (boundaryStartinPos-contentStartinPos && write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) <= 0) {
 					throw(statusCodeException(500, "Internal Server Error"));
 				}
-				if (length)
+				if (length == 0) {
+					s.sstat = ss_sHeader;
+					return;
+				}
+				else
 					throw (statusCodeException(400, "Bad Request19"));
 				break;//extin out of the loop cause i found the end boundary
 			}
@@ -136,9 +141,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 		pos = boundaryStartinPos+boundary.size();
 	}
 	size_t lastlinePos = buffer.rfind('\n');
-	if (length == 0)
-		s.sstat = ss_sHeader;
-	else if (static_cast<size_t>(contentStartinPos) < buffer.size() && buffer.size()-lastlinePos <= boundary.size()+2) {
+	if (static_cast<size_t>(contentStartinPos) < buffer.size() && buffer.size()-lastlinePos <= boundary.size()+2) {
 		if (lastlinePos && buffer[lastlinePos-1] == '\r')
 			--pos;
 		remainingBody = buffer.substr(lastlinePos);
