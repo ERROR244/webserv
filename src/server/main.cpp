@@ -26,13 +26,12 @@ int main(int ac, char **av) {
             //config file
             disableEchoCtrl();
             signal(SIGINT, signalHandler);
-            // signal(SIGPIPE, SIG_IGN);
             //multiplexer
             ConfigFileParser confi(av[1]);
             config = confi.parseFile();
             epollFd = createSockets(config, serverFds);     
             confi.printprint();
-            while (1) {                                                 //this loop is here if epoll fd somehow got closed and epoll wait fails and i have to create and instance of epoll fd;
+            while (1) {                                                 //this loop is here if epoll fd somehow got closed or epoll wait fails and i have to create and instance of epoll fd;
                 multiplexerSytm(serverFds, epollFd, config);
                 epollFd = startEpoll(serverFds);
             }

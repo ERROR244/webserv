@@ -2,12 +2,25 @@
 
 httpSession::Response::Response(httpSession& session) : s(session), headerSended(false), contentFd(-1), cgiHeadersParsed(false), lastActivityTime(0) {}
 
+string getConnection(string ConHeadre) {
+    string Connection;
+
+    if (ConHeadre.empty() || ConHeadre == "keep-alive") {
+        Connection = "keep-alive";
+    }
+    else {
+        Connection = "close";
+    }
+    return Connection;
+}
+
 void	httpSession::Response::handelRedirection(const int clientFd) {
     std::string body = "<a href='" + s.returnedLocation + "'>Moved Permanently</a>.\n";
     std::string response = "HTTP/1.1 301 Moved Permanently\r\n"
                         "Content-Length: " + toString(body.length()) + "\r\n"
                         "Content-Type: text/html; charset=utf-8\r\n"
                         "Location: " + s.returnedLocation + "\r\n"
+                        "Connection: " + getConnection(s.getHeaders()["connection"]) + "\r\n"
                         "\r\n" + body;
     
     send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
@@ -42,80 +55,9 @@ time_t	httpSession::Response::handelClientRes(const int clientFd) {
     return lastActivityTime;
 }
 
-string httpSession::Response::deleteFile(const string& file, const string& connection) {
-    string response;
-
-    unlink(file.c_str());
-    response = "HTTP/1.1 204 No Content\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Content-Length: 0\r\n";
-    response += "Connection: " + (connection.empty() ? "close" : connection);
-    response += "\r\n\r\n";
-    return response;
-}
-
-string httpSession::Response::deleteDir(const string& dir, const string& connection) {
-    string response = "";
-
-    if (remove(dir.c_str()) != 0) {
-        std::cerr << "Deleting Non-Empty Directory.\n";
-        response += "HTTP/1.1 409 Conflict\r\n";
-        response += "Content-Type: text/html\r\n";
-        response += "content-length: 134\r\n";
-        response += "Connection: " + (connection.empty() ? "close" : connection);
-        response += "\r\n\r\n<!DOCTYPE html><html><head><title>409 Conflict</title></head><body><h1>Conflict</h1><p>Deleting Non-Empty Directory.</p></body></html>";
-    }
-    else {
-        response += "HTTP/1.1 204 No Content\r\n";
-        response += "Content-Type: text/html\r\n";
-        response += "Content-Length: 0\r\n";
-        response += "Connection: " + (connection.empty() ? "close" : connection);
-        response += "\r\n\r\n";
-    }
-    return response;
-}
-
-string httpSession::Response::getDeleteRes(const string& path, const string& connection, struct stat& file_stat) {
-    string response = "";
-    string body;
-
-    if (path.find(s.rules->uploads) == string::npos) {
-        std::cerr << "Directory Traversal Attempt While Deleting.\n";
-        body = "<!DOCTYPE html><html><head><title>409 Conflict</title></head><body><h1>Conflict</h1><p>you don't have access to resource.</p></body></html>";
-        response += "HTTP/1.1 403 Forbidden\r\n";
-        response += "Content-Type: text/html\r\n";
-        response += "content-length: " + toString(body.size()) + "\r\n";
-        response += "Connection: " + (connection.empty() ? "close" : connection) + "\r\n\r\n";
-        response += body;
-    }
-    else if (!(file_stat.st_mode & S_IWUSR)) {
-        body = "<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>Forbidden</h1><p>user doesn't have write permission.</p></body></html>";
-        response += "HTTP/1.1 403 Forbidden\r\n";
-        response += "Content-Type: text/html\r\n";
-        response += "content-length: " + toString(body.size()) + "\r\n";
-        response += "Connection: " + (connection.empty() ? "close" : connection) + "\r\n\r\n";
-        response += body;
-    }
-    else if (S_ISDIR(file_stat.st_mode) != 0) {
-        response = deleteDir(path, connection);
-    }
-    else if (S_ISREG(file_stat.st_mode) != 0) {
-        response = deleteFile(path, connection);
-    }
-    else {
-        body = "<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>Forbidden</h1><p>resource is not a file or directory.</p></body></html>";
-        response += "HTTP/1.1 403 Forbidden\r\n";
-        response += "Content-Type: text/html\r\n";
-        response += "content-length: " + toString(body.size()) + "\r\n";
-        response += "Connection: " + (connection.empty() ? "close" : connection) + "\r\n\r\n";
-        response += body;
-    }
-    return response;
-}
 
 void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& file_stat) {
     if (s.method == GET) {
-        // cout << "GET method called on " << s.path << endl;
         if (headerSended == false) {
             Get(clientFd, smallFile);
         }
@@ -124,21 +66,17 @@ void httpSession::Response::sendRes(int clientFd, bool smallFile, struct stat& f
         }
     }
     else if (s.method == POST) {
-        // cout << "POST method called on " << s.path << endl;
-        string response;
-        response += "HTTP/1.1 204 No Content\r\n";
-        // response += "Content-Type: text/html\r\n";
+        string response = "HTTP/1.1 204 No Content\r\n";
+        
         response += "content-length: 0\r\n";
-        response += "Connection: " + (s.getHeaders()["connection"].empty() ? "close" : s.getHeaders()["connection"]) + "\r\n\r\n";
+        response += "Connection: " + getConnection(s.getHeaders()["connection"]) + "\r\n\r\n";
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         lastActivityTime = time(NULL);
         s.sstat = ss_done;
     }
     else if (s.method == DELETE) {
-        // cout << "HHHHHEAR-------> " << s.path << endl;
-        string response = getDeleteRes(s.path, s.headers["connection"], file_stat);
+        string response = getDeleteRes(s.path, getConnection(s.getHeaders()["connection"]), file_stat);
 
-        // cout << "response---> " << response << endl;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         lastActivityTime = time(NULL);
         s.sstat = ss_done;

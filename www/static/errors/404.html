@@ -1,16 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Page Not Found</title>
-	<link rel="stylesheet" href="../../styles/error.css"/>
+  <meta charset="UTF-8">
+  <title>404 Not Found</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 500px;
+    }
+
+    h1 {
+      font-size: 6rem;
+      color: #ff4757;
+    }
+
+    p {
+      font-size: 1.5rem;
+      margin: 20px 0;
+      color: #ccc;
+    }
+
+    a {
+      color: #1e90ff;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border: 2px solid #1e90ff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      transition: 0.3s;
+    }
+
+    a:hover {
+      background-color: #1e90ff;
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>404</h1>
-        <p>Oops! The page you are looking for doesn&#39;t exist.</p>
-        <a href="/">Go Back Home</a>
-    </div>
+  <div class="container">
+    <h1>404</h1>
+    <p>Oops. The page you're looking for doesn't exist.</p>
+    <a href="/">Go Home</a>
+  </div>
 </body>
 </html>

@@ -1,4 +1,6 @@
 #include "server.h"
+#include "httpSession.hpp"
+
 
 static void	sendError(const int clientFd, const int statusCode, const string codeMeaning) {
 	ostringstream	chunkSize;
@@ -7,10 +9,7 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 
 	msg += "HTTP/1.1 " + toString(statusCode) + " " + codeMeaning + "\r\n"; 
 	msg += "Content-type: text/html\r\n";
-	if (statusCode >= 500)
-		msg += "Connection: close";
-	else
-		msg += "Connection: keep-alive\r\n";
+	msg += "Connection: close\r\n";
 	msg += "Server: bngn/0.1\r\n";
 	body = "<!DOCTYPE html><html><body><h1>" + codeMeaning + "</h1></body></html>\r\n";
 	msg += "content-length: " + toString(body.size()) + "\r\n\r\n";

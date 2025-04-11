@@ -30,7 +30,7 @@ std::string generate_autoindex_html(const std::string &dir_path, const std::stri
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0) // Skip current directory entry
+        if (strcmp(entry->d_name, ".") == 0)
             continue;
 
         std::string full_path = dir_path + "/" + entry->d_name;
