@@ -86,7 +86,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 	else {
 		// cerr << buffer << endl;
 		// cerr << "more content than content length" << endl;
-		buffer.substr(0, length);
+		// buffer.substr(0, length);`
 		// cerr << buffer << endl;
 		length = 0;
 	}
@@ -120,8 +120,8 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 					fd = -1;
 					return;
 				}
-				cerr << "boundaryyy headere" << endl;
 				s.sstat = ss_body;
+				cerr << "boundaryyy headere" << endl;
 				fd = openFile(contentHeaders["content-disposition"], s.rules->uploads);
 			} else {
 				cerr << "end boundary" << endl;
@@ -188,7 +188,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 		nlPos = buffer.find('\n', nlPos+length);//skipping the length of the length to start from the new chunked data
 		if (nlPos != string::npos) {
 			s.cgiBody += buffer.substr(pos, length);
-			if (static_cast<off_t>(s.cgiBody.size()) < s.config.bodySize)
+			if (static_cast<off_t>(s.cgiBody.size()) > s.config.bodySize)
 				throw(statusCodeException(413, "Request Entity Too Large"));
 			length = 0;
 			pos = nlPos;//so i can start next iteration from the line that has the content
@@ -217,7 +217,7 @@ void	httpSession::Request::bodyFormat() {
 	if (s.cgi) {
 		if (s.headers.find("content-length") != s.headers.end()) {
 			length = w_stoi(s.headers["content-length"]);
-			if (static_cast<off_t>(length) < s.config.bodySize)
+			if (static_cast<off_t>(length) > s.config.bodySize)
 				throw(statusCodeException(413, "Request Entity Too Large"));
 			bodyHandlerFunc = &Request::bufferTheBody;
 		}
@@ -230,7 +230,7 @@ void	httpSession::Request::bodyFormat() {
 			length = w_stoi(s.headers["content-length"]);
 			bodyHandlerFunc = &Request::contentlength;
 		}
-		if (static_cast<off_t>(length) < s.config.bodySize)
+		if (static_cast<off_t>(length) > s.config.bodySize)
 			throw(statusCodeException(413, "Request Entity Too Large"));
 	} else
 		throw(statusCodeException(501, "Not Implemented"));

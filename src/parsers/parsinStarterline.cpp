@@ -69,7 +69,7 @@ void	httpSession::Request::reconstructUri() {
 	string tmpOriginalPath;
 
 	if (s.rules == NULL)
-		throw(statusCodeException(404, "Not Found1"));
+		throw(statusCodeException(404, "Not Found"));
 	if (s.rules->redirection) {
 		s.statusCode = 301;
 		s.codeMeaning = "Moved Permanently";
@@ -90,23 +90,17 @@ void	httpSession::Request::reconstructUri() {
 		if (stat(("." + s.path).c_str(), &pathStat) != 0) {
 			throw statusCodeException(404, "Not Found"); // or something else
 		}
-		else if (S_ISDIR(pathStat.st_mode) && s.path.back() != '/') {
-			s.statusCode = 301;
-			s.codeMeaning = "Moved Permanently";
+		else if (S_ISDIR(pathStat.st_mode) && s.path.back() != '/' && s.method == GET) {
+			s.statusCode = 303;
+			s.codeMeaning = "See Other";
 			s.returnedLocation = tmpOriginalPath + "/";
 			s.sstat = ss_sHeader;
 			return ;
 		}
-		cerr << s.path << endl;
 		s.path = w_realpath(("." + s.path).c_str());
-		cerr << s.path << endl;
 	}
-	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end()) {
-		cerr << "my m:  " << s.method << endl;
-		for (const auto& m : s.rules->methods)
-			cerr << m << endl;
+	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
-	}
 	switch (s.method)
 	{
 	case GET: {
@@ -114,7 +108,6 @@ void	httpSession::Request::reconstructUri() {
 		if (S_ISDIR(pathStat.st_mode)) {
 			string tmp = s.path;
 			s.path += "/" + s.rules->index;
-			cout << "to_check: " << s.path << endl;
 			if (access(s.path.c_str(), F_OK) != -1)
 				break;
 			else {
@@ -223,8 +216,9 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				if (s.path.empty()) {
 					s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
 					len = 0;
+					continue;
 				}
-				continue;
+				break;
 			}
 			case ' ': {
 				if (s.path.empty())

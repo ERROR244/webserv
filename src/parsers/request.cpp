@@ -15,7 +15,7 @@ void	httpSession::Request::readfromsock() {
 	remainingBody = NULL;//reseting to null be filled w new content in this iteration
 	cerr << "raw buffer" << endl;
 	cerr << bbuffer;
-	cerr << "####" << endl;
+	cerr << "----------------" << endl;
 	if (static_cast<int>(s.sstat) < 9) {
 		bufferPos = parseStarterLine(bbuffer);
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)

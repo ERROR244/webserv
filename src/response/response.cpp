@@ -16,7 +16,6 @@ void	httpSession::Response::handelRedirection(const int clientFd) {
 }
 
 time_t	httpSession::Response::handelClientRes(const int clientFd) {
-    cout << "HHHHHEAR-------> " << s.path << endl;
     if (!s.returnedLocation.empty()) {
         handelRedirection(clientFd);
     }

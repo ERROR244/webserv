@@ -134,7 +134,6 @@ class A {
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
 	map<int, httpSession>				sessions;
-	map<string, string>					sessionStorage;
 	map<int, time_t>					timeOut;
 	int									nfds;
 
@@ -144,18 +143,16 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 			continue ;
 		}
 		if ((nfds = ft_epoll_wait(epollFd, events, MAX_EVENTS, 0, sessions, epollFd)) == -1) {
-				return;
+			return;
 		}
 		for (int i = 0; i < nfds; ++i) {
 			const int fd = events[i].data.fd;
 			try {
-				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end()) {
+				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end())
 					acceptNewClient(epollFd, fd);
-				}
 				else if (events[i].events & EPOLLIN) {
-					if (sessions.find(fd) == sessions.end()) {
+					if (sessions.find(fd) == sessions.end())
 						sessions.insert({fd, httpSession(fd, config[getsockname(fd)])});
-					}
 					sessions[fd].req.readfromsock();
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}
