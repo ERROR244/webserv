@@ -202,7 +202,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			case URI_MAXSIZE:
 				throw(statusCodeException(414, "URI Too Long"));
 			case 0: {
-				if (buffer[i] != '/')
+				if (buffer[i] != '/')//need to be fixed in cases of addin query to the uri
 					throw(statusCodeException(400, "Bad Request7"));
 			}
 			}

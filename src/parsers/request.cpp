@@ -20,7 +20,7 @@ void	httpSession::Request::readfromsock() {
 		bufferPos = parseStarterLine(bbuffer);
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)
 			throw(statusCodeException(400, "Bad Request14"));
-		checkNecessaryHeaders();
+		// checkNecessaryHeaders();
 		if (s.sstat == ss_body)
 			bodyFormat();
 	}

@@ -72,7 +72,7 @@ public:
 		int				fd;
 
 		int				parseStarterLine(const bstring& buffer);
-		bool			checkNecessaryHeaders();
+		// bool			checkNecessaryHeaders();
 		void			contentlength(const bstring&, size_t);
 		void			unchunkBody(const bstring&, size_t);
 		void			bufferTheBody(const bstring&, size_t);
