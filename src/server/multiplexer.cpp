@@ -50,6 +50,7 @@ const e_sstat& httpSession::status() const {
 void	httpSession::reSetPath(const string& newPath) {
 	path = newPath;
 	method = GET;
+	headers["connection"] = "close";
 }
 
 void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
@@ -124,13 +125,6 @@ bool checkTimeOutForEachUsr(std::map<int, time_t> &timeOut) {
 	return false;
 }
 
-class A {
-	const int aa;
-	const int bb;
-	public:
-		A(int aa, int bb) : aa(aa), bb(bb) {}
-};
-
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
 	map<int, httpSession>				sessions;
@@ -139,12 +133,10 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 
 	cerr << "Started the server..." << endl;
 	while (1) {
-		if (checkTimeOutForEachUsr(timeOut) == true) {
+		if (checkTimeOutForEachUsr(timeOut) == true)
 			continue ;
-		}
-		if ((nfds = ft_epoll_wait(epollFd, events, MAX_EVENTS, 0, sessions, epollFd)) == -1) {
+		if ((nfds = ft_epoll_wait(epollFd, events, MAX_EVENTS, 0, sessions, epollFd)) == -1)
 			return;
-		}
 		for (int i = 0; i < nfds; ++i) {
 			const int fd = events[i].data.fd;
 			try {

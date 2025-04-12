@@ -49,12 +49,12 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
         ext[".xls"]   = "Content-Type: application/vnd.ms-excel\r\n";
         ext[".xlsx"]  = "Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n";
         ext[".zip"]   = "Content-Type: application/zip\r\n";
-        ext[".odt"]   = "Content-Type: application/vnd.oasis.opendocument.text\r\n"; // FIXED
-        ext[".ods"]   = "Content-Type: application/vnd.oasis.opendocument.spreadsheet\r\n"; // FIXED
-        ext[".odp"]   = "Content-Type: application/vnd.oasis.opendocument.presentation\r\n"; // FIXED
-        ext[".txt"]   = "Content-Type: text/plain\r\n"; // FIXED - was gibberish before
-        ext[".js"]    = "Content-Type: application/javascript\r\n"; // More modern than text/javascript
-        ext[".java"]  = "Content-Type: text/java\r\n"; // Alternative to x-java-source
+        ext[".odt"]   = "Content-Type: application/vnd.oasis.opendocument.text\r\n";
+        ext[".ods"]   = "Content-Type: application/vnd.oasis.opendocument.spreadsheet\r\n";
+        ext[".odp"]   = "Content-Type: application/vnd.oasis.opendocument.presentation\r\n";
+        ext[".txt"]   = "Content-Type: text/plain\r\n";
+        ext[".js"]    = "Content-Type: application/javascript\r\n";
+        ext[".java"]  = "Content-Type: text/java\r\n";
     }
     if (ext.find(key) != ext.end()) {
         return ext[key];
@@ -62,8 +62,7 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
     return "";
 }
 
-string httpSession::Response::getExt(string path) {
-    (void)path;
+string httpSession::Response::getExt() {
     size_t size = s.path.find_last_of(".");
     string ext;
 
@@ -75,32 +74,30 @@ string httpSession::Response::getExt(string path) {
 
 void httpSession::Response::Get(int clientFd, bool smallFile) {
     string response;
-    string fileType = getSupportedeExtensions(getExt(s.path));
+    string fileType = getSupportedeExtensions(getExt());
 
     if (smallFile) {
         ifstream fileStream(s.path.c_str(), std::ios::binary);
         std::stringstream buffer;
         buffer << fileStream.rdbuf();
         string body = buffer.str();
+
         response = "HTTP/1.1 200 OK\r\n" + fileType +
                         "Content-Length: " + toString(body.size()) + "\r\n" + "Connection: " +
-                        (s.headers["connection"].empty() ? "close" : s.headers["connection"]) +
-                        string("\r\n\r\n");
+                        getConnection(s.getHeaders()["connection"]) + string("\r\n\r\n");
         response += body;
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         s.sstat = ss_done;
-        lastActivityTime = time(NULL);      // for timeout
         if (s.closeAutoIndex == true) {
-            cout << "=====================YEAH" << endl;
             unlink(s.path.c_str());
         }
+        lastActivityTime = time(NULL);      // for timeout
     }
     else {
         headerSended = true;
         contentFd = open(s.path.c_str(), O_RDONLY);
         response = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n" + fileType + "Connection: " +
-                            (s.headers["connection"].empty() ? "close" : s.headers["connection"]) +
-                            string("\r\n\r\n");
+                            getConnection(s.getHeaders()["connection"]) + string("\r\n\r\n");
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
     }
 }
@@ -110,7 +107,7 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
     ssize_t bytesRead = read(contentFd, buffer, BUFFER_SIZE);
 
     if (bytesRead < 0) {
-        cout << contentFd << endl;
+        // cout << contentFd << endl;
         perror("ba33");
     }
     else if (bytesRead > 0) {
@@ -127,12 +124,12 @@ void httpSession::Response::sendBodyifChunked(int clientFd) {
         send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT | MSG_NOSIGNAL);
         s.sstat = ss_done;
         headerSended = false;
-        if (contentFd >= 0)
+        if (contentFd >= 0) {
             ft_close(contentFd, "fileFd");
-        lastActivityTime = time(NULL);      // for timeout
+        }
         if (s.closeAutoIndex == true) {
-            cout << "=====================YEAH" << endl;
             unlink(s.path.c_str());
         }
+        lastActivityTime = time(NULL);      // for timeout
     }
 }
