@@ -8,58 +8,84 @@
 #include <ctime>
 #include <cstring>
 #include <iomanip>
-#include <iomanip>  // For std::setw and std::left
+#include <iomanip>  // For setw and left
 
 
+string get_name(string name, bool is_not_a_file) {
+    if (name.length() + 1 > 50) {
+        return name.substr(0, 47) + "..&gt;" + "</a>";
+    } else if (is_not_a_file) {
+        return name + "/" + "</a>";
+    }
+    return name + "</a>";
+}
 
-std::string generate_autoindex_html(const std::string &dir_path, const std::string &uri_path) {
+
+string generate_autoindex_html(const string &dir_path, const string &uri_path) {
+    ostringstream html_stream;
+    struct dirent *entry;
+    vector<string> dir_links;
+    vector<string> files_links;
+    ostringstream link;
+    char timebuf[64];
+    struct tm *tm;
+    struct stat st;
+    string name;
     DIR *dir = opendir(dir_path.c_str());
+
     if (!dir) {
         cout << "Failed to open dir\n";
         return "";
     }
 
-    std::ostringstream html_stream;
 
-    html_stream << "<!DOCTYPE html>\n<html>\n<head><title>Index of " << uri_path << "</title></head>\n<body>\n"
+    html_stream << "<html>\n"
+                << "<head><title>Index of " << uri_path << "</title></head>\n"
+                << "<body>\n"
                 << "<h1>Index of " << uri_path << "</h1><hr><pre>\n";
 
-    // Go up a directory (if it's not the root)
-    if (uri_path != "/")
-        html_stream << "<a href=\"../\">../</a>\n";
-
-    struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0)
+        if (strcmp(entry->d_name, ".") == 0 || stat((dir_path + "/" + entry->d_name).c_str(), &st) == -1)
             continue;
 
-        std::string full_path = dir_path + "/" + entry->d_name;
-        struct stat st;
-        if (stat(full_path.c_str(), &st) == -1)
-            continue;
+        tm = localtime(&st.st_mtime);
+        strftime(timebuf, sizeof(timebuf), "%d-%b-%Y %H:%M", tm);
 
-        // Format the timestamp
-        char timebuf[64];
-        struct tm *tm = localtime(&st.st_mtime);
-        strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M", tm);
+        name = get_name(string(entry->d_name), S_ISDIR(st.st_mode));
+        link << "<a href=\"" << uri_path << entry->d_name << "/\">" << name << setw(72 - name.size());
+        if (name != "../</a>") {
+            link << timebuf << "                   " << (S_ISDIR(st.st_mode) ? "-" : toString(st.st_size)) << "\n";
+        }
+        else
+            link << "\n";
 
-        // Add entry to HTML list
-        html_stream << "<a href=\"" << uri_path << "/" << entry->d_name << "\">"
-            << std::left << std::setw(32) << entry->d_name << "</a>  "
-            << timebuf << "  "
-            << (S_ISDIR(st.st_mode) ? "<DIR>" : toString(st.st_size)) << "\n";
+        if (S_ISDIR(st.st_mode))
+            dir_links.push_back(link.str());
+        else
+            files_links.push_back(link.str());
+        link.str("");
+        link.clear();
     }
 
+    sort(dir_links.begin(), dir_links.end());
+    sort(files_links.begin(), files_links.end());
+
+    for (size_t i = 0; i < dir_links.size(); ++i) {
+        html_stream << dir_links[i];
+    }
+    for (size_t i = 0; i < files_links.size(); ++i) {
+        html_stream << files_links[i];
+    }
 
     html_stream << "</pre><hr></body>\n</html>\n";
     closedir(dir);
     return html_stream.str();
 }
 
-bool write_to_file(const std::string &filename, const std::string &content) {
-    std::ofstream file(filename.c_str());
+bool write_to_file(const string &filename, const string &content) {
+    ofstream file(filename.c_str());
     if (!file) {
-        std::cerr << "Failed to open file for writing: " << filename << std::endl;
+        cerr << "Failed to open file for writing: " << filename << endl;
         return false;
     }
     file << content;
