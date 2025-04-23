@@ -3,13 +3,13 @@
 inline string methodStringRepresentation(e_methods method) {
 	switch (method)
 	{
-	case e_methods::GET:
+	case GET:
 		return "GET";
-	case e_methods::POST:
+	case POST:
 		return "POST";
-	case e_methods::DELETE:
+	case DELETE:
 		return "DELETE";
-	case e_methods::NONE:
+	case NONE:
 		return "unvalid";
 	}
 	return "unvalid";
@@ -64,12 +64,35 @@ void	httpSession::Request::isCGI() {
 	}
 }
 
+bool	httpSession::Request::fileExistence(const string &rawPath) {
+	struct stat pathStat;
+	char lastCharInPath = s.path.size() ? s.path[s.path.size()-1] : 0;
+
+	if (!lastCharInPath || stat(("." + s.path).c_str(), &pathStat))
+		throw statusCodeException(404, "Not Found");
+	else if (S_ISDIR(pathStat.st_mode) && lastCharInPath != '/' && s.method == GET) {
+		s.statusCode = 303;
+		s.codeMeaning = "See Other";
+		s.returnedLocation = rawPath + "/";
+		s.sstat = ss_sHeader;
+		return false;
+	} else if (S_ISDIR(pathStat.st_mode) && s.method == GET) {
+		if (access(("." + s.path + s.rules->index).c_str(), F_OK) == -1 && s.rules->autoIndex == false)
+			throw(statusCodeException(403, "Forbidden"));
+		else if (access(("." + s.path + s.rules->index).c_str(), F_OK) == -1 && s.rules->autoIndex == true) {
+			s.rawUri = rawPath;
+			s.showDirFiles = true;
+		}
+		else
+			s.path += s.rules->index;
+	}
+	s.path = w_realpath(("." + s.path).c_str());
+	return true;
+}
+
 void	httpSession::Request::reconstructUri() {
 	struct stat pathStat;
-	string tmpOriginalPath;
 
-	if (s.rules == NULL)
-		throw(statusCodeException(404, "Not Found"));
 	if (s.rules->redirection) {
 		s.statusCode = 301;
 		s.codeMeaning = "Moved Permanently";
@@ -77,7 +100,7 @@ void	httpSession::Request::reconstructUri() {
 		s.sstat = ss_sHeader;
 		return ;
 	} else {
-		tmpOriginalPath = s.path;
+		string rawPath = s.path;
 		s.path.erase(s.path.begin(), s.path.begin()+s.rules->uri.size());
 		s.path = s.rules->reconfigurer + s.path;
 		if (s.path.find("/../") != string::npos || s.path.find("/..\0") != string::npos)
@@ -87,56 +110,24 @@ void	httpSession::Request::reconstructUri() {
 			cerr << "---CGIIIIIIIIIIIIIIII---" << endl;
 			return;
 		}
-		if (stat(("." + s.path).c_str(), &pathStat) != 0) {
-			throw statusCodeException(404, "Not Found"); // or something else
-		}
-		else if (S_ISDIR(pathStat.st_mode) && s.path.back() != '/' && s.method == GET) {
-			s.statusCode = 303;
-			s.codeMeaning = "See Other";
-			s.returnedLocation = tmpOriginalPath + "/";
-			s.sstat = ss_sHeader;
-			return ;
-		}
-		s.path = w_realpath(("." + s.path).c_str());
+		if (fileExistence(rawPath) == false)
+			return;
 	}
 	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
 	switch (s.method)
 	{
 	case GET: {
-		stat(s.path.c_str(), &pathStat);
-		if (S_ISDIR(pathStat.st_mode)) {
-			string tmp = s.path;
-			s.path += "/" + s.rules->index;
-			if (access(s.path.c_str(), F_OK) != -1)
-				break;
-			else {
-				// false means off
-				if (s.rules->autoIndex == false) {
-					throw(statusCodeException(403, "Forbidden"));
-				}
-				else {
-					string html = generate_autoindex_html(tmp, tmpOriginalPath);
-					s.path = tmp + "/.index.html";
-					if (html.empty()) {
-						cout << "Failed to generate the HTML\n";
-					} else {
-						if (write_to_file(s.path, html) == true) {
-							s.closeAutoIndex = true;
-						}
-					}
-				}
-			}
-		}
+		//auto indexing part will move to the response
+
 		break;
 	}
 	case POST: {
-		if (!s.rules->uploads.empty()) {
-			if (stat(s.rules->uploads.c_str(), &pathStat) && !S_ISDIR(pathStat.st_mode))
-				throw(statusCodeException(403, "Forbidden"));
-		} else
-			throw(statusCodeException(403, "Forbidden"));
-		break;
+		if (!s.rules->uploads.empty() && !stat(s.rules->uploads.c_str(), &pathStat) && S_ISDIR(pathStat.st_mode))
+				break ;
+		//what if uploads dir doesn't exist
+		//throw 404??
+		throw(statusCodeException(403, "Forbidden"));
 	}
 	case DELETE: {
 		if (s.rules->uploads.empty())
@@ -202,7 +193,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			case URI_MAXSIZE:
 				throw(statusCodeException(414, "URI Too Long"));
 			case 0: {
-				if (buffer[i] != '/')//need to be fixed in cases of addin query to the uri
+				if (buffer[i] != '/' && s.path.empty())//resetin len to 0 when ? is found
 					throw(statusCodeException(400, "Bad Request7"));
 			}
 			}
@@ -224,8 +215,9 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				if (s.path.empty())
 					s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
 				else
-					s.query = buffer.substr(i-len+1, len).cppstring();
-				reconstructUri();
+					s.query = buffer.substr(i-len, len).cppstring();
+				if (s.rules == NULL)
+					throw(statusCodeException(404, "Not Found"));
 				s.sstat = ss_httpversion;
 				len = 0;
 				continue;
@@ -269,7 +261,6 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			}
 			case '\n': {
 				s.sstat = ss_emptyline;
-				cerr << "uri -> " << s.path << endl;
 				return i+1;
 			}
 			default:

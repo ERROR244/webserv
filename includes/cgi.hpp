@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <cerrno>
 #include <fcntl.h>
 #include <iostream>
 #include <string.h>

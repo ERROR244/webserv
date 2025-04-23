@@ -27,7 +27,6 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
     char    buff[BUFFER_SIZE];
     int     byteRead = 0;
     int     status;
-
     if (!s.cgiBody.empty()) {
         int     byteWrite;
 
@@ -40,7 +39,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
         cerr << "byte write: " << byteWrite << endl;
         s.cgiBody.erase(0, byteWrite);
         if (s.cgiBody.empty())
-            cerr << "done writing the vody to the script" << endl;
+            cerr << "done writing the body to the script" << endl;
     }
     else if ((byteRead = read(s.cgi->rFd(), buff, BUFFER_SIZE)) < 0) {
         perror("read failed(sendResponse.cpp 152)");
@@ -68,7 +67,7 @@ void    httpSession::Response::sendCgiOutput(const int clientFd) {
                 return;
             }
             s.sstat = ss_sBody;
-            chunkedResponse += ("HTTP/1.1 " + to_string(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
+            chunkedResponse += ("HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
             chunkedResponse += tweakAndCheckHeaders(cgiHeaders);
             bbuffer = bbuffer.substr(bodyStartPos);
             cgiHeadersParsed = true;

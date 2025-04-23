@@ -2,13 +2,13 @@
 
 httpSession::httpSession(int clientFd, configuration& config)
 	: clientFd(clientFd), sstat(ss_method), config(config), rules(NULL)
-	, cgi(NULL), statusCode(200), codeMeaning("OK"), closeAutoIndex(false), req(Request(*this)), res(Response(*this)) {
+	, cgi(NULL), showDirFiles(false), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {
 	// cerr << clientFd << " http session constructor called" << endl;
 }
 
 httpSession::httpSession()
 	: clientFd(-1), sstat(ss_method), config(configuration()), rules(NULL)
-	, cgi(NULL), statusCode(200), codeMeaning("OK"), closeAutoIndex(false), req(Request(*this)), res(Response(*this)) {
+	, cgi(NULL), showDirFiles(false), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {
 	// cerr << clientFd << " http session default constructor called" << endl;
 	}
 
@@ -16,7 +16,6 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd),
 	req(Request(*this)), res(Response(*this))
 {
 	// cerr << clientFd << " http session copy constructor called" << endl;
-	closeAutoIndex = other.closeAutoIndex;
 	sstat = other.sstat;
 	method = other.method;
 	path = other.path;
@@ -26,13 +25,16 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd),
 	rules = other.rules ? new location(*other.rules) : NULL;
 	cgi = other.cgi ? new Cgi(*other.cgi) : NULL;
 	cgiBody = other.cgiBody;
+	returnedLocation = other.returnedLocation;
+	showDirFiles = other.showDirFiles;
 	statusCode = other.statusCode;
 	codeMeaning = other.codeMeaning;
-	returnedLocation = other.returnedLocation;
 }
 
 httpSession::~httpSession() {
 	// cerr << clientFd << " http session destructor called" << endl;
+	// delete[] rules;
+	// delete[] cgi;
 }
 
 configuration	httpSession::clientConfiguration() const {
@@ -58,11 +60,18 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 
 	if (status == ss_done) {
 		cerr << "done sending the response" << endl;
-		ev.events = EPOLLIN;
-		ev.data.fd = clientFd;
-		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1)
-			perror("epoll_ctl failed");
-		// delete s[clientFd];
+		map<string, string> headers = s[clientFd].getHeaders();
+		if (headers["connection"] != "keep-alive") {
+			cerr << "client want to close connection after this operation" << endl;
+			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
+				perror("epoll_ctl failed");
+			close(clientFd);
+		} else {
+			ev.events = EPOLLIN;
+			ev.data.fd = clientFd;
+			if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1)
+				perror("epoll_ctl failed");
+		}
 		s.erase(s.find(clientFd));
 	}
 	else if (status == ss_cclosedcon) {
@@ -70,7 +79,6 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
 		close(clientFd);
-		// delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
 }
@@ -91,7 +99,6 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
 		close(clientFd);
-		// delete s[clientFd];
 		s.erase(s.find(clientFd));
 	}
 }
@@ -114,27 +121,13 @@ void	acceptNewClient(const int& epollFd, const int& serverFd) {
 	cerr << "--------------new client added--------------" << endl;
 }
 
-bool checkTimeOutForEachUsr(std::map<int, time_t> &timeOut) {
-	map<int, time_t>::iterator			it;
-
-	for (it = timeOut.begin(); it != timeOut.end(); ++it) {
-		if (checkTimeOut(timeOut, it->first, it->second) == true) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
 	map<int, httpSession>				sessions;
-	map<int, time_t>					timeOut;
 	int									nfds;
 
 	cerr << "Started the server..." << endl;
 	while (1) {
-		if (checkTimeOutForEachUsr(timeOut) == true)
-			continue ;
 		if ((nfds = ft_epoll_wait(epollFd, events, MAX_EVENTS, 0, sessions, epollFd)) == -1)
 			return;
 		for (int i = 0; i < nfds; ++i) {
@@ -143,13 +136,15 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end())
 					acceptNewClient(epollFd, fd);
 				else if (events[i].events & EPOLLIN) {
-					if (sessions.find(fd) == sessions.end())
-						sessions.insert({fd, httpSession(fd, config[getsockname(fd)])});
+					if (sessions.find(fd) == sessions.end()) {
+						pair<int, httpSession> newclient(fd, httpSession(fd, config[getsockname(fd)]));
+						sessions.insert(newclient);
+					}
 					sessions[fd].req.readfromsock();
 					reqSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}
 				else if (events[i].events & EPOLLOUT) {
-					timeOut[fd] = sessions[fd].res.handelClientRes(fd);
+					sessions[fd].res.handelClientRes(fd);
 					resSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 				}
 			}

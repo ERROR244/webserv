@@ -14,7 +14,7 @@ Cgi::~Cgi() {
 
 void	Cgi::createPipes() {
 	if (pipe(wPipe) < 0 || pipe(rPipe) < 0) {
-		perror("pipe failed");
+		strerror(errno);
 		throw(statusCodeException(500, "Internal Server Error"));
 	}
 }
@@ -58,10 +58,10 @@ void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
 		scriptEnvs["PATH_TRANSLATED"] = "";
 	else
 		scriptEnvs["PATH_TRANSLATED"] = string(absolutePath);
-	cerr << "CGI headers" << endl;
-	for (const auto& it : scriptEnvs)
-		cerr << it.first << ": " << it.second << endl;
-	cerr << "------" << endl;
+	// cerr << "CGI headers" << endl;
+	// for (const auto& it : scriptEnvs)
+	// 	cerr << it.first << ": " << it.second << endl;
+	// cerr << "------" << endl;
 }
 
 static char**	transformVectorToChar(vector<string>& vec) {
@@ -82,7 +82,7 @@ void	Cgi::executeScript() {
 	for(map<string, string>::iterator it = scriptEnvs.begin(); it != scriptEnvs.end(); ++it) {
 		vecEnvp.push_back(it->first + "=" + it->second);
 	}
-	// while(*ncHomeEnvp) { // is it needed for me to add home envp
+	// while(*ncHomeEnvp) {
 	// 	vecEnvp.push_back(*ncHomeEnvp);
 	// 	++ncHomeEnvp;
 	// }
@@ -91,6 +91,7 @@ void	Cgi::executeScript() {
 	vecArgv.push_back(infos.scriptUri);
 	argv = transformVectorToChar(vecArgv);
 	CGIEnvp = transformVectorToChar(vecEnvp);
+	cerr << argv[0] << endl;
 	execve(argv[0], argv, CGIEnvp);
 	// for (size_t i = 0; argv[i]; ++i) {//need to be fixed its not bein freed properly
 	// 	delete argv[i];
@@ -100,7 +101,8 @@ void	Cgi::executeScript() {
 	// 	delete CGIEnvp[i];
 	// }
 	// delete []CGIEnvp;
-	perror("execve failed(cgi.cpp 102)");
+	cerr << "execve failed" << endl;
+	strerror(errno);
 	throw(statusCodeException(500, "Internal Server Errorrr"));
 }
 
@@ -109,14 +111,14 @@ void	Cgi::setupCGIProcess() {
 	// //fd[0] // read end;
 	pid = fork();
 	if (pid < 0) {
-		perror("fork failed");
+		strerror(errno);
 		throw(statusCodeException(500, "Internal Server Error"));
 	}
 	else if(pid == 0) {
 		close(rPipe[0]);
 		close(wPipe[1]);
 		if (dup2(rPipe[1], STDOUT_FILENO) < 0 || dup2(wPipe[0], STDIN_FILENO) < 0) {
-			perror("dup2 failed");
+			strerror(errno);
 			throw(statusCodeException(500, "Internal Server Error"));
 		}
 		close(rPipe[1]);

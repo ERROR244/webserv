@@ -10,4 +10,4 @@ string	statusCodeException::meaning() const {
 	return _meaning;
 } 
 
-statusCodeException::~statusCodeException() {}
+statusCodeException::~statusCodeException() throw() {}
