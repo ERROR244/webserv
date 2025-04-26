@@ -17,15 +17,14 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 	send(clientFd, msg.c_str(), msg.size(), MSG_DONTWAIT);
 }
 
-int	errorResponse(const int epollFd, const statusCodeException& exception, httpSession& session) {
+void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception) {
 	cerr << "code--> " << exception.code() << endl;
 	cerr << "reason--> " << exception.meaning() << endl;
 	struct epoll_event	ev;
-	configuration config = session.clientConfiguration();
-	int	clientFd = session.fd();
+	configuration config = sessions[clientFd].clientConfiguration();
 
 	if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
-		session.reSetPath(config.errorPages.at(exception.code()));
+		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()));
 		ev.events = EPOLLOUT;
 		ev.data.fd = clientFd;
 		ft_epoll__ctl(epollFd, clientFd, &ev);
@@ -34,15 +33,16 @@ int	errorResponse(const int epollFd, const statusCodeException& exception, httpS
 		if (exception.code() < 500) {
 			ev.events = EPOLLIN;
 			ev.data.fd = clientFd;
-			ft_epoll__ctl(epollFd, clientFd, &ev);
+			if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
+				perror("epoll_ctl failed");
+				close(clientFd);
+			}
 		} else {
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 				perror("epoll_ctl failed");
 			}
 			close(clientFd);
 		}
-		// delete session;
-		return -1;
+		sessions.erase(sessions.find(clientFd));
 	}
-	return 0;
 }

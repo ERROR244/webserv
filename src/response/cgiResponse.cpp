@@ -1,10 +1,14 @@
 #include "httpSession.hpp"
 
 static bstring    tweakAndCheckHeaders(map<string, string>& headers) {
+    cerr << "headers from cgi" << endl;
+    for (const auto& header : headers)
+        cerr << header.first << ": " << header.second << endl;
+    cerr << "-------" << endl;
     bstring bheaders;
 
     if (headers.find("content-type") == headers.end())
-        headers["content-type"] = "text/plain";
+        headers["content-type"] = "application/octet-stream";
     if (headers.find("content-length") != headers.end())
         headers.erase("content-length");
     if (headers.find("transfer-encoding") != headers.end())

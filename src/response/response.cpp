@@ -1,6 +1,6 @@
 #include "httpSession.hpp"
 
-httpSession::Response::Response(httpSession& session) : s(session), headerSended(false), contentFd(-1), cgiHeadersParsed(false) {}
+httpSession::Response::Response(httpSession& session) : s(session), contentFd(-1), cgiHeadersParsed(false) {}
 
 httpSession::Response::~Response() {
     close(contentFd);
@@ -15,6 +15,7 @@ void	httpSession::Response::handelClientRes(const int clientFd) {
 		}
 		sendCgiOutput(clientFd);
         //incase of client closin the connection what will you do
+		//send kill signal to the process if the client closed the connection
 	} else {
 		if (s.sstat == ss_sHeader) {
 			sendHeader();

@@ -89,19 +89,18 @@ public:
 	class Response {
 	private:
 		httpSession&	s;
-		bool			headerSended;
 		int				contentFd;
 		bool			cgiHeadersParsed;
-		
+
 		static string		getSupportedeExtensions(const string&);
 		void				sendCgiOutput(const int);
-		string				getDeleteRes(const string& path, const string& connection, struct stat& file_stat);
-		string				deleteDir(const string& dir, const string& connection);
-		string				deleteFile(const string& file, const string& connection);
 		void				sendHeader();
 		string				contentTypeHeader() const;
 		void				sendBody();
 		void				generateHtml();
+		void				deleteContent();
+		string				deleteDir(const string& dir, const string& connection);
+		string				deleteFile(const string& file, const string& connection);
 	public:
 		Response(httpSession& session);
 		~Response();
@@ -121,7 +120,7 @@ public:
 	configuration		clientConfiguration() const;
 	int					fd() const;
 	const e_sstat&		status() const;
-	void				reSetPath(const string& newPath);
+	void				resetForSendingErrorPage(const string& newPath);
 	map<string, string>	getHeaders() { return headers; }
 };
 

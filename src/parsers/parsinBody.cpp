@@ -124,7 +124,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				s.sstat = ss_body;
 				cerr << "boundaryyy headere" << endl;
 				fd = openFile(contentHeaders["content-disposition"], s.rules->uploads);
-			} else {
+			} else if (sepBoundary == 2) {
 				cerr << "end boundary" << endl;
 				if (boundaryStartinPos-contentStartinPos && write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) <= 0) {
 					throw(statusCodeException(500, "Internal Server Error"));
@@ -238,6 +238,4 @@ void	httpSession::Request::bodyFormat() {
 	} else
 		throw(statusCodeException(501, "Not Implemented"));
 	//bad  request in case content length and transfer encoding doesn't exist
-	s.statusCode = 204;
-	s.codeMeaning = "No Content";
 }

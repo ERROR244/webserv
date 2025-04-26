@@ -123,15 +123,26 @@ void	httpSession::Request::reconstructUri() {
 		break;
 	}
 	case POST: {
-		if (!s.rules->uploads.empty() && !stat(s.rules->uploads.c_str(), &pathStat) && S_ISDIR(pathStat.st_mode))
-				break ;
-		//what if uploads dir doesn't exist
-		//throw 404??
+		if (!s.rules->uploads.empty() && !stat(s.rules->uploads.c_str(), &pathStat) && S_ISDIR(pathStat.st_mode)) {
+			s.statusCode = 204;
+        	s.codeMeaning = "No Content";
+			break ;
+		}
 		throw(statusCodeException(403, "Forbidden"));
 	}
 	case DELETE: {
-		if (s.rules->uploads.empty())
-			throw(statusCodeException(403, "Forbidden"));
+		size_t pos;
+		struct stat fileStat;
+
+    	if (stat(s.path.c_str(), &fileStat))
+    	    throw(statusCodeException(404, "Not Found"));
+		if ((pos = s.path.find(s.rules->uploads)) == string::npos || pos) {
+			throw(statusCodeException(403, "Forbidden1"));
+		} else if (!(fileStat.st_mode & S_IWUSR)) {
+			throw(statusCodeException(403, "Forbidden1"));
+		}
+		s.statusCode = 204;
+        s.codeMeaning = "No Content";
 		break;
 	}
 	default:

@@ -58,10 +58,10 @@ void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
 		scriptEnvs["PATH_TRANSLATED"] = "";
 	else
 		scriptEnvs["PATH_TRANSLATED"] = string(absolutePath);
-	// cerr << "CGI headers" << endl;
-	// for (const auto& it : scriptEnvs)
-	// 	cerr << it.first << ": " << it.second << endl;
-	// cerr << "------" << endl;
+	cerr << "CGI headers ready" << endl;
+	for (const auto& it : scriptEnvs)
+		cerr << it.first << ": " << it.second << endl;
+	cerr << "------" << endl;
 }
 
 static char**	transformVectorToChar(vector<string>& vec) {

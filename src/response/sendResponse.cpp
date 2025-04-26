@@ -59,10 +59,8 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
     if (ext.find(key) != ext.end()) {
         return ext[key];
     }
-    return "";
+    return "Content-Type: application/octet-stream\r\n";
 }
-
-
 
 string	httpSession::Response::contentTypeHeader() const {
 	size_t pos = s.path.rfind(".");
@@ -73,21 +71,30 @@ string	httpSession::Response::contentTypeHeader() const {
         return ("Content-Type: application/octet-stream\r\n");
 	string ext = s.path.substr(pos);
 	string contentTypeValue = getSupportedeExtensions(ext);
-	if (contentTypeValue.empty())
-        return ("Content-Type: application/octet-stream\r\n");
 	return (contentTypeValue);
 }
 
 void	httpSession::Response::sendHeader() {
 	string header;
 
-    // cerr << s.statusCode << endl;
-	// cerr << s.codeMeaning << endl;
 	header += "HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n";
-	if (s.method == GET) {
+	switch (s.method) {
+    case GET: 
+    {
         header += contentTypeHeader();
 	    header += "Transfer-Encoding: chunked\r\n";
         s.sstat = ss_sBody;
+        break;
+    }
+    case DELETE:
+    {
+        deleteContent();
+        break;
+    }
+    case POST:
+        break;
+    default:
+        break;
     }
     if (s.showDirFiles == true)
         s.sstat = ss_sBodyAutoindex;
