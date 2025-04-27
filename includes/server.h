@@ -12,7 +12,7 @@
 #include "httpSession.hpp"
 #include <statusCodeException.hpp>
 
-#define MAX_EVENTS 10
+#define MAX_EVENTS 64
 
 using namespace std;
 

@@ -5,16 +5,13 @@ inline string  trimTrailinWs(const string& str) {
 	return str.substr(0, end + 1);
 }
 
-// bool	httpSession::Request::checkNecessaryHeaders() {
-// 	if (s.headers.find("host"))
-// }
-
 int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, string>& headers) {
 	size_t	size = buffer.size();
-	size_t	len = 0;
+	ssize_t	len = 0;
 	size_t	headerFieldsLen = 0;
 	string	fieldline;
 	char	ch;
+
 	while (pos < size) {
 		ch = buffer[pos];
 		switch (sstat)
@@ -22,7 +19,9 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		case ss_fieldLine: {
 			switch (ch)
 			{
-			case ':': { //test-> : field name ? valid?
+			case ':': {
+				if (len == 0)
+					throw(statusCodeException(400, "Bad Request"));
 				fieldline = buffer.substr(pos-len, len).cppstring();
 				sstat = ss_wssBeforeFieldName;
 				for (size_t i = 0; i < fieldline.size(); ++i)
@@ -34,7 +33,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 				break;
 			default: {
 				if (!iswalnum(ch))
-					throw(statusCodeException(400, "Bad Request15"));
+					throw(statusCodeException(400, "Bad Request"));
 			}
 			}
 			++len;
@@ -52,8 +51,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 				headers[fieldline] = "";
 				sstat = ss_emptyline;
 				len = 0;
-				++pos;
-				continue;
+				break;
 			}
 			case ' ': case '\t':
 			case '\f': case '\v':
@@ -77,9 +75,8 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			case '\n': {
 				headers[fieldline] = trimTrailinWs(buffer.substr(pos-len, len).cppstring());
 				sstat = ss_emptyline;
-				len = 0;
-				++pos;
-				continue;
+				len = -1;
+				break;
 			}
 			}
 			++len;
@@ -87,7 +84,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 		}
 		case ss_fieldNl: {
 			if (ch != '\n')
-				throw(statusCodeException(400, "Bad Request16"));
+				throw(statusCodeException(400, "Bad Request"));
 			sstat = ss_emptyline;
 			len = 0;
 			break;
@@ -97,20 +94,12 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			{
 			case '\r': {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request17"));
+					throw(statusCodeException(400, "Bad Request"));
 				break;
 			}
 			case '\n': {
-				switch (method)
-				{
-					case POST: {
-						sstat = ss_body;
-						break;
-					}
-					default:
-						sstat = ss_sHeader;
-				}
-				// cerr << "----headers----" << endl;
+				sstat = ss_sHeader;
+				// cerr << "----request headers----" << endl;
 				// for (const auto& it : headers)
 				// 	cerr << it.first << ": " << it.second << "|" <<  endl;
 				// cerr << "--------------" << endl;
@@ -118,7 +107,7 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			}
 			default: {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request18"));
+					throw(statusCodeException(400, "Bad Request"));
 				sstat = ss_fieldLine;
 				len = 0;
 				continue;

@@ -26,7 +26,7 @@
 
 using namespace std;
 
-enum e_sstat {//session stat
+enum e_sstat {
 	ss_method=0,
 	ss_uri,
 	ss_httpversion,
@@ -70,11 +70,10 @@ public:
 		bstring			remainingBody;
 		string			boundary;
 		size_t			length;
-		int				fd;
+		ofstream		uploadFile;
 
 		int				parseStarterLine(const bstring& buffer);
-		bool			fileExistence(const string&);
-		// bool			checkNecessaryHeaders();
+		bool			fileExistence();
 		void			contentlength(const bstring&, size_t);
 		void			unchunkBody(const bstring&, size_t);
 		void			bufferTheBody(const bstring&, size_t);

@@ -30,19 +30,10 @@ void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessi
 		ft_epoll__ctl(epollFd, clientFd, &ev);
 	} else {
 		sendError(clientFd, exception.code(), exception.meaning());
-		if (exception.code() < 500) {
-			ev.events = EPOLLIN;
-			ev.data.fd = clientFd;
-			if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
-				perror("epoll_ctl failed");
-				close(clientFd);
-			}
-		} else {
-			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
-				perror("epoll_ctl failed");
-			}
-			close(clientFd);
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
+			perror("epoll_ctl failed");
 		}
+		close(clientFd);
 		sessions.erase(sessions.find(clientFd));
 	}
 }

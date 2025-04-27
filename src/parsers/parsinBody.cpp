@@ -27,8 +27,17 @@ static bool	isMultipartFormData(const string& value) {
 	return true;
 }
 
-static int	openFile(const string& value, const string& path) {
-	int				fd;
+static int getLastChar(bstring buffer, ssize_t boundaryStartinIndex, bool startBoundary) {
+	if (startBoundary)
+		return boundaryStartinIndex;
+	if (boundaryStartinIndex)
+		--boundaryStartinIndex;
+	if (boundaryStartinIndex && buffer[boundaryStartinIndex-1] == '\r')
+		--boundaryStartinIndex;
+	return boundaryStartinIndex;
+}
+
+static string	openFile(const string& value, const string& path) {
 	vector<string>	fieldValueparts;
 	vector<string> keyvalue;
 
@@ -46,22 +55,16 @@ static int	openFile(const string& value, const string& path) {
 	keyvalue[1].erase(keyvalue[1].end()-1);
 	if (keyvalue[1].empty())
 		throw(statusCodeException(422, "Unprocessable Entity"));
-	if ((fd = open((path + "/" + keyvalue[1]).c_str(), O_CREAT | O_WRONLY, 0644)) < 0) {
-		perror("open failed");
-		throw (statusCodeException(500, "Internal Server Error"));
-	}
-	return fd;
+	return path + "/" + keyvalue[1];
 }
 
 static bool	roundedByNl(const bstring& buffer, const size_t start, const size_t len) {
-	// cerr << "is correct boundary" << endl;
 	char	ch;
 
-	if (start && buffer[start-1] != '\n')
+	if ((start && buffer[start-1] != '\n'))
 		return false;
 	for (size_t i = start+len; i < buffer.size(); ++i) {
 		ch = buffer[i];
-		// cerr << (int)ch << endl;
 		switch (ch)
 		{
 		case '\r': {
@@ -70,89 +73,91 @@ static bool	roundedByNl(const bstring& buffer, const size_t start, const size_t 
 			break;
 		}
 		case '\n':
-			return i+1;
+			return true;
 		default:
 			return false;
 		}
 	}
-	return true;
+	return false;
 }
 
 void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 	ssize_t	contentStartinPos = pos;
 
-	if (length >= buffer.size())
-		length -= buffer.size();
-	else {
-		// cerr << buffer << endl;
-		// cerr << "more content than content length" << endl;
-		// buffer.substr(0, length);`
-		// cerr << buffer << endl;
+	if (length >= buffer.size() - pos)
+		length -= buffer.size() - pos;
+	else
 		length = 0;
-	}
-	// cerr << length << endl;
-	while (true) {
+	while (pos < buffer.size()) {
 		size_t	boundaryStartinPos = buffer.find(boundary.c_str(), pos);
+		bool	firstBoundary = (uploadFile.is_open()) ? false : true;
 		int		sepBoundary = 0;
 
-		//checking the type of boundary;
-		if (boundaryStartinPos == string::npos)
+		if (firstBoundary && (boundaryStartinPos == string::npos || pos != boundaryStartinPos))
+			throw (statusCodeException(400, "Bad Request"));
+		else if (boundaryStartinPos == string::npos)
 			break;
-		if(!buffer.ncmp((boundary+"--").c_str(), boundary.size()+2, boundaryStartinPos)) {
+		//checking the type of boundary;
+		if(!buffer.ncmp((boundary+"--").c_str(), boundary.size()+2, boundaryStartinPos))
 			sepBoundary = 2;
-		}
 		//check if boundary is rounded by newlines;
 		if (roundedByNl(buffer, boundaryStartinPos, boundary.size()+sepBoundary)) {
-			if (boundaryStartinPos)
-				--boundaryStartinPos;
-			if (boundaryStartinPos && buffer[boundaryStartinPos-1] == '\r')
-				--boundaryStartinPos;
+			//getting the index of the last charchter in the content of the previous file
+			ssize_t lastIndexOfPContent = getLastChar(buffer, boundaryStartinPos, firstBoundary);
 			if (sepBoundary == 0) {
 				map<string, string>	contentHeaders;
-				if (fd != -1 && boundaryStartinPos-contentStartinPos && write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) <= 0) {
-					throw(statusCodeException(500, "Internal Server Error"));
+				if (uploadFile.is_open()) {
+					uploadFile.write(&buffer[contentStartinPos], lastIndexOfPContent-contentStartinPos);
+					if (uploadFile.fail())
+						throw(statusCodeException(500, "Internal Server Error"));
 				}
 				s.sstat = ss_emptyline;
-				if ((contentStartinPos = s.parseFields(buffer, buffer.find('\n', boundaryStartinPos+boundary.size())+1, contentHeaders)) < 0) {
-					cerr << "unfinished body headers" << endl;
-					remainingBody = buffer.substr(boundaryStartinPos);
+				if ((contentStartinPos = s.parseFields(buffer, buffer.find('\n', lastIndexOfPContent+boundary.size())+1, contentHeaders)) < 0) {
+					remainingBody = buffer.substr(lastIndexOfPContent);
 					length += remainingBody.size();
-					fd = -1;
+					uploadFile.close();
 					s.sstat = ss_body;
 					return;
 				}
 				s.sstat = ss_body;
-				cerr << "boundaryyy headere" << endl;
-				fd = openFile(contentHeaders["content-disposition"], s.rules->uploads);
-			} else if (sepBoundary == 2) {
-				cerr << "end boundary" << endl;
-				if (boundaryStartinPos-contentStartinPos && write(fd, &(buffer[contentStartinPos]), boundaryStartinPos-contentStartinPos) <= 0) {
+				uploadFile.close();
+				string filePath = openFile(contentHeaders["content-disposition"], s.rules->uploads);
+				uploadFile.open(filePath);
+				if (uploadFile.is_open() == false)
 					throw(statusCodeException(500, "Internal Server Error"));
+			} else if (sepBoundary == 2) {
+				if (uploadFile.is_open()) {
+					uploadFile.write(&buffer[contentStartinPos], lastIndexOfPContent-contentStartinPos);
+					if (uploadFile.fail())
+						throw(statusCodeException(500, "Internal Server Error"));
 				}
 				if (length == 0) {
 					s.sstat = ss_sHeader;
+					uploadFile.close();
 					return;
 				}
 				else
-					throw (statusCodeException(400, "Bad Request19"));
-				break;//extin out of the loop cause i found the end boundary
+					throw (statusCodeException(400, "Bad Request"));
 			}
 		}
 		pos = boundaryStartinPos+boundary.size();
 	}
 	size_t lastlinePos = buffer.rfind('\n');
-	if (static_cast<size_t>(contentStartinPos) < buffer.size() && buffer.size()-lastlinePos <= boundary.size()+2) {
+	if (lastlinePos == string::npos)
+		lastlinePos = 0;
+	if (static_cast<size_t>(contentStartinPos) >= buffer.size() || uploadFile.is_open() == false)
+		return;
+	else if (buffer.size()-lastlinePos <= boundary.size()+3) {
 		if (lastlinePos && buffer[lastlinePos-1] == '\r')
-			--pos;
+			--lastlinePos;
 		remainingBody = buffer.substr(lastlinePos);
 		length += remainingBody.size();
-		cerr << buffer.size() << endl;
-		cerr << contentStartinPos << endl;
-		if (lastlinePos && write(fd, &(buffer[contentStartinPos]), lastlinePos) <= 0) {
+		uploadFile.write(&buffer[contentStartinPos], lastlinePos);
+		if (uploadFile.fail())
 			throw(statusCodeException(500, "Internal Server Error"));
-		}
-	} else if (static_cast<size_t>(contentStartinPos) < buffer.size()) {
-		if (buffer.size()-contentStartinPos && write(fd, &(buffer[contentStartinPos]), buffer.size()-contentStartinPos) <= 0)
+	} else {
+		uploadFile.write(&buffer[contentStartinPos], buffer.size()-contentStartinPos);
+		if (uploadFile.fail())
 			throw(statusCodeException(500, "Internal Server Error"));
 	}
 }
@@ -226,16 +231,20 @@ void	httpSession::Request::bodyFormat() {
 		}
 		else if (s.headers.find("transfer-encoding") != s.headers.end() && s.headers["transfer-encoding"] == "chunked")
 			bodyHandlerFunc = &Request::unchunkBody;
+		else
+			throw(statusCodeException(501, "Not Implemented"));
 	}
-	else if (s.headers.find("content-type") != s.headers.end() && isMultipartFormData(s.headers["content-type"])) {
-		boundary = "--" + s.headers["content-type"].substr(s.headers["content-type"].rfind('=')+1);
-		if (s.headers.find("content-length") != s.headers.end()) {
+	else {
+		if (s.headers.find("content-length") != s.headers.end() && s.headers.find("content-type") != s.headers.end()
+			&& isMultipartFormData(s.headers["content-type"]))
+		{
+			boundary = "--" + s.headers["content-type"].substr(s.headers["content-type"].rfind('=')+1);
 			length = w_stoi(s.headers["content-length"]);
 			bodyHandlerFunc = &Request::contentlength;
+			// if (static_cast<off_t>(length) > s.config.bodySize)
+			// 	throw(statusCodeException(413, "Request Entity Too Large"));
 		}
-		if (static_cast<off_t>(length) > s.config.bodySize)
-			throw(statusCodeException(413, "Request Entity Too Large"));
-	} else
-		throw(statusCodeException(501, "Not Implemented"));
-	//bad  request in case content length and transfer encoding doesn't exist
+		else
+			throw(statusCodeException(501, "Not Implemented"));
+	}
 }

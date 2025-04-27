@@ -81,8 +81,10 @@ void	httpSession::Response::sendHeader() {
 	switch (s.method) {
     case GET: 
     {
-        header += contentTypeHeader();
-	    header += "Transfer-Encoding: chunked\r\n";
+        if (s.returnedLocation.empty()) {
+            header += contentTypeHeader();
+	        header += "Transfer-Encoding: chunked\r\n";
+        }
         s.sstat = ss_sBody;
         break;
     }

@@ -64,7 +64,7 @@ void	httpSession::Request::isCGI() {
 	}
 }
 
-bool	httpSession::Request::fileExistence(const string &rawPath) {
+bool	httpSession::Request::fileExistence() {
 	struct stat pathStat;
 	char lastCharInPath = s.path.size() ? s.path[s.path.size()-1] : 0;
 
@@ -73,16 +73,14 @@ bool	httpSession::Request::fileExistence(const string &rawPath) {
 	else if (S_ISDIR(pathStat.st_mode) && lastCharInPath != '/' && s.method == GET) {
 		s.statusCode = 303;
 		s.codeMeaning = "See Other";
-		s.returnedLocation = rawPath + "/";
+		s.returnedLocation = s.rawUri + "/";
 		s.sstat = ss_sHeader;
 		return false;
 	} else if (S_ISDIR(pathStat.st_mode) && s.method == GET) {
 		if (access(("." + s.path + s.rules->index).c_str(), F_OK) == -1 && s.rules->autoIndex == false)
 			throw(statusCodeException(403, "Forbidden"));
-		else if (access(("." + s.path + s.rules->index).c_str(), F_OK) == -1 && s.rules->autoIndex == true) {
-			s.rawUri = rawPath;
+		else if (access(("." + s.path + s.rules->index).c_str(), F_OK) == -1 && s.rules->autoIndex == true)
 			s.showDirFiles = true;
-		}
 		else
 			s.path += s.rules->index;
 	}
@@ -97,10 +95,9 @@ void	httpSession::Request::reconstructUri() {
 		s.statusCode = 301;
 		s.codeMeaning = "Moved Permanently";
 		s.returnedLocation = s.rules->reconfigurer;
-		s.sstat = ss_sHeader;
 		return ;
 	} else {
-		string rawPath = s.path;
+		s.rawUri = s.path;
 		s.path.erase(s.path.begin(), s.path.begin()+s.rules->uri.size());
 		s.path = s.rules->reconfigurer + s.path;
 		if (s.path.find("/../") != string::npos || s.path.find("/..\0") != string::npos)
@@ -110,20 +107,20 @@ void	httpSession::Request::reconstructUri() {
 			cerr << "---CGIIIIIIIIIIIIIIII---" << endl;
 			return;
 		}
-		if (fileExistence(rawPath) == false)
+		if (fileExistence() == false)
 			return;
 	}
 	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
 		throw(statusCodeException(405, "Method Not Allowed"));
 	switch (s.method)
 	{
-	case GET: {
-		//auto indexing part will move to the response
-
+	case GET:
 		break;
-	}
 	case POST: {
 		if (!s.rules->uploads.empty() && !stat(s.rules->uploads.c_str(), &pathStat) && S_ISDIR(pathStat.st_mode)) {
+			if (s.headers.find("content-length") == s.headers.end() && s.headers.find("transfer-encoding") == s.headers.end())
+				throw(statusCodeException(400, "Bad Request"));
+			s.sstat = ss_body;
 			s.statusCode = 204;
         	s.codeMeaning = "No Content";
 			break ;
@@ -137,16 +134,15 @@ void	httpSession::Request::reconstructUri() {
     	if (stat(s.path.c_str(), &fileStat))
     	    throw(statusCodeException(404, "Not Found"));
 		if ((pos = s.path.find(s.rules->uploads)) == string::npos || pos) {
-			throw(statusCodeException(403, "Forbidden1"));
-		} else if (!(fileStat.st_mode & S_IWUSR)) {
-			throw(statusCodeException(403, "Forbidden1"));
-		}
+			throw(statusCodeException(403, "Forbidden"));
+		} else if (!(fileStat.st_mode & S_IWUSR))
+			throw(statusCodeException(403, "Forbidden"));
 		s.statusCode = 204;
         s.codeMeaning = "No Content";
 		break;
 	}
 	default:
-		throw(statusCodeException(400, "Bad Request1"));
+		throw(statusCodeException(400, "Bad Request"));
 	}
 }
 
@@ -167,24 +163,24 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				{
 				case 3: {
 					if (buffer.ncmp("GET", 3, i-len))
-						throw(statusCodeException(400, "Bad Request2"));
+						throw(statusCodeException(400, "Bad Request"));
 					s.method = GET;
 					break;
 				}
 				case 4:{
 					if (buffer.ncmp("POST", 4, i-len))
-						throw(statusCodeException(400, "Bad Request3"));
+						throw(statusCodeException(400, "Bad Request"));
 					s.method = POST;
 					break;
 				}
 				case 6:{
 					if (buffer.ncmp("DELETE", 6, i-len))
-						throw(statusCodeException(400, "Bad Request4"));
+						throw(statusCodeException(400, "Bad Request"));
 					s.method = DELETE;
 					break;
 				}
 				default:
-					throw(statusCodeException(400, "Bad Request5"));
+					throw(statusCodeException(400, "Bad Request"));
 				}
 				s.sstat = ss_uri;
 				len = 0;
@@ -192,7 +188,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			}
 			default: {
 				if (len > 6)
-					throw(statusCodeException(400, "Bad Request6"));
+					throw(statusCodeException(400, "Bad Request"));
 			}
 			}
 			++len;
@@ -204,8 +200,8 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			case URI_MAXSIZE:
 				throw(statusCodeException(414, "URI Too Long"));
 			case 0: {
-				if (buffer[i] != '/' && s.path.empty())//resetin len to 0 when ? is found
-					throw(statusCodeException(400, "Bad Request7"));
+				if (buffer[i] != '/' && s.path.empty())
+					throw(statusCodeException(400, "Bad Request"));
 			}
 			}
 			switch (ch)
@@ -241,7 +237,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				break;
 			default:
 				if (!iswalnum(ch))
-					throw(statusCodeException(400, "Bad Request8"));
+					throw(statusCodeException(400, "Bad Request"));
 			}
 			++len;
 			break;
@@ -251,13 +247,13 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			{
 			case 7: {
 				if (buffer.ncmp("HTTP/1.1", 8, i-len))
-					throw(statusCodeException(400, "Bad Request9"));
+					throw(statusCodeException(400, "Bad Request"));
 				s.sstat = ss_starterlineNl;
 				len = 0;
 				continue;
 			}
 			case 8:
-				throw(statusCodeException(400, "Bad Request10"));
+				throw(statusCodeException(400, "Bad Request"));
 			}
 			++len;
 			break;
@@ -267,7 +263,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			{
 			case '\r': {
 				if (len != 0)
-					throw(statusCodeException(400, "Bad Request11"));
+					throw(statusCodeException(400, "Bad Request"));
 				break;
 			}
 			case '\n': {
@@ -275,7 +271,7 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 				return i+1;
 			}
 			default:
-				throw(statusCodeException(400, "Bad Request12"));
+				throw(statusCodeException(400, "Bad Request"));
 			}
 			++len;
 			break;
@@ -284,6 +280,6 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 			break;
 		}
 	}
-	throw(statusCodeException(400, "Bad Request13"));
+	throw(statusCodeException(400, "Bad Request"));
 	return(-1);
 }

@@ -20,7 +20,7 @@ using namespace std;
 string  w_realpath(const char * file_name);
 string  toString(const int& nbr);
 int     w_stoi(const string& snum);
-string  getsockname(int clientFd);
+string  ft_getsockname(int clientFd);
 int     ft_setsockopt(int __fd, int __level, int __optname);
 int     ft_epoll_ctl(int __epfd, int __op, int __fd, epoll_event *event);
 int     ft_bind(int __fd, const sockaddr *__addr, socklen_t __len);

@@ -54,17 +54,17 @@ void	acceptNewClient(const int& epollFd, const int& serverFd) {
 	int					clientFd;
 
 	if ((clientFd = accept(serverFd, NULL, NULL)) < 0) {
-		perror("accept faield");
-        return;
+		cerr << "accept failed" << endl;
+		return;
     }
 	ev.events = EPOLLIN;
 	ev.data.fd = clientFd;
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
-		perror("epoll_ctl faield");
+		cerr << "epoll_ctl failed" << endl;
 		close(clientFd);
 		return;
 	}
-	cerr << "--------------new client added--------------" << endl;
+	cerr << "new client added, its fd is -> " << clientFd << endl;
 }
 
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
@@ -72,10 +72,18 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 	map<int, httpSession>				sessions;
 	int									nfds;
 
-	cerr << "Started the server..." << endl;
 	while (1) {
-		if ((nfds = ft_epoll_wait(epollFd, events, MAX_EVENTS, 0, sessions, epollFd)) == -1)
-			return;
+		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
+			cerr << "epoll_wait failed" << endl;
+        	if (errno == ENOMEM) {
+				//ENOMEM is set when there'snt enough memory left in device
+        	    for (map<int, httpSession>::iterator it = sessions.begin(); it != sessions.end(); ++it)
+        	        close(it->first);
+        	    close(epollFd);
+        	    return;
+    	    }
+			continue;
+		}
 		for (int i = 0; i < nfds; ++i) {
 			const int fd = events[i].data.fd;
 			try {
@@ -83,7 +91,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				else if (events[i].events & EPOLLIN) {
 					if (sessions.find(fd) == sessions.end()) {
-						pair<int, httpSession> newclient(fd, httpSession(fd, config[getsockname(fd)]));
+						pair<int, httpSession> newclient(fd, httpSession(fd, config[ft_getsockname(fd)]));
 						sessions.insert(newclient);
 					}
 					sessions[fd].req.readfromsock();
