@@ -4,21 +4,23 @@ void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 	struct epoll_event	ev;
 
 	if (status == ss_done) {
-		cerr << "done sending the response" << endl;
 		map<string, string> headers = s[clientFd].getHeaders();
-		if (headers["connection"] != "keep-alive") {
-			cerr << "client want to close connection after this operation" << endl;
+		if (headers.find("connection") == headers.end() || headers["connection"] != "keep-alive") {
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
-				perror("epoll_ctl failed");
+				cerr << "epoll_ctl failed" << endl;
 			close(clientFd);
 		} else {
 			ev.events = EPOLLIN;
 			ev.data.fd = clientFd;
-			if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1)
-				perror("epoll_ctl failed");
-			//why not close the client fd when epoll ctl fail
+			if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
+				cerr << "epoll_ctl failed" << endl;
+				close(clientFd);
+			}
 		}
+		cerr << "before" << endl;
+		
 		s.erase(s.find(clientFd));
+		cerr << "after" << endl;
 	}
 	else if (status == ss_cclosedcon) {
 		cerr << "client closed the connection" << endl;
@@ -36,14 +38,15 @@ void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSess
 		ev.events = EPOLLOUT;
 		ev.data.fd = clientFd;
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
-			perror("epoll_ctl failed");
-			throw(statusCodeException(500, "Internal Server Error"));
+			cerr << "epoll_ctl failed" << endl;
+			close(clientFd);
+			s.erase(s.find(clientFd));
 		}
 	}
 	else if (status == ss_cclosedcon) {
-		cerr << "client closed the connection" << endl;
+		cerr << "closing the connection of -> " << clientFd << endl;
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
-			perror("epoll_ctl failed");
+			cerr <<"epoll_ctl failed" << endl;
 		close(clientFd);
 		s.erase(s.find(clientFd));
 	}

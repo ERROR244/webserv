@@ -155,23 +155,6 @@ int ft_epoll_create1(int __flags) {
 	return epollFd;
 }
 
-int ft_epoll_ctl(int __epfd, int __op, int __fd, epoll_event *event) {
-	if (epoll_ctl(__epfd, __op, __fd, event) < 0) {
-		ft_close(__epfd, "ft_epoll_ctl");
-		throw std::runtime_error("Epoll ctl failed");
-	}
-	return 0;
-}
-
-int ft_epoll__ctl(int __epfd, int __fd, epoll_event* ev) {
-	if (epoll_ctl(__epfd, EPOLL_CTL_MOD, __fd, ev) == -1) {
-		cerr << "epoll__ctl failed" << endl;
-		close(__fd);
-		return -1;
-	}
-	return 0;
-}
-
 void ft_perror(const std::string &msg) {
 	if (!msg.empty())
 		std::cerr << msg << ": ";

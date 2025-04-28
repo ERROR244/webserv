@@ -27,7 +27,11 @@ void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessi
 		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()));
 		ev.events = EPOLLOUT;
 		ev.data.fd = clientFd;
-		ft_epoll__ctl(epollFd, clientFd, &ev);
+		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
+			perror("epoll_ctl failed");
+			close(clientFd);
+			sessions.erase(sessions.find(clientFd));
+		}
 	} else {
 		sendError(clientFd, exception.code(), exception.meaning());
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {

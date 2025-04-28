@@ -22,18 +22,10 @@ if __name__ == "__main__":
 
     # Craft a simple HTTP GET request
     request = (
-        "POST / HTTP/1.1\r\n"
+        "GET /wrong HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         "Connection: close\r\n"
-        "content-length: 139\r\n"
-        "content-type: multipart/form-data; boundary=----Web\r\n"
         "\r\n"
-        "------Web\r\n"
-        "Content-Disposition: form-data; name=\"files\"; filename=\"test.txt\"\r\n"
-        "Content-Type: application/octet-stream\r\n"
-        "\r\n"
-        "hello"
-        "\r\n------Web--\r\n"
     )
 
     # Send request and print the response

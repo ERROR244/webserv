@@ -70,7 +70,7 @@ public:
 		bstring			remainingBody;
 		string			boundary;
 		size_t			length;
-		ofstream		uploadFile;
+		ofstream		outputFile;
 
 		int				parseStarterLine(const bstring& buffer);
 		bool			fileExistence();
@@ -81,14 +81,15 @@ public:
 		void			isCGI();
 		void			reconstructUri();
 	public:
-		void			readfromsock();
 		Request(httpSession& session);
+		~Request();
+		void			readfromsock();
 	};
 
 	class Response {
 	private:
 		httpSession&	s;
-		int				contentFd;
+		ifstream		inputFile;
 		bool			cgiHeadersParsed;
 
 		static string		getSupportedeExtensions(const string&);
@@ -98,11 +99,9 @@ public:
 		void				sendBody();
 		void				generateHtml();
 		void				deleteContent();
-		string				deleteDir(const string& dir, const string& connection);
-		string				deleteFile(const string& file, const string& connection);
 	public:
-		Response(httpSession& session);
-		~Response();
+	Response(httpSession& session);
+	~Response();
 
 		void				handelClientRes(const int clientFd);
 	};
@@ -122,8 +121,3 @@ public:
 	void				resetForSendingErrorPage(const string& newPath);
 	map<string, string>	getHeaders() { return headers; }
 };
-
-int		ft_epoll_wait(int __epfd, epoll_event *__events, int __maxevents, int __timeout, map<int, httpSession> serverFd, int epollFd);
-// string				generate_autoindex_html(const string& dir_path, const string& uri_path);
-// bool				write_to_file(const string& filename, const string& content);
-// string				getConnection(string ConHeadre);

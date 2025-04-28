@@ -32,9 +32,8 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd), r
 }
 
 httpSession::~httpSession() {
-	// cerr << clientFd << " http session destructor called" << endl;
-	// delete[] rules;
-	// delete[] cgi;
+	cerr << clientFd << " http session destructor called" << endl;
+	delete cgi;
 }
 
 configuration	httpSession::clientConfiguration() const {
@@ -56,12 +55,10 @@ void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
 	query = "";
 	headers.clear();
 	config = configuration();
-	// if (rules)
-	// 	delete rules;
-	// if (cgi)
-	// 	delete cgi;
-	//why double free here HUHUHUHUHUHHUH
-	rules = NULL;
+	if (cgi)
+		delete cgi;
+	// //why double free here HUHUHUHUHUHHUH
+	// rules = NULL;
 	cgi = NULL;
 	cgiBody = "";
 	returnedLocation = "";

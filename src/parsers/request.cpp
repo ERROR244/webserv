@@ -2,6 +2,10 @@
 
 httpSession::Request::Request(httpSession& session) : s(session), length(0) {}
 
+httpSession::Request::~Request() {
+	outputFile.close();
+}
+
 void	httpSession::Request::readfromsock() {
 	char	buffer[BUFFER_SIZE];
 	ssize_t byteread;
@@ -14,9 +18,6 @@ void	httpSession::Request::readfromsock() {
 	bstring bbuffer(buffer, byteread);
 	bbuffer = remainingBody + bbuffer;
 	remainingBody = NULL;
-	// cerr << "raw buffer" << endl;
-	// cerr << bbuffer;
-	// cerr << "----------------" << endl;
 	if (static_cast<int>(s.sstat) < 9) {
 		bufferPos = parseStarterLine(bbuffer);
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)

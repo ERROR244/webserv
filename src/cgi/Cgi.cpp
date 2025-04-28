@@ -103,7 +103,8 @@ void	Cgi::executeScript() {
 	// delete []CGIEnvp;
 	cerr << "execve failed" << endl;
 	strerror(errno);
-	throw(statusCodeException(500, "Internal Server Errorrr"));
+	//don't throw;
+	// throw(statusCodeException(500, "Internal Server Errorrr"));
 }
 
 void	Cgi::setupCGIProcess() {

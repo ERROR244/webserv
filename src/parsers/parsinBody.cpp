@@ -90,7 +90,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 		length = 0;
 	while (pos < buffer.size()) {
 		size_t	boundaryStartinPos = buffer.find(boundary.c_str(), pos);
-		bool	firstBoundary = (uploadFile.is_open()) ? false : true;
+		bool	firstBoundary = (outputFile.is_open()) ? false : true;
 		int		sepBoundary = 0;
 
 		if (firstBoundary && (boundaryStartinPos == string::npos || pos != boundaryStartinPos))
@@ -106,34 +106,34 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 			ssize_t lastIndexOfPContent = getLastChar(buffer, boundaryStartinPos, firstBoundary);
 			if (sepBoundary == 0) {
 				map<string, string>	contentHeaders;
-				if (uploadFile.is_open()) {
-					uploadFile.write(&buffer[contentStartinPos], lastIndexOfPContent-contentStartinPos);
-					if (uploadFile.fail())
+				if (outputFile.is_open()) {
+					outputFile.write(&buffer[contentStartinPos], lastIndexOfPContent-contentStartinPos);
+					if (outputFile.fail())
 						throw(statusCodeException(500, "Internal Server Error"));
 				}
 				s.sstat = ss_emptyline;
 				if ((contentStartinPos = s.parseFields(buffer, buffer.find('\n', lastIndexOfPContent+boundary.size())+1, contentHeaders)) < 0) {
 					remainingBody = buffer.substr(lastIndexOfPContent);
 					length += remainingBody.size();
-					uploadFile.close();
+					outputFile.close();
 					s.sstat = ss_body;
 					return;
 				}
 				s.sstat = ss_body;
-				uploadFile.close();
+				outputFile.close();
 				string filePath = openFile(contentHeaders["content-disposition"], s.rules->uploads);
-				uploadFile.open(filePath);
-				if (uploadFile.is_open() == false)
+				outputFile.open(filePath);
+				if (outputFile.is_open() == false)
 					throw(statusCodeException(500, "Internal Server Error"));
 			} else if (sepBoundary == 2) {
-				if (uploadFile.is_open()) {
-					uploadFile.write(&buffer[contentStartinPos], lastIndexOfPContent-contentStartinPos);
-					if (uploadFile.fail())
+				if (outputFile.is_open()) {
+					outputFile.write(&buffer[contentStartinPos], lastIndexOfPContent-contentStartinPos);
+					if (outputFile.fail())
 						throw(statusCodeException(500, "Internal Server Error"));
 				}
 				if (length == 0) {
 					s.sstat = ss_sHeader;
-					uploadFile.close();
+					outputFile.close();
 					return;
 				}
 				else
@@ -145,19 +145,19 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 	size_t lastlinePos = buffer.rfind('\n');
 	if (lastlinePos == string::npos)
 		lastlinePos = 0;
-	if (static_cast<size_t>(contentStartinPos) >= buffer.size() || uploadFile.is_open() == false)
+	if (static_cast<size_t>(contentStartinPos) >= buffer.size() || outputFile.is_open() == false)
 		return;
 	else if (buffer.size()-lastlinePos <= boundary.size()+3) {
 		if (lastlinePos && buffer[lastlinePos-1] == '\r')
 			--lastlinePos;
 		remainingBody = buffer.substr(lastlinePos);
 		length += remainingBody.size();
-		uploadFile.write(&buffer[contentStartinPos], lastlinePos);
-		if (uploadFile.fail())
+		outputFile.write(&buffer[contentStartinPos], lastlinePos);
+		if (outputFile.fail())
 			throw(statusCodeException(500, "Internal Server Error"));
 	} else {
-		uploadFile.write(&buffer[contentStartinPos], buffer.size()-contentStartinPos);
-		if (uploadFile.fail())
+		outputFile.write(&buffer[contentStartinPos], buffer.size()-contentStartinPos);
+		if (outputFile.fail())
 			throw(statusCodeException(500, "Internal Server Error"));
 	}
 }
@@ -241,8 +241,8 @@ void	httpSession::Request::bodyFormat() {
 			boundary = "--" + s.headers["content-type"].substr(s.headers["content-type"].rfind('=')+1);
 			length = w_stoi(s.headers["content-length"]);
 			bodyHandlerFunc = &Request::contentlength;
-			// if (static_cast<off_t>(length) > s.config.bodySize)
-			// 	throw(statusCodeException(413, "Request Entity Too Large"));
+			if (static_cast<off_t>(length) > s.config.bodySize)
+				throw(statusCodeException(413, "Request Entity Too Large"));
 		}
 		else
 			throw(statusCodeException(501, "Not Implemented"));
