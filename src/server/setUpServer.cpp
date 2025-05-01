@@ -2,20 +2,26 @@
 #include "wrappers.h"
 #include "server.h"
 
-int startEpoll(const vector<int>& serverFds) {
-    int epollFd = ft_epoll_create1(0);
+map<int, epollPtr>&	getEpollMonitor() {
+    static map<int, epollPtr>   monitor;
+    return monitor;
+}
 
-    struct epoll_event event = {};
+int startEpoll(const vector<int>& serverFds) {
+    struct epoll_event  event;;
+    int                 epollFd = ft_epoll_create1(0);
+    map<int, epollPtr>& monitor = getEpollMonitor();
+
     for (size_t fd = 0; fd < serverFds.size(); ++fd) {
         event.events = EPOLLIN;
-        epollPtr    *tmp = new epollPtr;
-        tmp->fd = serverFds[fd];
-        event.data.ptr = tmp;
+        monitor[serverFds[fd]].fd = serverFds[fd];
+        event.data.ptr = &monitor[serverFds[fd]];
         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverFds[fd], &event) == -1) {
             close(epollFd);
 		    throw runtime_error("epoll_ctl failed");
             //close all the previouse sockets
         }
+        cerr << "adding server fd -> " << serverFds[fd] << endl;
     }
     return epollFd;
 }

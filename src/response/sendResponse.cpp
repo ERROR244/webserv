@@ -124,7 +124,7 @@ void	httpSession::Response::sendBody() {
     streamsize sizeRead;
 
 	if (inputFile.is_open() == false) {
-        inputFile.open(s.path, ios::binary);
+        inputFile.open(s.path.c_str(), ios::binary);
         if (inputFile.is_open() == false) {
             cerr << "open failed" << endl;
             s.sstat = ss_cclosedcon;

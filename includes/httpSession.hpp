@@ -80,6 +80,7 @@ public:
 		void			reconstructUri();
 	public:
 		Request(httpSession& session);
+		Request(const Request& other);
 		~Request();
 		void			readfromsock();
 	};
@@ -100,6 +101,7 @@ public:
 		void				deleteContent();
 	public:
 		Response(httpSession& session);
+		Response(const Response& other);
 		~Response();
 		void				handelClientRes(const int);
 		void				storeCgiResponse(const bstring&);
@@ -112,10 +114,10 @@ public:
 	httpSession();
 	~httpSession();
 	int					parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
+	void				resetForSendingErrorPage(const string& newPath);
 	configuration		clientConfiguration() const;
 	int					fd() const;
 	const e_sstat&		status() const;
-	void				resetForSendingErrorPage(const string& newPath);
 	map<string, string>	getHeaders();
 	bstring&			getCgiBody();
 };

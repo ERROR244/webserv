@@ -22,17 +22,19 @@ if __name__ == "__main__":
 
     # Craft a simple HTTP GET request
     request = (
-        "POST /bin/cgi/post.py HTTP/1.1\r\n"
+        "POST /bin/cgi/script.py HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         "Connection: close\r\n"
         "transfer-encoding: chunked\r\n"
         "\r\n"
-        "2\r\n"
-        "he\r\n"
-        "3\r\n"
-        "llo\r\n"
+        "5\r\n"
+        "hello\r\n"
         "0\r\n\r\n"
     )
+    # request = (
+    #     "GET / HTTP/1.1\r\n"
+    #     "\r\n"
+    # )
 
     # Send request and print the response
     response = send_http_request(host, port, request)

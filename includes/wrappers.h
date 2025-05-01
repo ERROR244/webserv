@@ -19,7 +19,6 @@ using namespace std;
 
 string  w_realpath(const char * file_name);
 string  toString(const int& nbr);
-int     w_stoi(const string& snum);
 string  ft_getsockname(int clientFd);
 int     ft_setsockopt(int __fd, int __level, int __optname);
 int     ft_bind(int __fd, const sockaddr *__addr, socklen_t __len);
@@ -28,5 +27,5 @@ int     ft_epoll_create1(int __flags);
 int     ft_listen(int __fd, int __n);
 int     ft_close(int& __fd, string why);
 int     ft_stoi(const std::string &__str);
-int     my_stoi(const std::string &str, size_t *pos, int base);
+int     my_stoi(const std::string &str, size_t *pos = 0, int base = 10);
 void    ft_perror(const std::string &msg = "");

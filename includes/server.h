@@ -25,10 +25,11 @@ struct epollPtr {
 typedef struct sockaddr_in t_sockaddr;
 typedef map<int, t_sockaddr>::const_iterator t_sockaddr_it;
 
-vector<string>	homeEnvVariables(char ** vars = NULL);
-int				createSockets(map<string, configuration>& config, vector<int>& serverFds);
-int				startEpoll(const vector<int>& serverFds);
-void			errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, map<int, epollPtr>& epollPtrHolder, const statusCodeException& exception);
-void			multiplexerSytm(const vector<int>& serverFds, const int& epollFd, map<string, configuration>& config);
-void			readCgiOutput(struct epoll_event ev);
-bool    		writeBodyToCgi(struct epoll_event ev);
+vector<string>		homeEnvVariables(char ** vars = NULL);
+int					createSockets(map<string, configuration>& config, vector<int>& serverFds);
+map<int, epollPtr>&	getEpollMonitor();
+int					startEpoll(const vector<int>& serverFds);
+void				errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception);
+void				multiplexerSytm(const vector<int>& serverFds, const int& epollFd, map<string, configuration>& config);
+void				readCgiOutput(struct epoll_event ev);
+bool    			writeBodyToCgi(struct epoll_event ev);

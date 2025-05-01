@@ -1,7 +1,9 @@
 #include "server.h"
 
-static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, map<int, epollPtr>& epollPtrHolder, const e_sstat& status) {
-	struct epoll_event	ev;
+static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
+	struct epoll_event				ev;
+	map<int, epollPtr>&				monitor = getEpollMonitor();
+	map<int, epollPtr>::iterator	position = monitor.find(clientFd);
 
 	if (status == ss_done) {
 		map<string, string> headers = s[clientFd].getHeaders();
@@ -10,15 +12,17 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 				cerr << "epoll_ctl failed" << endl;
 			close(clientFd);
-			epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+			if (position != monitor.end())
+				monitor.erase(position);
 		} else {
 			ev.events = EPOLLIN;
-			epollPtrHolder[clientFd].fd = clientFd;
-			ev.data.ptr = &epollPtrHolder[clientFd];
+			monitor[clientFd].fd = clientFd;
+			ev.data.ptr = &monitor[clientFd];
 			if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 				cerr << "epoll_ctl failed" << endl;
 				close(clientFd);
-				epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+				if (position != monitor.end())
+					monitor.erase(position);
 			}
 		}
 		s.erase(s.find(clientFd));
@@ -29,22 +33,26 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 			perror("epoll_ctl failed");
 		close(clientFd);
 		s.erase(s.find(clientFd));
-		epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+		if (position != monitor.end())
+			monitor.erase(position);
 	}
 }
 
-static void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, map<int, epollPtr>& epollPtrHolder, const e_sstat& status) {
+static void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, httpSession>& s, const e_sstat& status) {
 	struct epoll_event	ev;
+	map<int, epollPtr>&	monitor = getEpollMonitor();
+	map<int, epollPtr>::iterator	position = monitor.find(clientFd);
 
 	if (status == ss_sHeader) {
 		ev.events = EPOLLOUT;
-		epollPtrHolder[clientFd].fd = clientFd;
-		ev.data.ptr = &epollPtrHolder[clientFd];
+		monitor[clientFd].fd = clientFd;
+		ev.data.ptr = &monitor[clientFd];
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			cerr << "epoll_ctl failed" << endl;
 			close(clientFd);
 			s.erase(s.find(clientFd));
-			epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+			if (position != monitor.end())
+				monitor.erase(position);
 		}
 	}
 	else if (status == ss_cclosedcon) {
@@ -53,25 +61,29 @@ static void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 			cerr <<"epoll_ctl failed" << endl;
 		close(clientFd);
 		s.erase(s.find(clientFd));
-		epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+		if (position != monitor.end())
+			monitor.erase(position);
 	}
 }
 
-static void	acceptNewClient(const int& epollFd, const int& serverFd, map<int, epollPtr>& epollPtrHolder) {
+static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 	struct epoll_event	ev;
 	int					clientFd;
+	map<int, epollPtr>&	monitor = getEpollMonitor();
 
 	if ((clientFd = accept(serverFd, NULL, NULL)) < 0) {
 		cerr << "accept failed" << endl;
 		return;
     }
 	ev.events = EPOLLIN;
-	epollPtrHolder[clientFd].fd = clientFd;
-	ev.data.ptr = &epollPtrHolder[clientFd];
+	monitor[clientFd].fd = clientFd;
+	ev.data.ptr = &monitor[clientFd];
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
 		cerr << "epoll_ctl failed" << endl;
+		map<int, epollPtr>::iterator	position = monitor.find(clientFd);
 		close(clientFd);
-		epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+		if (position != monitor.end())
+			monitor.erase(position);
 		return;
 	}
 	cerr << "new client added, its fd is -> " << clientFd << endl;
@@ -80,7 +92,6 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd, map<int, ep
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
 	map<int, httpSession>				sessions;
-	map<int, epollPtr>					epollPtrHolder;
 	int									nfds;
 
 	while (1) {
@@ -100,7 +111,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 			const int 	fd = ptr->fd;
 			try {
 				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end())
-					acceptNewClient(epollFd, fd, epollPtrHolder);
+					acceptNewClient(epollFd, fd);
 				else if (events[i].events & EPOLLIN) {
 					if (ptr->ptr) {
 						readCgiOutput(events[i]);
@@ -110,7 +121,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 							sessions.insert(newclient);
 						}
 						sessions[fd].req.readfromsock();
-						reqSessionStatus(epollFd, fd, sessions, epollPtrHolder, sessions[fd].status());
+						reqSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 					}
 				}
 				else if (events[i].events & EPOLLOUT) {
@@ -121,12 +132,12 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 						}
 					} else {
 						sessions[fd].res.handelClientRes(epollFd);
-						resSessionStatus(epollFd, fd, sessions, epollPtrHolder, sessions[fd].status());
+						resSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 					}
 				}
 			}
 			catch (const statusCodeException& exception) {
-				errorResponse(epollFd, fd, sessions, epollPtrHolder, exception);
+				errorResponse(epollFd, fd, sessions, exception);
 			}
 		}
 	}

@@ -17,22 +17,25 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 	send(clientFd, msg.c_str(), msg.size(), MSG_DONTWAIT);
 }
 
-void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, map<int, epollPtr>& epollPtrHolder, const statusCodeException& exception) {
+void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception) {
 	cerr << "code--> " << exception.code() << endl;
 	cerr << "reason--> " << exception.meaning() << endl;
-	struct epoll_event	ev;
-	configuration config = sessions[clientFd].clientConfiguration();
+	struct epoll_event				ev;
+	map<int, epollPtr>&				monitor = getEpollMonitor();
+	map<int, epollPtr>::iterator	position = monitor.find(clientFd);
+	configuration 					config = sessions[clientFd].clientConfiguration();
 
 	if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
 		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()));
 		ev.events = EPOLLOUT;
-		epollPtrHolder[clientFd].fd = clientFd;
-		ev.data.ptr = &epollPtrHolder[clientFd];
+		monitor[clientFd].fd = clientFd;
+		ev.data.ptr = &monitor[clientFd];
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed");
 			close(clientFd);
 			sessions.erase(sessions.find(clientFd));
-			epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+			if (position != monitor.end())
+				monitor.erase(position);
 		}
 	} else {
 		sendError(clientFd, exception.code(), exception.meaning());
@@ -41,6 +44,7 @@ void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessi
 		}
 		close(clientFd);
 		sessions.erase(sessions.find(clientFd));
-		epollPtrHolder.erase(epollPtrHolder.find(clientFd));
+		if (position != monitor.end())
+			monitor.erase(position);
 	}
 }

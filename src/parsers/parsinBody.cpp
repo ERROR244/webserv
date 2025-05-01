@@ -15,6 +15,18 @@ static void	split(const string& str, const char delimiter, vector<string>& parts
 	parts.push_back(str.substr(pos));
 }
 
+static int w_stoi(const string& snum) {
+	int num;
+	try {
+		//it will throw incase of invalid arg
+		num = my_stoi(snum);
+	} catch (...) {
+		cerr << "w_stoi failed" << endl;
+		throw(statusCodeException(400, "Bad Request"));
+	}
+	return num;
+}
+
 static bool	isMultipartFormData(const string& value) {
 	vector<string>	fieldValueparts;
 	split(value, ';', fieldValueparts);
@@ -37,7 +49,7 @@ static int getLastChar(bstring buffer, ssize_t boundaryStartinIndex, bool startB
 	return boundaryStartinIndex;
 }
 
-static string	openFile(const string& value, const string& path) {
+static string	getFileName(const string& value, const string& path) {
 	vector<string>	fieldValueparts;
 	vector<string> keyvalue;
 
@@ -121,8 +133,8 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				}
 				s.sstat = ss_body;
 				outputFile.close();
-				string filePath = openFile(contentHeaders["content-disposition"], s.rules->uploads);
-				outputFile.open(filePath);
+				string filePath = getFileName(contentHeaders["content-disposition"], s.rules->uploads);
+				outputFile.open(filePath.c_str());
 				if (outputFile.is_open() == false)
 					throw(statusCodeException(500, "Internal Server Error"));
 			} else if (sepBoundary == 2) {
@@ -142,9 +154,6 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 		}
 		pos = boundaryStartinPos+boundary.size();
 	}
-	// size_t lastlinePos = buffer.rfind('\n');
-	// if (lastlinePos == string::npos)
-	// 	lastlinePos = 0;
 	if (static_cast<size_t>(contentStartinPos) >= buffer.size() || outputFile.is_open() == false)
 		return;
 	size_t cuttingPoint = buffer.size() > boundary.size()+4 ? (buffer.size()-1)-(boundary.size()+4) : 0;
@@ -180,9 +189,6 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
                 }
 				ss << hex << lengthInHex;
 				ss >> length;
-				if (!(ss >> length)) {
-                    throw statusCodeException(400, "Invalid chunk size format");
-                }
 				if (length == 0) {
 					s.headers["content-length"] = toString(s.cgiBody.size());
 					s.headers.erase(s.headers.find("transfer-encoding"));

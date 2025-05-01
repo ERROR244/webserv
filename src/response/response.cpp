@@ -2,6 +2,8 @@
 #include "server.h"
 httpSession::Response::Response(httpSession& session) : s(session), cgiHeadersParsed(false) {}
 
+httpSession::Response::Response(const Response& other) : s(other.s), cgiHeadersParsed(false) {}
+
 httpSession::Response::~Response() {
     inputFile.close();
 }
@@ -11,26 +13,25 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 		if (s.sstat == ss_sHeader) {
 			struct epoll_event	evWritePipe;
 			struct epoll_event	evReadPipe;
-			epollPtr			*tmp1 = new epollPtr;
-			epollPtr			*tmp2 = new epollPtr;
+			map<int, epollPtr>&	monitor = getEpollMonitor();
 
 			s.cgi->prepearingCgiEnvVars(s.headers);
 			s.cgi->setupCGIProcess();
 			if (s.cgiBody.empty() == false) {
-				tmp1->fd = s.cgi->wFd();
-				tmp1->ptr = &s;
+				monitor[s.cgi->wFd()].fd = s.cgi->wFd();
+				monitor[s.cgi->wFd()].ptr = &s;
 				evWritePipe.events = EPOLLOUT;
-				evWritePipe.data.ptr = tmp1;
+				evWritePipe.data.ptr = &monitor[s.cgi->wFd()];
 				if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->wFd(), &evWritePipe) == -1) {
 					cerr << "epoll_ctl failed" << endl;
 					s.sstat = ss_cclosedcon;
 					return;
 				}
 			}
-			tmp2->fd = s.cgi->rFd();
-			tmp2->ptr = &s;
+			monitor[s.cgi->rFd()].fd = s.cgi->rFd();
+			monitor[s.cgi->rFd()].ptr = &s;
 			evReadPipe.events = EPOLLIN;
-			evReadPipe.data.ptr = tmp2;
+			evReadPipe.data.ptr = &monitor[s.cgi->rFd()];
 			if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->rFd(), &evReadPipe) == -1) {
 				cerr << "epoll_ctl failed" << endl;
 				s.sstat = ss_cclosedcon;

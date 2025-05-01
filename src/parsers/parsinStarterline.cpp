@@ -112,8 +112,10 @@ void	httpSession::Request::reconstructUri() {
 		throw(statusCodeException(405, "Method Not Allowed"));
 	switch (s.method)
 	{
-	case GET:
+	case GET: {
+		s.sstat = ss_sHeader;
 		break;
+	}
 	case POST: {
 		if (!s.rules->uploads.empty() && !stat(s.rules->uploads.c_str(), &pathStat) && S_ISDIR(pathStat.st_mode)) {
 			if (s.headers.find("content-length") == s.headers.end() && s.headers.find("transfer-encoding") == s.headers.end())
@@ -135,6 +137,7 @@ void	httpSession::Request::reconstructUri() {
 			throw(statusCodeException(403, "Forbidden"));
 		} else if (!(fileStat.st_mode & S_IWUSR))
 			throw(statusCodeException(403, "Forbidden"));
+		s.sstat = ss_sHeader;
 		s.statusCode = 204;
         s.codeMeaning = "No Content";
 		break;

@@ -2,6 +2,8 @@
 
 httpSession::Request::Request(httpSession& session) : s(session), length(0) {}
 
+httpSession::Request::Request(const Request& other) : s(other.s), length(0) {}
+
 httpSession::Request::~Request() {
 	outputFile.close();
 }
@@ -23,7 +25,7 @@ void	httpSession::Request::readfromsock() {
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)
 			throw(statusCodeException(400, "Bad Request"));
 		reconstructUri();
-		if (s.method== POST)
+		if (s.method == POST)
 			bodyFormat();
 	}
 	if (s.sstat == ss_body && static_cast<size_t>(bufferPos) < bbuffer.size())

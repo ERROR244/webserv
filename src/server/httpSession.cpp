@@ -22,7 +22,6 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd), r
 	query = other.query;
 	headers = other.headers;
 	config = other.config;
-	// monitorCgi = other.monitorCgi;
 	cgi = other.cgi ? new Cgi(*other.cgi) : NULL;
 	rules = other.rules ? new location(*other.rules) : NULL;
 	cgiBody = other.cgiBody;
@@ -33,7 +32,7 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd), r
 }
 
 httpSession::~httpSession() {
-	cerr << clientFd << " http session destructor called" << endl;
+	// cerr << clientFd << " http session destructor called" << endl;
 	delete cgi;
 }
 

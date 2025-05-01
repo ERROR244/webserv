@@ -17,7 +17,7 @@ string toString(const int& nbr) {
 	return (oss.str());
 }
 
-int my_stoi(const std::string &str, size_t *pos = 0, int base = 10) {
+int my_stoi(const std::string &str, size_t *pos, int base) {
 	if (base != 10)
 		throw std::invalid_argument("stoi only supports base 10");
 	size_t	i = 0;
@@ -60,17 +60,6 @@ int ft_stoi(const std::string &__str) {
 		cout << e.what() << endl;
 		throw std::runtime_error("invalid number: `" + __str + "`");
 	}
-}
-
-int w_stoi(const string& snum) {
-	int num;
-	try {
-		num = my_stoi(snum);        //it will throw incase of invalid arg
-	} catch (...) {
-		perror("stoi failed");
-		throw(statusCodeException(400, "Bad Request"));
-	}
-	return num;
 }
 
 string ft_inet_ntoa(struct in_addr addr) {
