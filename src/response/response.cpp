@@ -16,17 +16,17 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 
 			s.cgi->prepearingCgiEnvVars(s.headers);
 			s.cgi->setupCGIProcess();
-			// if (s.cgiBody.empty() == false) {
-			// 	tmp1->fd = s.cgi->wFd();
-			// 	tmp1->ptr = &s;
-			// 	evWritePipe.events = EPOLLOUT;
-			// 	evWritePipe.data.ptr = tmp1;
-			// 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->wFd(), &evWritePipe) == -1) {
-			// 		cerr << "epoll_ctl failed" << endl;
-			// 		s.sstat = ss_cclosedcon;
-			// 		return;
-			// 	}
-			// }
+			if (s.cgiBody.empty() == false) {
+				tmp1->fd = s.cgi->wFd();
+				tmp1->ptr = &s;
+				evWritePipe.events = EPOLLOUT;
+				evWritePipe.data.ptr = tmp1;
+				if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->wFd(), &evWritePipe) == -1) {
+					cerr << "epoll_ctl failed" << endl;
+					s.sstat = ss_cclosedcon;
+					return;
+				}
+			}
 			tmp2->fd = s.cgi->rFd();
 			tmp2->ptr = &s;
 			evReadPipe.events = EPOLLIN;

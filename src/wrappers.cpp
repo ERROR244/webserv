@@ -68,7 +68,7 @@ int w_stoi(const string& snum) {
 		num = my_stoi(snum);        //it will throw incase of invalid arg
 	} catch (...) {
 		perror("stoi failed");
-		throw(statusCodeException(400, "Bad Request20"));
+		throw(statusCodeException(400, "Bad Request"));
 	}
 	return num;
 }

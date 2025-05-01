@@ -103,10 +103,8 @@ void	httpSession::Request::reconstructUri() {
 		if (s.path.find("/../") != string::npos || s.path.find("/..\0") != string::npos)
 			throw(statusCodeException(403, "Forbidden"));
 		isCGI();
-		if (s.cgi) {
-			cerr << "---CGIIIIIIIIIIIIIIII---" << endl;
+		if (s.cgi)
 			return;
-		}
 		if (fileExistence() == false)
 			return;
 	}

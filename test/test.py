@@ -25,9 +25,13 @@ if __name__ == "__main__":
         "POST /bin/cgi/post.py HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         "Connection: close\r\n"
-        "content-length: 5\r\n"
+        "transfer-encoding: chunked\r\n"
         "\r\n"
-        "hello"
+        "2\r\n"
+        "he\r\n"
+        "3\r\n"
+        "llo\r\n"
+        "0\r\n\r\n"
     )
 
     # Send request and print the response

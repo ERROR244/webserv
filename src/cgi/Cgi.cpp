@@ -127,10 +127,6 @@ void	Cgi::setupCGIProcess() {
 		close(wPipe[0]);
 		executeScript();
 	}
-	if (write(wPipe[1], "hello", 5) <= 0)
-	{
-		perror("test");
-	}
 	close(rPipe[1]);
 	close(wPipe[0]);
 }

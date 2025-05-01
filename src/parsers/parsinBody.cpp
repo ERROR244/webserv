@@ -156,48 +156,63 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 }
 
 void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
-	size_t size = buffer.size();
+	size_t buffersize = buffer.size();
 
-	while (pos < size) {
+	while (pos < buffersize) {
 		stringstream	ss;
-		bool			crInLine = false;
-		size_t			nlPos;
+		size_t			nlPos = 0;
 	
 		if (length == 0) {
 			nlPos = buffer.find('\n', pos);
-			if (nlPos != string::npos) {
-				if (nlPos && buffer[nlPos-1] == '\r')
-					crInLine = true;
-				string hexLength = buffer.substr(pos, nlPos-pos-crInLine).cppstring();//incase of unvalid number then whatttttttttt;
-				if (hexLength == "0") {
+			if (nlPos == string::npos) {
+				remainingBody = buffer.substr(pos);
+				return;
+			} else {
+				bool 	crInLine = (nlPos > 0 && buffer[nlPos-1] == '\r');
+				size_t	lengthEnd = crInLine ? nlPos - 1 : nlPos;
+				string	lengthInHex = buffer.substr(pos, lengthEnd-pos).cppstring();
+
+				for (size_t i = 0; i < lengthInHex.size(); ++i) {
+                    char c = lengthInHex[i];
+                    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+                        throw statusCodeException(400, "Invalid hex character in chunk size");
+                    }
+                }
+				ss << hex << lengthInHex;
+				ss >> length;
+				if (!(ss >> length)) {
+                    throw statusCodeException(400, "Invalid chunk size format");
+                }
+				if (length == 0) {
 					s.headers["content-length"] = toString(s.cgiBody.size());
 					s.headers.erase(s.headers.find("transfer-encoding"));
 					s.sstat = ss_sHeader;
-					cerr << "cgi's body(unchunked)" << endl;
-					cerr << s.cgiBody << endl;
-					cerr << "------------------------------------" << endl;
-					return ;
+					return;
 				}
-				ss << hex << hexLength;
-				ss >> length;
-			} else {
-				remainingBody = buffer.substr(pos);
-				return;
+				pos = nlPos+1;
 			}
-			pos = nlPos+1;
 		}
-		nlPos = buffer.find('\n', nlPos+length);//skipping the length of the length to start from the new chunked data
-		if (nlPos != string::npos) {
-			s.cgiBody += buffer.substr(pos, length);
-			if (static_cast<off_t>(s.cgiBody.size()) > s.config.bodySize)
-				throw(statusCodeException(413, "Request Entity Too Large"));
-			length = 0;
-			pos = nlPos;//so i can start next iteration from the line that has the content
-		} else {
-			remainingBody = buffer.substr(pos+1);
-			return;
+		size_t chunkEnd = pos + length;
+        if (chunkEnd + 2 > buffersize) {
+            // We don't have the complete chunk data yet - save what we have and wait
+            remainingBody = buffer.substr(pos);
+            return;
+        }
+        // Append the chunk data to our body
+        s.cgiBody += buffer.substr(pos, length);
+        if (static_cast<off_t>(s.cgiBody.size()) > s.config.bodySize) {
+            throw statusCodeException(413, "Request Entity Too Large");
+        }
+        pos = chunkEnd;
+        if (pos + 1 < buffersize && buffer[pos] == '\r' && buffer[pos + 1] == '\n') {
+            pos += 2;
+        } else if (pos < buffersize && buffer[pos] == '\n') {
+            pos += 1;
+        } else {
+            throw statusCodeException(400, "Malformed chunked encoding");
 		}
-		++pos;
+        // Reset for next chunk
+        length = 0;
 	}
 }
 
@@ -233,8 +248,8 @@ void	httpSession::Request::bodyFormat() {
 			boundary = "--" + s.headers["content-type"].substr(s.headers["content-type"].rfind('=')+1);
 			length = w_stoi(s.headers["content-length"]);
 			bodyHandlerFunc = &Request::contentlength;
-			// if (static_cast<off_t>(length) > s.config.bodySize)
-			// 	throw(statusCodeException(413, "Request Entity Too Large"));
+			if (static_cast<off_t>(length) > s.config.bodySize)
+				throw(statusCodeException(413, "Request Entity Too Large"));
 		}
 		else
 			throw(statusCodeException(501, "Not Implemented"));
