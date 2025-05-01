@@ -17,14 +17,12 @@
 #include "statusCodeException.hpp"
 #include <ctime>
 
-
+using namespace std;
 
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
 #define T 2
-
-using namespace std;
 
 enum e_sstat {
 	ss_method=0,
@@ -38,6 +36,7 @@ enum e_sstat {
 	ss_emptyline,
 	ss_body,
 	ss_sHeader,
+	ss_CgiResponse,
 	ss_sBody,
 	ss_sBodyAutoindex,
 	ss_done,
@@ -61,7 +60,6 @@ private:
 	bool				showDirFiles;
 	int					statusCode;
 	string				codeMeaning;
-
 public:
 	class Request {
 	private:
@@ -90,6 +88,7 @@ public:
 	private:
 		httpSession&	s;
 		ifstream		inputFile;
+		bstring			cgiBuffer;
 		bool			cgiHeadersParsed;
 
 		static string		getSupportedeExtensions(const string&);
@@ -100,24 +99,23 @@ public:
 		void				generateHtml();
 		void				deleteContent();
 	public:
-	Response(httpSession& session);
-	~Response();
-
-		void				handelClientRes(const int clientFd);
+		Response(httpSession& session);
+		~Response();
+		void				handelClientRes(const int);
+		void				storeCgiResponse(const bstring&);
 	};
+	Request		req;
+	Response	res;
+
 	httpSession(int clientFd, configuration& confi);
 	httpSession(const httpSession& other);
 	httpSession();
 	~httpSession();
-
-	Request		req;
-	Response	res;
-
-
 	int					parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
 	configuration		clientConfiguration() const;
 	int					fd() const;
 	const e_sstat&		status() const;
 	void				resetForSendingErrorPage(const string& newPath);
-	map<string, string>	getHeaders() { return headers; }
+	map<string, string>	getHeaders();
+	bstring&			getCgiBody();
 };

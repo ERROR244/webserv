@@ -23,8 +23,7 @@ void	httpSession::Request::readfromsock() {
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)
 			throw(statusCodeException(400, "Bad Request"));
 		reconstructUri();
-		cerr << "uri -> " << s.path << endl;
-		if (s.sstat == ss_body)
+		if (s.method== POST)
 			bodyFormat();
 	}
 	if (s.sstat == ss_body && static_cast<size_t>(bufferPos) < bbuffer.size())

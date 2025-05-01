@@ -142,24 +142,17 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 		}
 		pos = boundaryStartinPos+boundary.size();
 	}
-	size_t lastlinePos = buffer.rfind('\n');
-	if (lastlinePos == string::npos)
-		lastlinePos = 0;
+	// size_t lastlinePos = buffer.rfind('\n');
+	// if (lastlinePos == string::npos)
+	// 	lastlinePos = 0;
 	if (static_cast<size_t>(contentStartinPos) >= buffer.size() || outputFile.is_open() == false)
 		return;
-	else if (buffer.size()-lastlinePos <= boundary.size()+3) {
-		if (lastlinePos && buffer[lastlinePos-1] == '\r')
-			--lastlinePos;
-		remainingBody = buffer.substr(lastlinePos);
-		length += remainingBody.size();
-		outputFile.write(&buffer[contentStartinPos], lastlinePos);
-		if (outputFile.fail())
-			throw(statusCodeException(500, "Internal Server Error"));
-	} else {
-		outputFile.write(&buffer[contentStartinPos], buffer.size()-contentStartinPos);
-		if (outputFile.fail())
-			throw(statusCodeException(500, "Internal Server Error"));
-	}
+	size_t cuttingPoint = buffer.size() > boundary.size()+4 ? (buffer.size()-1)-(boundary.size()+4) : 0;
+	remainingBody = buffer.substr(cuttingPoint);
+	length += remainingBody.size();
+	outputFile.write(&buffer[contentStartinPos], buffer.size()-contentStartinPos-remainingBody.size());
+	if (outputFile.fail())
+		throw(statusCodeException(500, "Internal Server Error"));
 }
 
 void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
@@ -210,15 +203,14 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 
 void	httpSession::Request::bufferTheBody(const bstring& buffer, size_t pos) {
 	if (length) {
-		s.cgiBody += buffer.substr(pos);
-		length -= buffer.size()-pos;
+		s.cgiBody += buffer.substr(pos, length);
+		if (s.cgiBody.size() >= length)
+			length = 0;
+		else 
+			length -= s.cgiBody.size();
 	}
-	if (length == 0) {
-		cerr << "cgi's body" << endl;
-		cerr << s.cgiBody << endl;
+	if (length == 0)
 		s.sstat = ss_sHeader;
-		cerr << "--------" << endl;
-	}
 }
 
 void	httpSession::Request::bodyFormat() {
@@ -241,10 +233,11 @@ void	httpSession::Request::bodyFormat() {
 			boundary = "--" + s.headers["content-type"].substr(s.headers["content-type"].rfind('=')+1);
 			length = w_stoi(s.headers["content-length"]);
 			bodyHandlerFunc = &Request::contentlength;
-			if (static_cast<off_t>(length) > s.config.bodySize)
-				throw(statusCodeException(413, "Request Entity Too Large"));
+			// if (static_cast<off_t>(length) > s.config.bodySize)
+			// 	throw(statusCodeException(413, "Request Entity Too Large"));
 		}
 		else
 			throw(statusCodeException(501, "Not Implemented"));
 	}
+	s.sstat = ss_body;
 }

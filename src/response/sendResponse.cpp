@@ -91,10 +91,13 @@ void	httpSession::Response::sendHeader() {
     case DELETE:
     {
         deleteContent();
+        s.sstat = ss_done;
         break;
     }
-    case POST:
+    case POST: {
+        s.sstat = ss_done;
         break;
+    }
     default:
         break;
     }

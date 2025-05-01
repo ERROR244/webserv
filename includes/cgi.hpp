@@ -15,6 +15,8 @@ using namespace std;
 
 //https://www.ibm.com/docs/en/netcoolomnibus/8.1?topic=scripts-environment-variables-in-cgi-script
 
+#define DOCUMENT_ROOT "./www/"
+
 struct cgiInfo {
 	string	scriptUri;
 	string	scriptName;
@@ -35,7 +37,8 @@ class Cgi {
 		void	createPipes();
 		void	executeScript();
 		void	getHeaders(const map<string, string>& headers);
-		public:
+		Cgi();
+	public:
 		Cgi(const cgiInfo& infos);
 		~Cgi();
 		void	setupCGIProcess();

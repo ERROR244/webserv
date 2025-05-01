@@ -14,7 +14,7 @@ void signalHandler( int signum ) {
 	throw "";
 }
 
-int main(int ac, char **av) {
+int main(int ac, char **av, char **envp) {
 	map<string, configuration> config;
 	vector<int> serverFds;
 	int epollFd;
@@ -23,6 +23,8 @@ int main(int ac, char **av) {
 		cerr << "invalid number of argument" << endl;
 	} else {
 		try {
+			//settin home envs
+			homeEnvVariables(envp);
 			//config file
 			disableEchoCtrl();
 			signal(SIGINT, signalHandler);

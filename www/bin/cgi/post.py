@@ -8,7 +8,7 @@ print("Content-Type: text/html")
 print()  # Required blank line after headers
 
 # Get the content length from the environment
-content_length = os.environ.get("HTTP_CONTENT_LENGTH", 0)
+content_length = os.environ.get("CONTENT_LENGTH", 0)
 
 try:
     content_length = int(content_length)

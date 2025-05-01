@@ -22,10 +22,12 @@ if __name__ == "__main__":
 
     # Craft a simple HTTP GET request
     request = (
-        "GET /wrong HTTP/1.1\r\n"
+        "POST /bin/cgi/post.py HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         "Connection: close\r\n"
+        "content-length: 5\r\n"
         "\r\n"
+        "hello"
     )
 
     # Send request and print the response

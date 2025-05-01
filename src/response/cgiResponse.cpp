@@ -1,101 +1,109 @@
 #include "httpSession.hpp"
+#include "server.h"
 
-static bstring    tweakAndCheckHeaders(map<string, string>& headers) {
-    cerr << "headers from cgi" << endl;
-    for (const auto& header : headers)
-        cerr << header.first << ": " << header.second << endl;
-    cerr << "-------" << endl;
-    bstring bheaders;
+void	readCgiOutput(struct epoll_event ev) {
+	epollPtr    *ptr = static_cast<epollPtr*>(ev.data.ptr);
+	httpSession *s = static_cast<httpSession*>(ptr->ptr);
+	char        buffer[BUFFER_SIZE];
+	ssize_t     bytesRead;
 
-    if (headers.find("content-type") == headers.end())
-        headers["content-type"] = "application/octet-stream";
-    if (headers.find("content-length") != headers.end())
-        headers.erase("content-length");
-    if (headers.find("transfer-encoding") != headers.end())
-        headers.erase("transfer-encoding");
-    headers["transfer-encoding"] = "chunked";
-    if (headers.find("connection") == headers.end()) {
-        headers["connection"] = "close";
-    } else {
-        if (headers["connection"] != "close" || headers["connection"] != "keep-alive")
-            headers["connection"] = "close";
-    }
-    for (map<string, string>::iterator it = headers.begin(); it != headers.end(); ++it) {
-        bheaders += (it->first + ": " + it->second + "\r\n").c_str();
-    }
-    bheaders += "\r\n";
-    return bheaders;
+	if ((bytesRead = read(ptr->fd, buffer, BUFFER_SIZE)) <= 0) {
+		//how can i show internall server error to the client incase of error
+		cerr << "read failed" << endl;
+	}
+	bstring tmp(buffer, bytesRead);
+	s->res.storeCgiResponse(tmp);
 }
 
-void    httpSession::Response::sendCgiOutput(const int clientFd) {
-    char    buff[BUFFER_SIZE];
-    int     byteRead = 0;
-    int     status;
-    if (!s.cgiBody.empty()) {
-        int     byteWrite;
+bool    writeBodyToCgi(struct epoll_event ev) {
+	epollPtr	*ptr = static_cast<epollPtr*>(ev.data.ptr);
+	httpSession *s = static_cast<httpSession*>(ptr->ptr);
+	bstring& 	body = s->getCgiBody();
+	int     	byteWrite;
 
-        cerr << s.cgi->wFd() << endl;
-        if ((byteWrite = write(s.cgi->wFd(), s.cgiBody.c_str(), s.cgiBody.size())) <= 0) {
-            perror("write failed(sendResponse.cpp 185)");
-            s.sstat = ss_cclosedcon;
-            return;
-        }
-        cerr << "byte write: " << byteWrite << endl;
-        s.cgiBody.erase(0, byteWrite);
-        if (s.cgiBody.empty())
-            cerr << "done writing the body to the script" << endl;
-    }
-    else if ((byteRead = read(s.cgi->rFd(), buff, BUFFER_SIZE)) < 0) {
-        perror("read failed(sendResponse.cpp 152)");
-        s.sstat = ss_cclosedcon;
-        return;
-    }
-    bstring bbuffer(buff, byteRead);
-    if (byteRead > 0) {
-        bstring         chunkedResponse;
+	if ((byteWrite = write(ptr->fd, body.c_str(), body.size())) <= 0) {
+		//how can i show internall server error to the client incase of error
+		cerr << "write failed" << endl;
+		return true;
+	}
+	body.erase(0, byteWrite);
+	if (body.empty())
+		return true;
+	return false;
+}
+
+static bstring    tweakAndCheckHeaders(map<string, string>& headers) {
+	bstring bheaders;
+
+	if (headers.find("content-type") == headers.end())
+		headers["content-type"] = "application/octet-stream";
+	if (headers.find("content-length") != headers.end())
+		headers.erase("content-length");
+	if (headers.find("transfer-encoding") != headers.end())
+		headers.erase("transfer-encoding");
+	headers["transfer-encoding"] = "chunked";
+	if (headers.find("connection") == headers.end()) {
+		headers["connection"] = "close";
+	} else {
+		if (headers["connection"] != "close" || headers["connection"] != "keep-alive")
+			headers["connection"] = "close";
+	}
+	for (map<string, string>::iterator it = headers.begin(); it != headers.end(); ++it) {
+		bheaders += (it->first + ": " + it->second + "\r\n").c_str();
+	}
+	bheaders += "\r\n";
+	return bheaders;
+}
+
+void    httpSession::Response::sendCgiOutput(const int epollFd) {
+	int     status;
+
+	if (cgiBuffer.empty() == false) {
+		bstring         chunkedResponse;
 		ostringstream   chunkSize;
-    
-        if (cgiHeadersParsed == false) {
-            map<string, string>	cgiHeaders;
-            ssize_t  bodyStartPos = 0;
+	
+		if (cgiHeadersParsed == false) {
+			map<string, string>	cgiHeaders;
+			ssize_t  bodyStartPos = 0;
 
-            s.sstat = ss_emptyline;
-            try {
-                if ((bodyStartPos = s.parseFields(bbuffer, 0, cgiHeaders)) < 0) { // i might use a buffer here in case of incomplete fields
-                    perror("write failed(sendResponse.cpp 143)");
-		            s.sstat = ss_cclosedcon;
-                    return;
-                }
-            } catch (...) {
-                s.sstat = ss_cclosedcon;
-                return;
-            }
-            s.sstat = ss_sBody;
-            chunkedResponse += ("HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
-            chunkedResponse += tweakAndCheckHeaders(cgiHeaders);
-            bbuffer = bbuffer.substr(bodyStartPos);
-            cgiHeadersParsed = true;
-        }
-		chunkSize << hex << bbuffer.size() << "\r\n";
-        chunkedResponse += chunkSize.str().c_str();
-        chunkedResponse += bbuffer;
-        chunkedResponse += "\r\n";
-        cerr << "cgi response ->>>>>>" << endl;
-        cerr << chunkedResponse << endl;
-        cerr << "-------------" << endl;
-        if (send(clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT) <= 0) {
-            perror("send failed(sendResponse.cpp 50)");
-			s.sstat = ss_cclosedcon;
-			return ;
-        }
-    } else if (byteRead == 0 && waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
-        if (send(clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT) <= 0) {
-			perror("write failed(sendResponse.cpp 56)");
+			s.sstat = ss_emptyline;
+			try {
+				if ((bodyStartPos = s.parseFields(cgiBuffer, 0, cgiHeaders)) < 0) {
+					//grahhhhh
+					return;
+				}
+			} catch (...) {
+				s.sstat = ss_cclosedcon;
+				return;
+			}
+			s.sstat = ss_CgiResponse;
+			chunkedResponse += ("HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
+			chunkedResponse += tweakAndCheckHeaders(cgiHeaders);
+			cgiBuffer = cgiBuffer.substr(bodyStartPos);
+			cgiHeadersParsed = true;
+		}
+		chunkSize << hex << cgiBuffer.size() << "\r\n";
+		chunkedResponse += chunkSize.str().c_str();
+		chunkedResponse += cgiBuffer;
+		chunkedResponse += "\r\n";
+		if (send(s.clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT) <= 0) {
+			cerr << "send failed" << endl;
 			s.sstat = ss_cclosedcon;
 			return ;
 		}
-        s.sstat = ss_done;
+		cgiBuffer = NULL;
+	} else if (waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
+		struct epoll_event	ev;
+
+		if (send(s.clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT) <= 0) {
+			cerr << "send failed" << endl;
+			s.sstat = ss_cclosedcon;
+			return ;
+		}
+		epoll_ctl(epollFd, EPOLL_CTL_DEL, s.cgi->rFd(), &ev);
+		epoll_ctl(epollFd, EPOLL_CTL_DEL, s.cgi->wFd(), &ev);
 		close(s.cgi->rFd());
 		close(s.cgi->wFd());
-    }
+		s.sstat = ss_done;
+	}
 }

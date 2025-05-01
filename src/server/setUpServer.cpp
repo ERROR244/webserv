@@ -1,5 +1,6 @@
 #include "confiClass.hpp"
 #include "wrappers.h"
+#include "server.h"
 
 int startEpoll(const vector<int>& serverFds) {
     int epollFd = ft_epoll_create1(0);
@@ -7,7 +8,9 @@ int startEpoll(const vector<int>& serverFds) {
     struct epoll_event event = {};
     for (size_t fd = 0; fd < serverFds.size(); ++fd) {
         event.events = EPOLLIN;
-        event.data.fd = serverFds[fd];
+        epollPtr    *tmp = new epollPtr;
+        tmp->fd = serverFds[fd];
+        event.data.ptr = tmp;
         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverFds[fd], &event) == -1) {
             close(epollFd);
 		    throw runtime_error("epoll_ctl failed");

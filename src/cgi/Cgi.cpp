@@ -1,5 +1,7 @@
 #include "cgi.hpp"
 
+Cgi::Cgi() {}
+
 Cgi::Cgi(const cgiInfo& infos): infos(infos){
 	rPipe[0] = -1;
 	rPipe[1] = -1;
@@ -8,13 +10,11 @@ Cgi::Cgi(const cgiInfo& infos): infos(infos){
 	createPipes();
 }
 
-Cgi::~Cgi() {
-	cerr << "des called" << endl;
-}
+Cgi::~Cgi() {}
 
 void	Cgi::createPipes() {
 	if (pipe(wPipe) < 0 || pipe(rPipe) < 0) {
-		strerror(errno);
+		cerr << "pipe failed" << endl;
 		throw(statusCodeException(500, "Internal Server Error"));
 	}
 }
@@ -45,28 +45,27 @@ void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
 
 	scriptEnvs["GATEWAY_INTERFACE"] = "CGI/1.1";
 	scriptEnvs["SERVER_PROTOCOL"] = "http/1.1";
-	scriptEnvs["REMOTE_METHODE"] = infos.method;
+	scriptEnvs["REQUEST_METHODE"] = infos.method;
 	scriptEnvs["PATH_INFO"] = infos.path;
 	scriptEnvs["QUERY_STRING"] = infos.query;
 	scriptEnvs["SCRIPT_NAME"] = infos.scriptName;
 	scriptEnvs["SCRIPT_FILENAME"] = infos.scriptUri;
-	scriptEnvs["REDIRECT_STATUS"] = "1";//this is just a work around to make php work because it needs
-	//the request to be redirected to it and not passed to it directly so when i set the var to 1
-	//its like i am sayin yas this request is bein redirected to you just execute it
+	/*
+		this is just a work around to make php work because it needs
+		the request to be redirected to it and not passed to it directly so when i set the var to 1
+		its like i am sayin yas this request is bein redirected to you just execute it
+	*/
+	scriptEnvs["REDIRECT_STATUS"] = "1";
 	getHeaders(headers);
-	if (realpath(("."+infos.path).c_str(), absolutePath) == NULL || infos.path.empty())
+	if (realpath((DOCUMENT_ROOT+infos.path).c_str(), absolutePath) == NULL || infos.path.empty())
 		scriptEnvs["PATH_TRANSLATED"] = "";
 	else
 		scriptEnvs["PATH_TRANSLATED"] = string(absolutePath);
-	cerr << "CGI headers ready" << endl;
-	for (const auto& it : scriptEnvs)
-		cerr << it.first << ": " << it.second << endl;
-	cerr << "------" << endl;
 }
 
 static char**	transformVectorToChar(vector<string>& vec) {
 	char** 	strs = new char*[vec.size() + 1];
-
+	
 	for (size_t i = 0; i < vec.size(); ++i) {
 		strs[i] = new char[vec[i].size()+1];
 		strcpy(strs[i], vec[i].c_str());
@@ -75,58 +74,63 @@ static char**	transformVectorToChar(vector<string>& vec) {
 	return strs;
 }
 
+vector<string> homeEnvVariables(char **vars = NULL) {
+	static vector<string> envp;
+
+	if (envp.empty() && vars) {
+		for (int i = 0;  vars[i]; ++i) {
+			envp.push_back(vars[i]);
+		}
+	}
+	return envp;
+}
+
 void	Cgi::executeScript() {
 	char			**CGIEnvp, **argv;
-	vector<string>	vecArgv, vecEnvp;
+	vector<string>	vecArgv, vecEnvp(homeEnvVariables());
 
 	for(map<string, string>::iterator it = scriptEnvs.begin(); it != scriptEnvs.end(); ++it) {
 		vecEnvp.push_back(it->first + "=" + it->second);
 	}
-	// while(*ncHomeEnvp) {
-	// 	vecEnvp.push_back(*ncHomeEnvp);
-	// 	++ncHomeEnvp;
-	// }
 	if (!infos.exec.empty())
 		vecArgv.push_back(infos.exec);
 	vecArgv.push_back(infos.scriptUri);
 	argv = transformVectorToChar(vecArgv);
 	CGIEnvp = transformVectorToChar(vecEnvp);
-	cerr << argv[0] << endl;
 	execve(argv[0], argv, CGIEnvp);
-	// for (size_t i = 0; argv[i]; ++i) {//need to be fixed its not bein freed properly
-	// 	delete argv[i];
-	// }
-	// delete []argv;
-	// for (size_t i = 0; CGIEnvp[i]; ++i) {
-	// 	delete CGIEnvp[i];
-	// }
-	// delete []CGIEnvp;
+	for (size_t i = 0; argv[i]; ++i) {
+		delete[] argv[i];
+	}
+	delete []argv;
+	for (size_t i = 0; CGIEnvp[i]; ++i) {
+		delete[] CGIEnvp[i];
+	}
+	delete []CGIEnvp;
 	cerr << "execve failed" << endl;
-	strerror(errno);
-	//don't throw;
-	// throw(statusCodeException(500, "Internal Server Errorrr"));
+	exit(-1);
 }
 
 void	Cgi::setupCGIProcess() {
-	// //fd[1] // write end;
-	// //fd[0] // read end;
 	pid = fork();
 	if (pid < 0) {
-		strerror(errno);
+		cerr << "fork failed" << endl;
 		throw(statusCodeException(500, "Internal Server Error"));
 	}
 	else if(pid == 0) {
 		close(rPipe[0]);
 		close(wPipe[1]);
 		if (dup2(rPipe[1], STDOUT_FILENO) < 0 || dup2(wPipe[0], STDIN_FILENO) < 0) {
-			strerror(errno);
-			throw(statusCodeException(500, "Internal Server Error"));
+			cerr << "dup2 failed" << endl;
+			exit(-1);
 		}
 		close(rPipe[1]);
 		close(wPipe[0]);
 		executeScript();
 	}
-	
+	if (write(wPipe[1], "hello", 5) <= 0)
+	{
+		perror("test");
+	}
 	close(rPipe[1]);
 	close(wPipe[0]);
 }

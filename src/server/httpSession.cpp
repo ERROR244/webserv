@@ -22,8 +22,9 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd), r
 	query = other.query;
 	headers = other.headers;
 	config = other.config;
-	rules = other.rules ? new location(*other.rules) : NULL;
+	// monitorCgi = other.monitorCgi;
 	cgi = other.cgi ? new Cgi(*other.cgi) : NULL;
+	rules = other.rules ? new location(*other.rules) : NULL;
 	cgiBody = other.cgiBody;
 	returnedLocation = other.returnedLocation;
 	showDirFiles = other.showDirFiles;
@@ -48,6 +49,10 @@ const e_sstat& httpSession::status() const {
 	return sstat;
 }
 
+map<string, string>	httpSession::getHeaders() {
+	return headers;
+}
+
 void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
 	sstat = ss_sHeader;
 	method = GET;
@@ -57,10 +62,12 @@ void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
 	config = configuration();
 	if (cgi)
 		delete cgi;
-	// //why double free here HUHUHUHUHUHHUH
-	// rules = NULL;
 	cgi = NULL;
 	cgiBody = "";
 	returnedLocation = "";
 	showDirFiles = false;
+}
+
+bstring&	httpSession::getCgiBody() {
+	return cgiBody;
 }

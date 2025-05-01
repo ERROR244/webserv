@@ -17,7 +17,7 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 	send(clientFd, msg.c_str(), msg.size(), MSG_DONTWAIT);
 }
 
-void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception) {
+void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, map<int, epollPtr>& epollPtrHolder, const statusCodeException& exception) {
 	cerr << "code--> " << exception.code() << endl;
 	cerr << "reason--> " << exception.meaning() << endl;
 	struct epoll_event	ev;
@@ -26,11 +26,13 @@ void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessi
 	if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
 		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()));
 		ev.events = EPOLLOUT;
-		ev.data.fd = clientFd;
+		epollPtrHolder[clientFd].fd = clientFd;
+		ev.data.ptr = &epollPtrHolder[clientFd];
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed");
 			close(clientFd);
 			sessions.erase(sessions.find(clientFd));
+			epollPtrHolder.erase(epollPtrHolder.find(clientFd));
 		}
 	} else {
 		sendError(clientFd, exception.code(), exception.meaning());
@@ -39,5 +41,6 @@ void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessi
 		}
 		close(clientFd);
 		sessions.erase(sessions.find(clientFd));
+		epollPtrHolder.erase(epollPtrHolder.find(clientFd));
 	}
 }
