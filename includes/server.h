@@ -17,9 +17,9 @@
 using namespace std;
 
 struct epollPtr {
-	int		fd;
-	void	*ptr;
-	epollPtr() : fd(-1),  ptr(NULL) {}
+	int			fd;
+	httpSession	*s;
+	epollPtr() : fd(-1),  s(NULL) {}
 };
 
 typedef struct sockaddr_in t_sockaddr;

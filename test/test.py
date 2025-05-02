@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # Craft a simple HTTP GET request
     request = (
-        "POST /bin/cgi/script.py HTTP/1.1\r\n"
+        "POST /bin/cgi/post.py HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         "Connection: close\r\n"
         "transfer-encoding: chunked\r\n"

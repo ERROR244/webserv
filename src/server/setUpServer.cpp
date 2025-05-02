@@ -13,8 +13,8 @@ int startEpoll(const vector<int>& serverFds) {
     map<int, epollPtr>& monitor = getEpollMonitor();
 
     for (size_t fd = 0; fd < serverFds.size(); ++fd) {
-        event.events = EPOLLIN;
         monitor[serverFds[fd]].fd = serverFds[fd];
+        event.events = EPOLLIN;
         event.data.ptr = &monitor[serverFds[fd]];
         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverFds[fd], &event) == -1) {
             close(epollFd);

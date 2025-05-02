@@ -75,8 +75,8 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 		cerr << "accept failed" << endl;
 		return;
     }
-	ev.events = EPOLLIN;
 	monitor[clientFd].fd = clientFd;
+	ev.events = EPOLLIN;
 	ev.data.ptr = &monitor[clientFd];
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
 		cerr << "epoll_ctl failed" << endl;
@@ -113,7 +113,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end())
 					acceptNewClient(epollFd, fd);
 				else if (events[i].events & EPOLLIN) {
-					if (ptr->ptr) {
+					if (ptr->s) {
 						readCgiOutput(events[i]);
 					} else {
 						if (sessions.find(fd) == sessions.end()) {
@@ -125,7 +125,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					}
 				}
 				else if (events[i].events & EPOLLOUT) {
-					if (ptr->ptr) {
+					if (ptr->s) {
 						if (writeBodyToCgi(events[i])) {
 							epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 							close(fd);

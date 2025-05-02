@@ -3,7 +3,7 @@
 
 void	readCgiOutput(struct epoll_event ev) {
 	epollPtr    *ptr = static_cast<epollPtr*>(ev.data.ptr);
-	httpSession *s = static_cast<httpSession*>(ptr->ptr);
+	// httpSession *s = static_cast<httpSession*>(ptr->ptr);
 	char        buffer[BUFFER_SIZE];
 	ssize_t     bytesRead;
 
@@ -12,13 +12,14 @@ void	readCgiOutput(struct epoll_event ev) {
 		cerr << "read failed" << endl;
 	}
 	bstring tmp(buffer, bytesRead);
-	s->res.storeCgiResponse(tmp);
+	ptr->s->res.storeCgiResponse(tmp);
 }
 
 bool    writeBodyToCgi(struct epoll_event ev) {
 	epollPtr	*ptr = static_cast<epollPtr*>(ev.data.ptr);
-	httpSession *s = static_cast<httpSession*>(ptr->ptr);
-	bstring& 	body = s->getCgiBody();
+	// httpSession *s = static_cast<httpSession*>(ptr->ptr);
+	bstring& 	body = ptr->s->getCgiBody();
+
 	int     	byteWrite;
 
 	if ((byteWrite = write(ptr->fd, body.c_str(), body.size())) <= 0) {
