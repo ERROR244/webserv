@@ -8,7 +8,7 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 	if (status == ss_done) {
 		map<string, string> headers = s[clientFd].getHeaders();
 		if (headers.find("connection") == headers.end() || headers["connection"] != "keep-alive") {
-			cerr << "closing the connection of -> " << clientFd << endl;
+			cerr << "closing the connection of -> " << clientFd << " from headers" << endl;
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 				cerr << "epoll_ctl failed" << endl;
 			close(clientFd);
@@ -28,7 +28,7 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 		s.erase(s.find(clientFd));
 	}
 	else if (status == ss_cclosedcon) {
-		cerr << "closing the connection of -> " << clientFd << endl;
+		cerr << "closing the connection of -> " << clientFd << " from res" << endl;
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
 		close(clientFd);
@@ -56,7 +56,7 @@ static void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 		}
 	}
 	else if (status == ss_cclosedcon) {
-		cerr << "closing the connection of -> " << clientFd << endl;
+		cerr << "closing the connection of -> " << clientFd << " from req" << endl;
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			cerr <<"epoll_ctl failed" << endl;
 		close(clientFd);
@@ -88,6 +88,39 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 	}
 	cerr << "new client added, its fd is -> " << clientFd << endl;
 }
+
+
+bool checkTimeOut(map<int, epollPtr>& monitor, const int& fd, epollPtr client, const int& epollFd) {
+	struct epoll_event	ev;
+	time_t lastActivityTime = client.timer;
+    
+	if ((lastActivityTime != 0 && time(NULL) - lastActivityTime >= T)) {
+		cout << "Client " << fd << " TIMED OUT: " << time(NULL) - lastActivityTime << ".1" << endl;
+		if (client.pid != -1) {
+			kill(client.pid, 9);
+		}
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &ev) == -1) {
+			cerr << "epoll_ctl failed" << endl;
+		}
+		close(fd);
+		monitor.erase(monitor.find(fd));
+		return false;
+    }
+	return true;
+}
+
+void checkTimeOutForEachUsr(const int& epollFd) {
+	map<int, epollPtr>& monitor = getEpollMonitor();
+	map<int, epollPtr>::iterator			it;
+
+	for (it = monitor.begin(); it != monitor.end(); ++it) {
+		if (it->second.is_server_socket == true)
+			continue;
+		if (checkTimeOut(monitor, it->first, it->second, epollFd) == false)
+			it = monitor.begin();
+	}
+}
+
 
 void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<string, configuration>& config) {
 	struct epoll_event					events[MAX_EVENTS];
@@ -140,6 +173,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				errorResponse(epollFd, fd, sessions, exception);
 			}
 		}
+		checkTimeOutForEachUsr(epollFd);
 	}
 	
 }

@@ -112,46 +112,48 @@ void	httpSession::Response::sendHeader() {
         s.sstat = ss_done;
     }
 	header += "\r\n";
-	if (send(s.clientFd, header.c_str(), header.size(), MSG_DONTWAIT) <= 0) {
-		cerr << "send failed" << endl;
-		s.sstat = ss_cclosedcon;
+	if (ft_send(s.clientFd, header.c_str(), header.size(), s.sstat) == false) {
 		return ;
 	}
+    inputFile.open(s.path.c_str(), ios::binary);
+    if (inputFile.is_open() == false) {
+        cerr << "open failed" << endl;
+        s.sstat = ss_cclosedcon;
+        return;
+    }
 }
 
 void	httpSession::Response::sendBody() {
-	char        buff[BUFFER_SIZE];
+	char        buff[BUFFER_SIZE] = {0};
     streamsize sizeRead;
-
-	if (inputFile.is_open() == false) {
-        inputFile.open(s.path.c_str(), ios::binary);
-        if (inputFile.is_open() == false) {
-            cerr << "open failed" << endl;
-            s.sstat = ss_cclosedcon;
-            return;
-        }
-	}
+	
     inputFile.read(buff, BUFFER_SIZE);
     sizeRead =  inputFile.gcount();
 	if (sizeRead > 0) {
-        bstring body;
 		ostringstream chunkSize;
 		chunkSize << hex << sizeRead << "\r\n";
-        body += chunkSize.str().c_str();
-        body += bstring(buff, sizeRead);
-        body += "\r\n";
-		if (send(s.clientFd, body.c_str(), body.size(), MSG_DONTWAIT) <= 0) {//not good wrapper good
-			cerr << "send failed" << endl;
-			s.sstat = ss_cclosedcon;
+		if ( ft_send(s.clientFd, chunkSize.str().c_str(), chunkSize.str().size(), s.sstat) == false ||
+             ft_send(s.clientFd, buff, sizeRead, s.sstat) == false ||
+             ft_send(s.clientFd, "\r\n", 2, s.sstat) == false ) {
 			return ;
 		}
-	} else {
-		if (send(s.clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT) <= 0) {
-            cerr << "send failed" << endl;
-			s.sstat = ss_cclosedcon;
+	} else if (sizeRead == 0) {
+		if (ft_send(s.clientFd, "0\r\n\r\n", 5, s.sstat) == false) {
 			return ;
 		}
         inputFile.close();
 		s.sstat = ss_done;
 	}
+    else
+        s.sstat = ss_cclosedcon;
+}
+
+
+bool ft_send(int __fd, const void *__buf, size_t __n, e_sstat& status) {
+    if (send(__fd, __buf, __n, MSG_DONTWAIT | MSG_NOSIGNAL) < 0) {
+        cerr << "send failed" << endl;
+        status = ss_cclosedcon;
+        return false;
+    }
+    return true;
 }

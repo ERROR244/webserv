@@ -224,6 +224,8 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 					s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
 				else
 					s.query = buffer.substr(i-len, len).cppstring();
+				
+				// cerr << "uri -> " << s.path << endl;
 				if (s.rules == NULL)
 					throw(statusCodeException(404, "Not Found"));
 				s.sstat = ss_httpversion;

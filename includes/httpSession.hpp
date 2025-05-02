@@ -22,7 +22,7 @@ using namespace std;
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
-#define T 2
+#define T 10
 
 enum e_sstat {
 	ss_method=0,
@@ -113,6 +113,7 @@ public:
 	httpSession(const httpSession& other);
 	httpSession();
 	~httpSession();
+
 	int					parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
 	void				resetForSendingErrorPage(const string& newPath);
 	configuration		clientConfiguration() const;
@@ -120,4 +121,8 @@ public:
 	const e_sstat&		status() const;
 	map<string, string>	getHeaders();
 	bstring&			getCgiBody();
+
+	Cgi* getCgi();
 };
+
+bool ft_send(int __fd, const void *__buf, size_t __n, e_sstat& status);

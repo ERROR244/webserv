@@ -17,9 +17,9 @@ string toString(const int& nbr) {
 	return (oss.str());
 }
 
-int my_stoi(const std::string &str, size_t *pos, int base) {
+int my_stoi(const string &str, size_t *pos, int base) {
 	if (base != 10)
-		throw std::invalid_argument("stoi only supports base 10");
+		throw invalid_argument("stoi only supports base 10");
 	size_t	i = 0;
 	size_t	startPos;
 	int		sign = 1;
@@ -29,20 +29,20 @@ int my_stoi(const std::string &str, size_t *pos, int base) {
 		i++;
 
 	if (i >= str.length())
-		throw std::invalid_argument("stoi: no conversion could be performed");
+		throw invalid_argument("stoi: no conversion could be performed");
 	if (str[i] == '-' || str[i] == '+') {
 		if (str[i] == '-')
 			sign = -1;
 		i++;
 	}
 	if (i >= str.length() || !isdigit(str[i]))
-		throw std::invalid_argument("stoi: no valid digits found");
+		throw invalid_argument("stoi: no valid digits found");
 
 	startPos = i;
 	while (i < str.length() && isdigit(str[i])) {
 		// int digit = str[i] - '0';
 		if (result > (INT_MAX - (str[i] - '0')) / 10)
-			throw std::out_of_range("stoi: integer overflow");
+			throw out_of_range("stoi: integer overflow");
 		result = result * 10 + (str[i] - '0');
 		i++;
 	}
@@ -51,14 +51,14 @@ int my_stoi(const std::string &str, size_t *pos, int base) {
 	return static_cast<int>(sign * result);
 }
 
-int ft_stoi(const std::string &__str) {
+int ft_stoi(const string &__str) {
 	try {
 		int res = my_stoi(__str);
 		return (res);
 	}
 	catch (exception& e) {
 		cout << e.what() << endl;
-		throw std::runtime_error("invalid number: `" + __str + "`");
+		throw runtime_error("invalid number: `" + __str + "`");
 	}
 }
 
@@ -90,7 +90,7 @@ string  ft_getsockname(int clientFd) {
 int ft_socket(int __domain, int __type, int __protocol) {
 	int fd = socket(__domain, __type, __protocol);
 	if (fd == -1) {
-		throw std::runtime_error("Socket creation failed");
+		throw runtime_error("Socket creation failed");
 	}
 	return fd;
 }
@@ -99,7 +99,7 @@ int ft_setsockopt(int __fd, int __level, int __optname) {
 	int opt = 1;
 	if (setsockopt(__fd, __level, __optname, &opt, sizeof(opt)) < 0) {
 		ft_close(__fd, "ft_setsockopt");
-		throw std::runtime_error("setsockopt failed");
+		throw runtime_error("setsockopt failed");
 	}
 	return 0;
 }
@@ -115,7 +115,7 @@ int ft_setsockopt(int __fd, int __level, int __optname) {
 int ft_bind(int __fd, const sockaddr *__addr, socklen_t __len) {
 	if (bind(__fd, __addr, __len) < 0) {
 		ft_close(__fd, "ft_bind");
-		throw std::runtime_error("Bind failed: " + string(strerror(errno)));
+		throw runtime_error("Bind failed: " + string(strerror(errno)));
 	}
 	return 0;
 }
@@ -123,7 +123,7 @@ int ft_bind(int __fd, const sockaddr *__addr, socklen_t __len) {
 int ft_listen(int __fd, int __n) {
 	if (listen(__fd, __n) < 0) {
 		ft_close(__fd, "ft_listen");
-		throw std::runtime_error("listen failed");
+		throw runtime_error("listen failed");
 	}
 	return 0;
 }
@@ -139,13 +139,13 @@ int ft_close(int& __fd, string who) {
 int ft_epoll_create1(int __flags) {
 	int epollFd = epoll_create1(__flags);
 	if (epollFd == -1) {
-		throw std::runtime_error("epoll_create1 failed");
+		throw runtime_error("epoll_create1 failed");
 	}
 	return epollFd;
 }
 
-void ft_perror(const std::string &msg) {
+void ft_perror(const string &msg) {
 	if (!msg.empty())
-		std::cerr << msg << ": ";
-	std::cerr << std::strerror(errno) << std::endl;
+		cerr << msg << ": ";
+	cerr << strerror(errno) << endl;
 }

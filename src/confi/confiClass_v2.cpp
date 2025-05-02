@@ -2,24 +2,24 @@
 
 size_t checkKey(const string& key, const string& line) {
 	if (line.size() < key.size()) {
-		throw std::runtime_error("checkKey::expected: `" + key + "` need to be smaller than `" + line + "`");
+		throw runtime_error("checkKey::expected: `" + key + "` need to be smaller than `" + line + "`");
 	}
 	for (size_t i = 0; i < key.size(); ++i) {
 		if (key[i] != line[i]) {
-			throw std::runtime_error("checkKey::expected: `" + key + "` instead of `" + line + "`");
+			throw runtime_error("checkKey::expected: `" + key + "` instead of `" + line + "`");
 		}
 	}
 	return (key.size());
 }
 
-bool isNumber(const std::string& str) {  
+bool isNumber(const string& str) {  
 	for (size_t i = 0; i < str.size(); ++i) {
 		if (!(str[i] >= 48 && str[i] <= 57)) {
 			return false;
 		}
 	}
 	if (65536 < ft_stoi(str)) {
-		throw std::runtime_error("port bigger than 65536.");
+		throw runtime_error("port bigger than 65536.");
 	}
 	return true;
 }
@@ -27,7 +27,7 @@ bool isNumber(const std::string& str) {
 void handlePort(string& line, configuration& kv, ifstream& sFile) {
 	(void)sFile;
 	if (isNumber(line) == false) {
-		throw std::runtime_error("invalid port.");
+		throw runtime_error("invalid port.");
 	}
 	kv.port = line;
 }
@@ -35,7 +35,7 @@ void handlePort(string& line, configuration& kv, ifstream& sFile) {
 string getCurrentHost(configuration& kv, string line) {
 	(void)kv;
 	if (line.empty())
-		throw std::runtime_error("host can't be empty");
+		throw runtime_error("host can't be empty");
 	return line;
 }
 
@@ -43,7 +43,7 @@ void handleHost(string& line, configuration& kv, ifstream& sFile) {
 	(void)sFile;
 	kv.host = getCurrentHost(kv, line);
 	if (kv.host.empty())
-		throw std::runtime_error("host can't be empty");
+		throw runtime_error("host can't be empty");
 }
 
 void handleListen(string& line, configuration& kv, ifstream& sFile) {
@@ -72,20 +72,38 @@ bool isValidDirectory(const char* path) {
 	return false;
 }
 
+bool isHostnameResolvable(const string& hostname) {
+    struct addrinfo hints;
+    struct addrinfo* res = NULL;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+
+    int status = getaddrinfo(hostname.c_str(), NULL, &hints, &res);
+
+    if (res != NULL)
+        freeaddrinfo(res);
+
+    return status == 0;
+}
+
 void handleSerNames(string& line, configuration& kv, ifstream& sFile) {
 	(void)sFile;
 	string tmp;
 	size_t i;
 	
 	i = checkKey("server_name:", line);
+	line = trim(line.substr(i));
 	while (true) {
 		i = line.find_first_of(',');
 		if (i == string::npos) {
 			kv.serNames.push_back(trim(line));
 			break;
 		}
-		tmp = line.substr(0, i);
-		kv.serNames.push_back(trim(tmp));
+		tmp = trim(line.substr(0, i));
+		if (!isHostnameResolvable(tmp))
+			throw runtime_error("host name `" + tmp +"` is not Resolvable");
+		kv.serNames.push_back(tmp);
 		line = line.substr(i);
 		if (line[0] == ',')
 			line = line.substr(1);
@@ -99,7 +117,7 @@ string getRPath(string path) {
 	uploads = realpath(path.c_str(), buf);
 	
 	if (uploads == NULL)
-		throw std::runtime_error("invalid path: `" + path + "`");
+		throw runtime_error("invalid path: `" + path + "`");
 	return string(uploads);
 }
 
@@ -111,7 +129,7 @@ void handleBodyLimit(string& line, configuration& kv, ifstream& sFile) {
 
 void handleError(string& line, configuration& kv, ifstream& sFile) {
 	if (!checkRule(line, "errors")) {
-		throw std::runtime_error("expected: `errors && {` got `" + line + "`");
+		throw runtime_error("expected: `errors && {` got `" + line + "`");
 	}
 	while (getline(sFile, line)) {
 		line = trim(line);
@@ -147,7 +165,7 @@ void handleAliasRed(string& line, location& kv, ifstream& sFile) {
 	}
 	kv.reconfigurer = trim(line.substr(i));
 	if (kv.reconfigurer.empty())
-		throw std::runtime_error("location alias can't be empty");
+		throw runtime_error("location alias can't be empty");
 }
 
 e_methods getMethods(const string& method) {
@@ -197,10 +215,10 @@ void handleMethods(string& line, location& kv, ifstream& sFile) {
 			line = line.substr(1);
 	}
 	if (kv.methods.size() > 3)
-		throw std::runtime_error("invalid numbers of methods: " + toString(kv.methods.size()));
+		throw runtime_error("invalid numbers of methods: " + toString(kv.methods.size()));
 	for (size_t i = 0; i < kv.methods.size(); ++i) {
 		if (kv.methods[i] != GET && kv.methods[i] != DELETE && kv.methods[i] != POST)
-			throw std::runtime_error("invalid method at index: `" + toString(i) + "`");
+			throw runtime_error("invalid method at index: `" + toString(i) + "`");
 	}
 }
 
@@ -228,12 +246,20 @@ void handleAutoIndex(string& line, location& kv, ifstream& sFile) {
 		kv.autoIndex = true;
 }
 
+bool isValidFile(const char* path) {
+    struct stat s;
+    if (stat(path, &s) == 0) {
+        return S_ISREG(s.st_mode);
+    }
+    return false;
+}
 
 void handleCgi(string& line, location& kv, ifstream& sFile) {
 	size_t  index = 0;
+	string s1, s2;
 
 	if (!checkRule(line, "cgi")) {
-		throw std::runtime_error("expected: `cgi && {` instead of `" + line + "`");
+		throw runtime_error("expected: `cgi && {` instead of `" + line + "`");
 	}
 	while (getline(sFile, line)) {
 		line = trim(line);
@@ -245,16 +271,20 @@ void handleCgi(string& line, location& kv, ifstream& sFile) {
 		line = trim(line.substr(index));
 		index = line.find_first_of(' ');
 		if (line.empty())
-			throw std::runtime_error("add-handler can't be empty");
+			throw runtime_error("add-handler can't be empty");
 		else if (index == string::npos)
-			throw std::runtime_error("add-handler need two values");
-		kv.cgis[trim(line.substr(0, index))] = trim(line.substr(index));
+			throw runtime_error("add-handler need two values");
+		s1 = trim(line.substr(0, index));
+		s2 = trim(line.substr(index));
+		kv.cgis[s1] = s2;
+		if (!isValidFile(s2.c_str()))
+			throw runtime_error(s2 + " doesn't exist");
 	}
 }
 
 int getSer2(string line) {
 	if (line.empty())
-		throw std::runtime_error("line can't be empty");
+		throw runtime_error("line can't be empty");
 	else if ((line[0] == 'a' && line[1] == 'l') || line[0] == 'r')
 		return ALIASRRDI;
 	else if (line[0] == 'l')
@@ -267,7 +297,7 @@ int getSer2(string line) {
 		return UPLOADS;
 	else if (checkRule(line, "cgi"))
 		return CGI;
-	throw std::runtime_error("unexpected keyword: `" + line + "`");
+	throw runtime_error("unexpected keyword: `" + line + "`");
 }
 
 string checkLocationRule(string s1, string s2) {
@@ -276,7 +306,7 @@ string checkLocationRule(string s1, string s2) {
 
 
 	if (first_occ == string::npos || last_occ == string::npos)
-		throw std::runtime_error("checkLocationRule::unexpected keyword: ``" + s1 + "`" + "`");
+		throw runtime_error("checkLocationRule::unexpected keyword: ``" + s1 + "`" + "`");
 
 	string key = trim(s1.substr(0, first_occ));
 	string url = trim(s1.substr(first_occ, last_occ - first_occ));
@@ -335,7 +365,7 @@ location handleLocation(ifstream& sFile, string line) {
 			continue;
 		index = getSer2(line);
 		if (locationsFunc[index] == -1) {
-			throw std::runtime_error("handleLocation::duplicate_is_error: `" + line + "`");
+			throw runtime_error("handleLocation::duplicate_is_error: `" + line + "`");
 		}
 		locationsFunc[index] = -1;
 		farr[index](line, kv, sFile);
@@ -348,7 +378,7 @@ void handleLocs(string& line, configuration& kv, ifstream& sFile) {
 	string url;
 
 	if (!checkRule(line, "locations"))
-			throw std::runtime_error("handlelocs::expected: `locations & {` instead of `" + line + "`");
+			throw runtime_error("handlelocs::expected: `locations & {` instead of `" + line + "`");
 	while (getline(sFile, line)) {
 		line = trim(line);
 
@@ -359,14 +389,14 @@ void handleLocs(string& line, configuration& kv, ifstream& sFile) {
 	
 		url = checkLocationRule(line, "location");
 		if (url.empty()) {
-			throw std::runtime_error("handlelocs::expected: `location & {` instead of `" + line + "`");
+			throw runtime_error("handlelocs::expected: `location & {` instead of `" + line + "`");
 		}
 		else {
 			rt = handleLocation(sFile, url);
 			kv.locations[rt.uri] = rt;
 		}
 	}
-	throw std::runtime_error("`}` is expected at the end of each rule");
+	throw runtime_error("`}` is expected at the end of each rule");
 }
 
 

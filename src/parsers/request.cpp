@@ -1,4 +1,5 @@
 #include "httpSession.hpp"
+#include "server.h"
 
 httpSession::Request::Request(httpSession& session) : s(session), length(0) {}
 
@@ -14,6 +15,7 @@ void	httpSession::Request::readfromsock() {
 	ssize_t bufferPos = 0;
 
 	if ((byteread = recv(s.clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT)) <= 0) {
+		cout << "YEAH" << endl;
 		s.sstat = ss_cclosedcon;
 		return ;
 	}
@@ -21,6 +23,8 @@ void	httpSession::Request::readfromsock() {
 	bbuffer = remainingBody + bbuffer;
 	remainingBody = NULL;
 	if (static_cast<int>(s.sstat) < 9) {
+		map<int, epollPtr>&	monitor = getEpollMonitor();
+		monitor[s.clientFd].timer = time(NULL);
 		bufferPos = parseStarterLine(bbuffer);
 		if ((bufferPos = s.parseFields(bbuffer, bufferPos, s.headers)) < 0)
 			throw(statusCodeException(400, "Bad Request"));
@@ -30,4 +34,7 @@ void	httpSession::Request::readfromsock() {
 	}
 	if (s.sstat == ss_body && static_cast<size_t>(bufferPos) < bbuffer.size())
 		(this->*bodyHandlerFunc)(bbuffer, bufferPos);
+
+	
+						
 }

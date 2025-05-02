@@ -11,6 +11,7 @@ void disableEchoCtrl() {
 
 void signalHandler( int signum ) {
 	cout << "Interrupt signal (" << signum << ") received.\n";
+	exit(0);
 	throw "";
 }
 
@@ -31,6 +32,7 @@ int main(int ac, char **av, char **envp) {
 			//multiplexer
 			ConfigFileParser confi(av[1]);
 			config = confi.parseFile();
+			// confi.printprint();
 			epollFd = createSockets(config, serverFds);     
 			// confi.printprint();
 			while (1) {                                           //this loop is here if epoll fd somehow got closed or epoll wait fails and i have to create and instance of epoll fd;

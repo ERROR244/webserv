@@ -17,6 +17,7 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 
 			s.cgi->prepearingCgiEnvVars(s.headers);
 			s.cgi->setupCGIProcess();
+			monitor[s.clientFd].pid = s.cgi->ppid();
 			if (s.cgiBody.empty() == false) {
 				monitor[s.cgi->wFd()].fd = s.cgi->wFd();
 				monitor[s.cgi->wFd()].s = &s;
@@ -29,6 +30,7 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 				}
 			}
 			monitor[s.cgi->rFd()].fd = s.cgi->rFd();
+			cerr << s.cgi->rFd()<< endl;
 			monitor[s.cgi->rFd()].s = &s;
 			evReadPipe.events = EPOLLIN;
 			evReadPipe.data.ptr = &monitor[s.cgi->rFd()];
@@ -58,3 +60,4 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 void	httpSession::Response::storeCgiResponse(const bstring& newBuff) {
 	cgiBuffer += newBuff;
 }
+

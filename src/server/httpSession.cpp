@@ -70,3 +70,7 @@ void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
 bstring&	httpSession::getCgiBody() {
 	return cgiBody;
 }
+
+Cgi* httpSession::getCgi() {
+	return cgi;
+}

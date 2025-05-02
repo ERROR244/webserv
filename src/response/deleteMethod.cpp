@@ -16,7 +16,7 @@
 //     string response = "";
 
 //     if (remove(dir.c_str()) != 0) {
-//         std::cerr << "Deleting Non-Empty Directory.\n";
+//         cerr << "Deleting Non-Empty Directory.\n";
 //         response += "HTTP/1.1 409 Conflict\r\n";
 //         response += "Content-Type: text/html\r\n";
 //         response += "content-length: 134\r\n";

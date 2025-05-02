@@ -17,9 +17,12 @@
 using namespace std;
 
 struct epollPtr {
-	int			fd;
-	httpSession	*s;
-	epollPtr() : fd(-1),  s(NULL) {}
+	int			fd; //can be sock or pipe;
+	httpSession	*s; // if NULL sock else cgi
+	bool		is_server_socket;
+	time_t		timer;
+	pid_t		pid;
+	epollPtr() : fd(-1),  s(NULL), is_server_socket(false), timer(0), pid(-1) {}
 };
 
 typedef struct sockaddr_in t_sockaddr;
