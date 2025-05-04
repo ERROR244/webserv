@@ -87,7 +87,7 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 		chunkedResponse += chunkSize.str().c_str();
 		chunkedResponse += cgiBuffer;
 		chunkedResponse += "\r\n";
-		if (send(s.clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT) <= 0) {
+		if (send(s.clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
 			cerr << "send failed" << endl;
 			s.sstat = ss_cclosedcon;
 			return ;
@@ -96,7 +96,7 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 	} else if (waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
 		struct epoll_event	ev;
 
-		if (send(s.clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT) <= 0) {
+		if (send(s.clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
 			cerr << "send failed" << endl;
 			s.sstat = ss_cclosedcon;
 			return ;

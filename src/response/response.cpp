@@ -19,6 +19,8 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 			s.cgi->setupCGIProcess();
 			monitor[s.clientFd].pid = s.cgi->ppid();
 			if (s.cgiBody.empty() == false) {
+				cerr << "wtf" << endl;
+				exit(0);
 				monitor[s.cgi->wFd()].fd = s.cgi->wFd();
 				monitor[s.cgi->wFd()].s = &s;
 				evWritePipe.events = EPOLLOUT;

@@ -19,10 +19,11 @@
 
 using namespace std;
 
+
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
-#define T 10
+#define T 2
 
 enum e_sstat {
 	ss_method=0,
@@ -126,3 +127,5 @@ public:
 };
 
 bool ft_send(int __fd, const void *__buf, size_t __n, e_sstat& status);
+bool shouldStop(int i);
+

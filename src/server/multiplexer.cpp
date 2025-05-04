@@ -9,8 +9,9 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 		map<string, string> headers = s[clientFd].getHeaders();
 		if (headers.find("connection") == headers.end() || headers["connection"] != "keep-alive") {
 			cerr << "closing the connection of -> " << clientFd << " from headers" << endl;
-			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
+			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
 				cerr << "epoll_ctl failed" << endl;
+			}
 			close(clientFd);
 			if (position != monitor.end())
 				monitor.erase(position);
@@ -75,6 +76,7 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 		cerr << "accept failed" << endl;
 		return;
     }
+	monitor[clientFd].s = NULL;
 	monitor[clientFd].fd = clientFd;
 	ev.events = EPOLLIN;
 	ev.data.ptr = &monitor[clientFd];
@@ -127,13 +129,16 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 	map<int, httpSession>				sessions;
 	int									nfds;
 
-	while (1) {
+	while (true) {
+		if (shouldStop(0) == false)
+			break;
 		if ((nfds = epoll_wait(epollFd, events, MAX_EVENTS, 0)) == -1) {
 			cerr << "epoll_wait failed" << endl;
         	if (errno == ENOMEM) {
 				//ENOMEM is set when there'snt enough memory left in device
-        	    for (map<int, httpSession>::iterator it = sessions.begin(); it != sessions.end(); ++it)
-        	        close(it->first);
+        	    for (map<int, httpSession>::iterator it = sessions.begin(); it != sessions.end(); ++it) {
+					close(it->first);
+				}
         	    close(epollFd);
         	    return;
     	    }

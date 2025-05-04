@@ -2,6 +2,15 @@
 #include "confiClass.hpp"
 #include <termios.h>
 
+bool shouldStop(int i) {
+	static volatile sig_atomic_t stopFlag = 0;
+
+	if (i == 0)
+		return (stopFlag == 0);
+	stopFlag = i;
+	return false;
+}
+
 void disableEchoCtrl() {
 	struct termios tty;
 	tcgetattr(STDIN_FILENO, &tty);
@@ -10,9 +19,8 @@ void disableEchoCtrl() {
 }
 
 void signalHandler( int signum ) {
-	cout << "Interrupt signal (" << signum << ") received.\n";
-	exit(0);
-	throw "";
+	(void)signum;
+	shouldStop(1);
 }
 
 int main(int ac, char **av, char **envp) {
@@ -26,17 +34,19 @@ int main(int ac, char **av, char **envp) {
 		try {
 			//settin home envs
 			homeEnvVariables(envp);
-			//config file
+			
+			//setup server
 			disableEchoCtrl();
 			signal(SIGINT, signalHandler);
-			//multiplexer
 			ConfigFileParser confi(av[1]);
 			config = confi.parseFile();
-			// confi.printprint();
 			epollFd = createSockets(config, serverFds);     
-			// confi.printprint();
-			while (1) {                                           //this loop is here if epoll fd somehow got closed or epoll wait fails and i have to create and instance of epoll fd;
+			
+			//multiplexer
+			while (true) {
 				multiplexerSytm(serverFds, epollFd, config);
+				if (shouldStop(0) == false)
+					break;
 				epollFd = startEpoll(serverFds);
 			}
 		}
@@ -44,12 +54,9 @@ int main(int ac, char **av, char **envp) {
 			cerr << msg.what() << endl;
 			return -1;
 		}
-		catch (...) {
-			//close epollfd
-			//preforme clean up for all ressources
-			cout << "the server has been stoped\n";
-		}
 	}
 	
+	cout << "Interrupt signal 'SIGINT' received.\n"
+		 << "the server has been stoped\n";
 	return 0;
 }

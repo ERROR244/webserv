@@ -70,7 +70,7 @@ void httpSession::Response::generateHtml() {
     body += bstring(html.c_str(), html.size());
     body += "\r\n";
     body += "0\r\n\r\n";
-    if (send(s.clientFd, body.c_str(), body.size(), MSG_DONTWAIT) <= 0) {
+    if (send(s.clientFd, body.c_str(), body.size(), MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
         cerr << "send failed" << endl;
         s.sstat = ss_cclosedcon;
         return ;

@@ -40,7 +40,7 @@ int main(int ac, char **av) {
 			ss += line + "\r\n";
 		}
 		else {
-			send(clientFd, ss.c_str(), ss.size(), MSG_DONTWAIT);
+			send(clientFd, ss.c_str(), ss.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
 			ss = "";
 		}
 	}

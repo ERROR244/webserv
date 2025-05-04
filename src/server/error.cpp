@@ -14,7 +14,7 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 	body = "<!DOCTYPE html><html><body><h1>" + codeMeaning + "</h1></body></html>\r\n";
 	msg += "content-length: " + toString(body.size()) + "\r\n\r\n";
 	msg += body;
-	send(clientFd, msg.c_str(), msg.size(), MSG_DONTWAIT);
+	send(clientFd, msg.c_str(), msg.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
 }
 
 void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception) {
