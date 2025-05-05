@@ -22,7 +22,7 @@ using namespace std;
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
-#define T 1
+#define T 2
 
 string	getHeaderValue(map<string, vector<string> >& mp, const string& key);
 
@@ -69,7 +69,7 @@ public:
 		void			(httpSession::Request::*bodyHandlerFunc)(const bstring&, size_t);
 		bstring			remainingBody;
 		string			boundary;
-		size_t			length;
+		double			length;
 		ofstream		outputFile;
 
 		int				parseStarterLine(const bstring& buffer);
@@ -117,7 +117,7 @@ public:
 	~httpSession();
 
 	int								parseFields(const bstring& buffer, size_t pos, map<string, vector<string> >& headers);
-	void							resetForSendingErrorPage(const string& newPath);
+	void							resetForSendingErrorPage(const string& errorPagePath, int statusCode, string meaning);
 	configuration					clientConfiguration() const;
 	int								fd() const;
 	const e_sstat&					status() const;

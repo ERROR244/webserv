@@ -51,7 +51,7 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 	} else {
 		if (s.sstat == ss_sHeader)
 			sendHeader();
-		else if (s.sstat == ss_sBody)
+		else if (s.sstat == ss_sBody) 
 			sendBody();
 		else if (s.sstat == ss_sBodyAutoindex) {
 			generateHtml();

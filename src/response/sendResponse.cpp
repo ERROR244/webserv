@@ -63,7 +63,7 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
 }
 
 static bool ft_send(int __fd, const void *__buf, size_t __n, e_sstat& status) {
-    if (send(__fd, __buf, __n, MSG_DONTWAIT | MSG_NOSIGNAL) < 0) {
+    if (send(__fd, __buf, __n, MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
         cerr << "send failed" << endl;
         status = ss_cclosedcon;
         return false;
@@ -138,9 +138,12 @@ void	httpSession::Response::sendBody() {
 	
     inputFile.read(buff, BUFFER_SIZE);
     sizeRead =  inputFile.gcount();
-	if (sizeRead > 0) {
+	cout << "sizeRead: " << sizeRead << endl;
+    if (sizeRead > 0) {
 		ostringstream chunkSize;
 		chunkSize << hex << sizeRead << "\r\n";
+        cerr << "chunksize -> " << endl;
+        cerr << chunkSize.str() << endl;
 		if ( ft_send(s.clientFd, chunkSize.str().c_str(), chunkSize.str().size(), s.sstat) == false ||
              ft_send(s.clientFd, buff, sizeRead, s.sstat) == false ||
              ft_send(s.clientFd, "\r\n", 2, s.sstat) == false ) {
@@ -153,6 +156,7 @@ void	httpSession::Response::sendBody() {
         inputFile.close();
 		s.sstat = ss_done;
 	}
-    else
+    else {
         s.sstat = ss_cclosedcon;
+    }
 }

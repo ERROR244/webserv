@@ -90,26 +90,29 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 
 
 bool checkTimeOut(map<int, epollPtr>& monitor, const int& fd, epollPtr client, const int& epollFd) {
-	struct epoll_event	ev;
-	time_t lastActivityTime = client.timer;
+	time_t				lastActivityTime = client.timer;
+	string				msg;
+	string				body;
 	
 	if ((lastActivityTime != 0 && time(NULL) - lastActivityTime >= T)) {
 		cout << "Client " << fd << " TIMED OUT: " << time(NULL) - lastActivityTime << ".1" << endl;
 		if (client.cgiInfo.pid != -1) {
+			if (monitor.find(client.cgiInfo.readPipe) != monitor.end()) {
+				if (epoll_ctl(epollFd, EPOLL_CTL_DEL, client.cgiInfo.readPipe, NULL) == -1)
+					cerr <<"epoll_ctl failed" << endl;
+				monitor.erase(monitor.find(client.cgiInfo.readPipe));
+			}
+			if (monitor.find(client.cgiInfo.writePipe) != monitor.end()) {
+				if (epoll_ctl(epollFd, EPOLL_CTL_DEL, client.cgiInfo.writePipe, NULL) == -1)
+					cerr <<"epoll_ctl failed" << endl;
+				monitor.erase(monitor.find(client.cgiInfo.writePipe));
+			}
 			close(client.cgiInfo.readPipe);
 			close(client.cgiInfo.writePipe);
-			if (monitor.find(client.cgiInfo.readPipe) != monitor.end())
-				monitor.erase(monitor.find(client.cgiInfo.readPipe));
-			if (monitor.find(client.cgiInfo.writePipe) != monitor.end())
-				monitor.erase(monitor.find(client.cgiInfo.writePipe));
 			kill(client.cgiInfo.pid, 9);
 		}
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &ev) == -1) {
-			cerr << "epoll_ctl failed" << endl;
-		}
-		close(fd);
 		return false;
-    }
+	}
 	return true;
 }
 
@@ -122,9 +125,11 @@ void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions)
 			continue;
 		}
 		if (checkTimeOut(monitor, it->first, it->second, epollFd) == false) {
-			if (sessions.find(it->first) != sessions.end())
-				sessions.erase(sessions.find(it->first));
-			monitor.erase(monitor.find(it->first));
+			errorResponse(epollFd, it->first, sessions, statusCodeException(408, "Timeout"));
+			// if (sessions.find(it->first) != sessions.end())
+			// 	sessions.erase(sessions.find(it->first));
+			// monitor.erase(monitor.find(it->first));
+			return;
 		}
 	}
 }

@@ -3,7 +3,6 @@
 
 
 static void	sendError(const int clientFd, const int statusCode, const string codeMeaning) {
-	ostringstream	chunkSize;
 	string			msg;
 	string			body;
 
@@ -24,7 +23,7 @@ void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessi
 	configuration 					config = sessions[clientFd].clientConfiguration();
 
 	if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
-		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()));
+		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()), exception.code(), exception.meaning());
 		ev.events = EPOLLOUT;
 		monitor[clientFd].fd = clientFd;
 		ev.data.ptr = &monitor[clientFd];

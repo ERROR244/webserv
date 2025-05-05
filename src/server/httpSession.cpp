@@ -1,4 +1,5 @@
 #include "httpSession.hpp"
+#include "server.h"
 
 httpSession::httpSession(int clientFd, configuration& config)
 	: clientFd(clientFd), sstat(ss_method), config(config), rules(NULL)
@@ -48,7 +49,9 @@ map<string, vector<string> >	httpSession::getHeaders() {
 	return headers;
 }
 
-void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
+void	httpSession::resetForSendingErrorPage(const string& errorPagePath, int statusCode, string meaning) {
+	map<int, epollPtr>&	monitor = getEpollMonitor();
+	monitor[clientFd].timer = 0;
 	sstat = ss_sHeader;
 	method = GET;
 	path = errorPagePath;
@@ -61,6 +64,9 @@ void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
 	cgiBody = "";
 	returnedLocation = "";
 	showDirFiles = false;
+	this->statusCode = statusCode;
+	this->codeMeaning = meaning;
+
 }
 
 bstring&	httpSession::getCgiBody() {

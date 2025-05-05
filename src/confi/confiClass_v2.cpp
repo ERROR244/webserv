@@ -124,7 +124,10 @@ string getRPath(string path) {
 void handleBodyLimit(string& line, configuration& kv, ifstream& sFile) {
 	(void)sFile;
 	int i = checkKey("limit_req:", line);
-	kv.bodySize = ft_stoi(trim(line.substr(i)));
+	line = trim(line.substr(i));
+	if (line.size() > 11)
+		throw runtime_error("too large limit_req: `" + line + "`");
+	kv.bodySize = ft_stoi(line);
 }
 
 void handleError(string& line, configuration& kv, ifstream& sFile) {
