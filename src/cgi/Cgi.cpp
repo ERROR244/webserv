@@ -45,6 +45,7 @@ void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
 
 	scriptEnvs["GATEWAY_INTERFACE"] = "CGI/1.1";
 	scriptEnvs["SERVER_PROTOCOL"] = "http/1.1";
+	scriptEnvs["SERVER_NAME"] = "bngn/1";
 	scriptEnvs["REQUEST_METHODE"] = infos.method;
 	scriptEnvs["PATH_INFO"] = infos.path;
 	scriptEnvs["QUERY_STRING"] = infos.query;

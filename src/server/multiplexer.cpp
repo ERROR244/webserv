@@ -152,7 +152,10 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					acceptNewClient(epollFd, fd);
 				else if (events[i].events & EPOLLIN) {
 					if (ptr->s) {
-						readCgiOutput(events[i]);
+						if (readCgiOutput(events[i])) {
+							epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
+							close(fd);
+						}
 					} else {
 						if (sessions.find(fd) == sessions.end()) {
 							pair<int, httpSession> newclient(fd, httpSession(fd, config[ft_getsockname(fd)]));

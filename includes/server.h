@@ -34,5 +34,5 @@ map<int, epollPtr>&	getEpollMonitor();
 int					startEpoll(const vector<int>& serverFds);
 void				errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception);
 void				multiplexerSytm(const vector<int>& serverFds, const int& epollFd, map<string, configuration>& config);
-void				readCgiOutput(struct epoll_event ev);
+bool				readCgiOutput(struct epoll_event ev);
 bool    			writeBodyToCgi(struct epoll_event ev);

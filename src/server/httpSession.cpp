@@ -55,6 +55,7 @@ map<string, string>	httpSession::getHeaders() {
 void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
 	sstat = ss_sHeader;
 	method = GET;
+	cerr << "prev path -> " << path << endl;
 	path = errorPagePath;
 	query = "";
 	headers.clear();
