@@ -30,9 +30,8 @@ int startEpoll(const vector<int>& serverFds) {
 int	startSocket(const configuration& kv) {
     int fd = ft_socket(kv.addInfo->ai_family, kv.addInfo->ai_socktype, kv.addInfo->ai_protocol);
     ft_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR);
-
     ft_bind(fd, kv.addInfo->ai_addr, kv.addInfo->ai_addrlen);
-    ft_listen(fd, 3);
+    ft_listen(fd, 64);
     return fd;
 }
 

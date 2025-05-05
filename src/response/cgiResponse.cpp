@@ -37,12 +37,9 @@ static bstring    tweakAndCheckHeaders(map<string, string>& headers) {
 	bstring bheaders;
 
 	if (headers.find("content-type") == headers.end())
-		headers["content-type"] = "application/octet-stream";
-	if (headers.find("content-length") != headers.end())
-		headers.erase("content-length");
-	if (headers.find("transfer-encoding") != headers.end())
-		headers.erase("transfer-encoding");
-	headers["transfer-encoding"] = "chunked";
+		headers["content-type"] = "text/plain";
+	if (headers.find("content-length") == headers.end() && headers.find("transfer-encoding") == headers.end())
+		throw(statusCodeException(500, "Internal Server Error"));
 	if (headers.find("connection") == headers.end()) {
 		headers["connection"] = "close";
 	} else {
@@ -69,13 +66,10 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 
 			s.sstat = ss_emptyline;
 			try {
-				if ((bodyStartPos = s.parseFields(cgiBuffer, 0, cgiHeaders)) < 0) {
-					//grahhhhh
+				if ((bodyStartPos = s.parseFields(cgiBuffer, 0, cgiHeaders)) < 0)
 					return;
-				}
 			} catch (...) {
-				s.sstat = ss_cclosedcon;
-				return;
+				throw(statusCodeException(500, "Internal Server Error"));
 			}
 			s.sstat = ss_CgiResponse;
 			chunkedResponse += ("HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n").c_str();
@@ -83,10 +77,7 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 			cgiBuffer = cgiBuffer.substr(bodyStartPos);
 			cgiHeadersParsed = true;
 		}
-		chunkSize << hex << cgiBuffer.size() << "\r\n";
-		chunkedResponse += chunkSize.str().c_str();
 		chunkedResponse += cgiBuffer;
-		chunkedResponse += "\r\n";
 		if (send(s.clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
 			cerr << "send failed" << endl;
 			s.sstat = ss_cclosedcon;
@@ -96,11 +87,6 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 	} else if (waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
 		struct epoll_event	ev;
 
-		if (send(s.clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
-			cerr << "send failed" << endl;
-			s.sstat = ss_cclosedcon;
-			return ;
-		}
 		epoll_ctl(epollFd, EPOLL_CTL_DEL, s.cgi->rFd(), &ev);
 		epoll_ctl(epollFd, EPOLL_CTL_DEL, s.cgi->wFd(), &ev);
 		close(s.cgi->rFd());

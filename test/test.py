@@ -18,14 +18,15 @@ def send_http_request(host, port, request_text):
 if __name__ == "__main__":
     # Target server
     host = "127.0.0.1"
-    port = 8080
+    port = 7070
 
     # Craft a simple HTTP GET request
     request = (
-        "GET /bin/cgi/loop.py HTTP/1.1\r\n"
+        "POST /bin/cgi/post.py HTTP/1.1\r\n"
         f"Host: {host}\r\n"
-        # "Connection: close\r\n\r\n"
+        "Content-length: 5\r\n"
         "Connection: keep-alive\r\n\r\n"
+        "najib"
     )
     # request = (
     #     "GET / HTTP/1.1\r\n"

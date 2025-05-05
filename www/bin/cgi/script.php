@@ -1,4 +1,4 @@
-#!/usr/bin/php-cgi
+!/usr/bin/php-cgi
 <?php
 phpinfo();
 ?>

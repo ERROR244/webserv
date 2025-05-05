@@ -30,18 +30,17 @@ int main(int ac, char **av, char **envp) {
 	
 	if (ac != 2) {
 		cerr << "invalid number of argument" << endl;
+		return 0;
 	} else {
 		try {
 			//settin home envs
 			homeEnvVariables(envp);
-			
 			//setup server
 			disableEchoCtrl();
 			signal(SIGINT, signalHandler);
 			ConfigFileParser confi(av[1]);
 			config = confi.parseFile();
 			epollFd = createSockets(config, serverFds);     
-			
 			//multiplexer
 			while (true) {
 				multiplexerSytm(serverFds, epollFd, config);
@@ -56,7 +55,6 @@ int main(int ac, char **av, char **envp) {
 		}
 	}
 	
-	cout << "Interrupt signal 'SIGINT' received.\n"
-		 << "the server has been stoped\n";
+	cout << "Interrupt signal 'SIGINT' received.\n" << "the server has been stoped" << endl;
 	return 0;
 }
