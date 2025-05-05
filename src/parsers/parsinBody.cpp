@@ -117,7 +117,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 			//getting the index of the last charchter in the content of the previous file
 			ssize_t lastIndexOfPContent = getLastChar(buffer, boundaryStartinPos, firstBoundary);
 			if (sepBoundary == 0) {
-				map<string, string>	contentHeaders;
+				map<string, vector<string> >	contentHeaders;
 				if (outputFile.is_open()) {
 					outputFile.write(&buffer[contentStartinPos], lastIndexOfPContent-contentStartinPos);
 					if (outputFile.fail())
@@ -133,7 +133,7 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				}
 				s.sstat = ss_body;
 				outputFile.close();
-				string filePath = getFileName(contentHeaders["content-disposition"], s.rules->uploads);
+				string filePath = getFileName(getHeaderValue(contentHeaders, "content-disposition"), s.rules->uploads);
 				outputFile.open(filePath.c_str());
 				if (outputFile.is_open() == false)
 					throw(statusCodeException(500, "Internal Server Error"));
@@ -190,7 +190,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 				ss << hex << lengthInHex;
 				ss >> length;
 				if (length == 0) {
-					s.headers["content-length"] = toString(s.cgiBody.size());
+					s.headers["content-length"].push_back(toString(s.cgiBody.size()));
 					s.headers.erase(s.headers.find("transfer-encoding"));
 					s.sstat = ss_sHeader;
 					return;
@@ -237,22 +237,22 @@ void	httpSession::Request::bufferTheBody(const bstring& buffer, size_t pos) {
 void	httpSession::Request::bodyFormat() {
 	if (s.cgi) {
 		if (s.headers.find("content-length") != s.headers.end()) {
-			length = w_stoi(s.headers["content-length"]);
+			length = w_stoi(getHeaderValue(s.headers, "content-length"));
 			if (static_cast<off_t>(length) > s.config.bodySize)
 				throw(statusCodeException(413, "Request Entity Too Large"));
 			bodyHandlerFunc = &Request::bufferTheBody;
 		}
-		else if (s.headers.find("transfer-encoding") != s.headers.end() && s.headers["transfer-encoding"] == "chunked")
+		else if (s.headers.find("transfer-encoding") != s.headers.end() && getHeaderValue(s.headers, "transfer-encoding") == "chunked")
 			bodyHandlerFunc = &Request::unchunkBody;
 		else
 			throw(statusCodeException(501, "Not Implemented"));
 	}
 	else {
-		if (s.headers.find("content-length") != s.headers.end() && s.headers.find("content-type") != s.headers.end()
-			&& isMultipartFormData(s.headers["content-type"]))
+		string contentTypeValue = getHeaderValue(s.headers, "content-type");
+		if (s.headers.find("content-length") != s.headers.end() && !contentTypeValue.empty() && isMultipartFormData(contentTypeValue))
 		{
-			boundary = "--" + s.headers["content-type"].substr(s.headers["content-type"].rfind('=')+1);
-			length = w_stoi(s.headers["content-length"]);
+			boundary = "--" + contentTypeValue.substr(contentTypeValue.rfind('=')+1);
+			length = w_stoi(getHeaderValue(s.headers, "content-length"));
 			bodyHandlerFunc = &Request::contentlength;
 			if (static_cast<off_t>(length) > s.config.bodySize)
 				throw(statusCodeException(413, "Request Entity Too Large"));

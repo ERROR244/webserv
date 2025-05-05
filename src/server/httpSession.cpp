@@ -40,7 +40,7 @@ const e_sstat& httpSession::status() const {
 	return sstat;
 }
 
-map<string, string>	httpSession::getHeaders() {
+map<string, vector<string> >	httpSession::getHeaders() {
 	return headers;
 }
 
@@ -65,4 +65,13 @@ bstring&	httpSession::getCgiBody() {
 
 Cgi* httpSession::getCgi() {
 	return cgi;
+}
+
+string	getHeaderValue(map<string, vector<string> >& mp, const string& key) {
+	if (mp.find(key) != mp.end()) {
+		vector<string> value = mp.at(key);
+		if (value.empty() == false)
+			return value[0];
+	}
+	return "";
 }

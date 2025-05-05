@@ -6,8 +6,8 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 	map<int, epollPtr>::iterator	position = monitor.find(clientFd);
 
 	if (status == ss_done) {
-		map<string, string> headers = s[clientFd].getHeaders();
-		if (headers.find("connection") == headers.end() || headers["connection"] != "keep-alive") {
+		map<string, vector<string> > headers = s[clientFd].getHeaders();
+		if (headers.find("connection") == headers.end() || getHeaderValue(headers, "connection") != "keep-alive") {
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 				cerr << "epoll_ctl failed" << endl;
 			close(clientFd);

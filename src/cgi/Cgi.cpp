@@ -31,16 +31,16 @@ static string	proccesHeaderValue(const string& key) {
 	return proccesedKey;
 }
 
-void	Cgi::getHeaders(const map<string, string>& headers) {
-	for (map<string, string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+void	Cgi::getHeaders(const map<string, vector<string> >& headers) {
+	for (map<string, vector<string> >::const_iterator it = headers.begin(); it != headers.end(); ++it) {
 		string key = proccesHeaderValue(it->first);
 		if (key == "HTTP_CONTENT_LENGTH" || key == "HTTP_CONTENT_TYPE")
 			key.erase(key.begin(), key.begin()+5);
-		scriptEnvs[key] = it->second;
+		scriptEnvs[key] = it->second[0];
 	}
 }	
 
-void	Cgi::prepearingCgiEnvVars(const map<string, string>& headers) {
+void	Cgi::prepearingCgiEnvVars(const map<string, vector<string> >& headers) {
 	char absolutePath[1024];
 
 	scriptEnvs["GATEWAY_INTERFACE"] = "CGI/1.1";

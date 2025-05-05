@@ -32,19 +32,18 @@ bool    writeBodyToCgi(struct epoll_event ev) {
 	return false;
 }
 
-static bstring    tweakAndCheckHeaders(map<string, string>& headers) {
+static bstring    tweakAndCheckHeaders(map<string, vector<string> >& headers) {
 	bstring bheaders;
 
 	if (headers.find("content-type") == headers.end())
-		headers["content-type"] = "text/plain";
-	if (headers.find("connection") == headers.end()) {
-		headers["connection"] = "close";
-	} else {
-		if (headers["connection"] != "close" && headers["connection"] != "keep-alive")
-			headers["connection"] = "close";
-	}
-	for (map<string, string>::iterator it = headers.begin(); it != headers.end(); ++it) {
-		bheaders += (it->first + ": " + it->second + "\r\n").c_str();
+		headers["content-type"].push_back("text/plain");
+	for (map<string, vector<string> >::iterator it = headers.begin(); it != headers.end(); ++it) {
+		if (it->first == "set-cookie") {
+			for (size_t i = 0; i < it->second.size(); ++i)
+				bheaders += (it->first + ": " + it->second[i] + "\r\n").c_str();
+		} else {
+			bheaders += (it->first + ": " + it->second[0] + "\r\n").c_str();
+		}
 	}
 	bheaders += "\r\n";
 	return bheaders;
@@ -66,7 +65,7 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 		ostringstream   chunkSize;
 	
 		if (cgiHeadersParsed == false) {
-			map<string, string>	cgiHeaders;
+			map<string, vector<string> >	cgiHeaders;
 			ssize_t  bodyStartPos = 0;
 
 			s.sstat = ss_emptyline;

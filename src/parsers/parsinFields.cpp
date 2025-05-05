@@ -5,7 +5,7 @@ static inline string  trimTrailinWs(const string& str) {
 	return str.substr(0, end + 1);
 }
 
-int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, string>& headers) {
+int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, vector<string> >& headers) {
 	size_t	size = buffer.size();
 	ssize_t	len = 0;
 	size_t	headerFieldsLen = 0;
@@ -43,12 +43,12 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			switch (ch)
 			{
 			case '\r': {
-				headers[fieldline] = "";
+				headers[fieldline].push_back("");
 				sstat = ss_fieldNl;
 				break;
 			}
 			case '\n': {
-				headers[fieldline] = "";
+				headers[fieldline].push_back("");
 				sstat = ss_emptyline;
 				len = 0;
 				break;
@@ -68,12 +68,12 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			switch (ch)
 			{
 			case '\r': {
-				headers[fieldline] = trimTrailinWs(buffer.substr(pos-len, len).cppstring());
+				headers[fieldline].push_back(trimTrailinWs(buffer.substr(pos-len, len).cppstring()));
 				sstat = ss_fieldNl;
 				break;
 			}
 			case '\n': {
-				headers[fieldline] = trimTrailinWs(buffer.substr(pos-len, len).cppstring());
+				headers[fieldline].push_back(trimTrailinWs(buffer.substr(pos-len, len).cppstring()));
 				sstat = ss_emptyline;
 				len = -1;
 				break;

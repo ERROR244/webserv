@@ -112,7 +112,7 @@ void	httpSession::Response::sendHeader() {
     }
     if (s.showDirFiles == true)
         s.sstat = ss_sBodyAutoindex;
-    if (s.headers["connection"] == "keep-alive")
+    if (getHeaderValue(s.headers, "connection") == "keep-alive")
 	    header += "Connection: keep-alive\r\n";
     else
 	    header += "Connection: close\r\n";

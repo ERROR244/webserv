@@ -19,11 +19,12 @@
 
 using namespace std;
 
-
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
 #define T 4
+
+string	getHeaderValue(map<string, vector<string> >& mp, const string& key);
 
 enum e_sstat {
 	ss_method=0,
@@ -46,21 +47,21 @@ enum e_sstat {
 
 class httpSession {
 private:
-	const int			clientFd;
-	e_sstat				sstat;
-	e_methods			method;
-	string				path;
-	string				query;
-	map<string, string>	headers;
-	configuration		config;
-	location*			rules;
-	Cgi*				cgi;
-	bstring				cgiBody;
-	string				rawUri;
-	string				returnedLocation;
-	bool				showDirFiles;
-	int					statusCode;
-	string				codeMeaning;
+	const int						clientFd;
+	e_sstat							sstat;
+	e_methods						method;
+	string							path;
+	string							query;
+	map<string, vector<string> >	headers;
+	configuration					config;
+	location*						rules;
+	Cgi*							cgi;
+	bstring							cgiBody;
+	string							rawUri;
+	string							returnedLocation;
+	bool							showDirFiles;
+	int								statusCode;
+	string							codeMeaning;
 public:
 	class Request {
 	private:
@@ -115,12 +116,12 @@ public:
 	httpSession();
 	~httpSession();
 
-	int					parseFields(const bstring& buffer, size_t pos, map<string, string>& headers);
+	int					parseFields(const bstring& buffer, size_t pos, map<string, vector<string> >& headers);
 	void				resetForSendingErrorPage(const string& newPath);
 	configuration		clientConfiguration() const;
 	int					fd() const;
 	const e_sstat&		status() const;
-	map<string, string>	getHeaders();
+	map<string, vector<string> >	getHeaders();
 	bstring&			getCgiBody();
 
 	Cgi* getCgi();
