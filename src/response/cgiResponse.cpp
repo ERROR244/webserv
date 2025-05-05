@@ -7,7 +7,6 @@ bool	readCgiOutput(struct epoll_event ev) {
 	ssize_t     bytesRead;
 
 	if ((bytesRead = read(ptr->fd, buffer, BUFFER_SIZE)) <= 0) {
-		//how can i show internall server error to the client incase of error
 		cerr << "read failed" << endl;
 		return true;
 	}
@@ -22,7 +21,6 @@ bool    writeBodyToCgi(struct epoll_event ev) {
 	int     	byteWrite;
 
 	if ((byteWrite = write(ptr->fd, body.c_str(), body.size())) <= 0) {
-		//how can i show internall server error to the client incase of error
 		cerr << "write failed" << endl;
 		return true;
 	}
