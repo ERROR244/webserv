@@ -40,6 +40,10 @@ const e_sstat& httpSession::status() const {
 	return sstat;
 }
 
+void	httpSession::setStatus() {
+	sstat = ss_cclosedcon;
+}
+
 map<string, vector<string> >	httpSession::getHeaders() {
 	return headers;
 }

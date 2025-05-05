@@ -151,6 +151,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 						if (readCgiOutput(events[i])) {
 							epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 							close(fd);
+							ptr->s->setStatus();
 						}
 					} else {
 						if (sessions.find(fd) == sessions.end()) {
@@ -166,6 +167,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 						if (writeBodyToCgi(events[i])) {
 							epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 							close(fd);
+							ptr->s->setStatus();
 						}
 					} else {
 						sessions[fd].res.handelClientRes(epollFd);

@@ -116,13 +116,14 @@ public:
 	httpSession();
 	~httpSession();
 
-	int					parseFields(const bstring& buffer, size_t pos, map<string, vector<string> >& headers);
-	void				resetForSendingErrorPage(const string& newPath);
-	configuration		clientConfiguration() const;
-	int					fd() const;
-	const e_sstat&		status() const;
+	int								parseFields(const bstring& buffer, size_t pos, map<string, vector<string> >& headers);
+	void							resetForSendingErrorPage(const string& newPath);
+	configuration					clientConfiguration() const;
+	int								fd() const;
+	const e_sstat&					status() const;
+	void							setStatus();
 	map<string, vector<string> >	getHeaders();
-	bstring&			getCgiBody();
+	bstring&						getCgiBody();
 
 	Cgi* getCgi();
 };
