@@ -14,7 +14,7 @@ int startEpoll(const vector<int>& serverFds) {
 
     for (size_t fd = 0; fd < serverFds.size(); ++fd) {
         monitor[serverFds[fd]].fd = serverFds[fd];
-        monitor[serverFds[fd]].is_server_socket = true;
+        monitor[serverFds[fd]].type = serverSock;
         event.events = EPOLLIN;
         event.data.ptr = &monitor[serverFds[fd]];
         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverFds[fd], &event) == -1) {

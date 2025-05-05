@@ -57,7 +57,6 @@ int ft_stoi(const string &__str) {
 		return (res);
 	}
 	catch (exception& e) {
-		cout << e.what() << endl;
 		throw runtime_error("invalid number: `" + __str + "`");
 	}
 }

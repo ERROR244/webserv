@@ -16,13 +16,26 @@
 
 using namespace std;
 
+struct cgiTools {
+	pid_t	pid;
+	int 	readPipe;
+	int		writePipe;
+	cgiTools() : pid(-1), readPipe(-1), writePipe(-1) {}
+};
+
+enum fdType {
+	serverSock,
+	clientSock,
+	cgiPipe,
+};
+
 struct epollPtr {
 	int			fd; //can be sock or pipe;
 	httpSession	*s; // if NULL sock else cgi
-	bool		is_server_socket;
+	fdType		type;
 	time_t		timer;
-	pid_t		pid;
-	epollPtr() : fd(-1),  s(NULL), is_server_socket(false), timer(0), pid(-1) {}
+	cgiTools	cgiInfo;
+	epollPtr() : fd(-1),  s(NULL), timer(0) {}
 };
 
 typedef struct sockaddr_in t_sockaddr;

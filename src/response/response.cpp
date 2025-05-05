@@ -18,10 +18,13 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 
 			s.cgi->prepearingCgiEnvVars(s.headers);
 			s.cgi->setupCGIProcess();
-			monitor[s.clientFd].pid = s.cgi->ppid();
+			monitor[s.clientFd].cgiInfo.pid = s.cgi->ppid();
+			monitor[s.clientFd].cgiInfo.readPipe = s.cgi->rFd();
+			monitor[s.clientFd].cgiInfo.writePipe = s.cgi->wFd();
 			if (s.cgiBody.empty() == false) {
 				monitor[s.cgi->wFd()].fd = s.cgi->wFd();
 				monitor[s.cgi->wFd()].s = &s;
+				monitor[s.cgi->wFd()].type = cgiPipe;
 				evWritePipe.events = EPOLLOUT;
 				evWritePipe.data.ptr = &monitor[s.cgi->wFd()];
 				if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->wFd(), &evWritePipe) == -1) {
@@ -32,8 +35,8 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 				}
 			}
 			monitor[s.cgi->rFd()].fd = s.cgi->rFd();
-			cerr << s.cgi->rFd()<< endl;
 			monitor[s.cgi->rFd()].s = &s;
+			monitor[s.cgi->rFd()].type = cgiPipe;
 			evReadPipe.events = EPOLLIN;
 			evReadPipe.data.ptr = &monitor[s.cgi->rFd()];
 			if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->rFd(), &evReadPipe) == -1) {

@@ -74,6 +74,7 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
     }
 	monitor[clientFd].s = NULL;
 	monitor[clientFd].fd = clientFd;
+	monitor[clientFd].type = clientSock;
 	ev.events = EPOLLIN;
 	ev.data.ptr = &monitor[clientFd];
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) == -1) {
@@ -91,31 +92,40 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 bool checkTimeOut(map<int, epollPtr>& monitor, const int& fd, epollPtr client, const int& epollFd) {
 	struct epoll_event	ev;
 	time_t lastActivityTime = client.timer;
-    
+	
 	if ((lastActivityTime != 0 && time(NULL) - lastActivityTime >= T)) {
 		cout << "Client " << fd << " TIMED OUT: " << time(NULL) - lastActivityTime << ".1" << endl;
-		if (client.pid != -1) {
-			kill(client.pid, 9);
+		if (client.cgiInfo.pid != -1) {
+			close(client.cgiInfo.readPipe);
+			close(client.cgiInfo.writePipe);
+			if (monitor.find(client.cgiInfo.readPipe) != monitor.end())
+				monitor.erase(monitor.find(client.cgiInfo.readPipe));
+			if (monitor.find(client.cgiInfo.writePipe) != monitor.end())
+				monitor.erase(monitor.find(client.cgiInfo.writePipe));
+			kill(client.cgiInfo.pid, 9);
 		}
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &ev) == -1) {
 			cerr << "epoll_ctl failed" << endl;
 		}
 		close(fd);
-		monitor.erase(monitor.find(fd));
 		return false;
     }
 	return true;
 }
 
-void checkTimeOutForEachUsr(const int& epollFd) {
+void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions) {
 	map<int, epollPtr>& monitor = getEpollMonitor();
 	map<int, epollPtr>::iterator			it;
 
 	for (it = monitor.begin(); it != monitor.end(); ++it) {
-		if (it->second.is_server_socket == true)
+		if (it->second.type == serverSock || it->second.type == cgiPipe) {
 			continue;
-		if (checkTimeOut(monitor, it->first, it->second, epollFd) == false)
-			it = monitor.begin();
+		}
+		if (checkTimeOut(monitor, it->first, it->second, epollFd) == false) {
+			if (sessions.find(it->first) != sessions.end())
+				sessions.erase(sessions.find(it->first));
+			monitor.erase(monitor.find(it->first));
+		}
 	}
 }
 
@@ -179,7 +189,7 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				errorResponse(epollFd, fd, sessions, exception);
 			}
 		}
-		checkTimeOutForEachUsr(epollFd);
+		checkTimeOutForEachUsr(epollFd, sessions);
 	}
 	
 }
