@@ -17,13 +17,13 @@ string toString(const int& nbr) {
 	return (oss.str());
 }
 
-int my_stoi(const string &str, size_t *pos, int base) {
+off64_t my_stoi(const string &str, size_t *pos, int base) {
 	if (base != 10)
 		throw invalid_argument("stoi only supports base 10");
 	size_t	i = 0;
 	size_t	startPos;
 	int		sign = 1;
-	long	result = 0;
+	off64_t	result = 0;
 
 	while (i < str.length() && isspace(str[i]))
 		i++;
@@ -40,7 +40,6 @@ int my_stoi(const string &str, size_t *pos, int base) {
 
 	startPos = i;
 	while (i < str.length() && isdigit(str[i])) {
-		// int digit = str[i] - '0';
 		if (result > (INT_MAX - (str[i] - '0')) / 10)
 			throw out_of_range("stoi: integer overflow");
 		result = result * 10 + (str[i] - '0');
@@ -51,9 +50,9 @@ int my_stoi(const string &str, size_t *pos, int base) {
 	return static_cast<int>(sign * result);
 }
 
-int ft_stoi(const string &__str) {
+off64_t ft_stoi(const string &__str) {
 	try {
-		int res = my_stoi(__str);
+		off64_t res = my_stoi(__str);
 		return (res);
 	}
 	catch (exception& e) {

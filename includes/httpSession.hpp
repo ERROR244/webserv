@@ -69,7 +69,7 @@ public:
 		void			(httpSession::Request::*bodyHandlerFunc)(const bstring&, size_t);
 		bstring			remainingBody;
 		string			boundary;
-		double			length;
+		off64_t			length;
 		ofstream		outputFile;
 
 		int				parseStarterLine(const bstring& buffer);

@@ -121,13 +121,41 @@ string getRPath(string path) {
 	return string(uploads);
 }
 
+off64_t ft_off64(const string& s) {
+    const string max_str = "9223372036854775807";
+    size_t len = s.length();
+
+    if (len == 0)
+        throw runtime_error("empty number");
+
+    for (size_t i = 0; i < len; ++i) {
+        if (s[i] < '0' || s[i] > '9')
+            throw runtime_error("invalid character in number");
+    }
+
+    // Fast overflow check by comparing strings
+    if (len > max_str.length() || (len == max_str.length() && s > max_str))
+        throw runtime_error("value exceeds OFF64_MAX");
+
+    off64_t result = 0;
+    for (size_t i = 0; i < len; ++i) {
+        int digit = s[i] - '0';
+        result = result * 10 + digit;
+    }
+
+    return result;
+}
+
 void handleBodyLimit(string& line, configuration& kv, ifstream& sFile) {
-	(void)sFile;
-	int i = checkKey("limit_req:", line);
-	line = trim(line.substr(i));
-	if (line.size() > 11)
-		throw runtime_error("too large limit_req: `" + line + "`");
-	kv.bodySize = ft_stoi(line);
+    (void)sFile;
+    int i = checkKey("limit_req:", line);
+    line = trim(line.substr(i));
+
+    try {
+        kv.bodySize = ft_off64(line);
+    } catch (const exception& e) {
+        throw runtime_error("invalid limit_req: `" + line + "`: " + e.what());
+    }
 }
 
 void handleError(string& line, configuration& kv, ifstream& sFile) {

@@ -15,8 +15,8 @@ static void	split(const string& str, const char delimiter, vector<string>& parts
 	parts.push_back(str.substr(pos));
 }
 
-static int w_stoi(const string& snum) {
-	int num;
+static off64_t w_stoi(const string& snum) {
+	off64_t num;
 	try {
 		//it will throw incase of invalid arg
 		num = my_stoi(snum);
@@ -96,7 +96,7 @@ static bool	roundedByNl(const bstring& buffer, const size_t start, const size_t 
 void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 	ssize_t	contentStartinPos = pos;
 
-	if (length >= buffer.size() - pos)
+	if (length >= off64_t(buffer.size() - pos))
 		length -= buffer.size() - pos;
 	else
 		length = 0;
@@ -206,7 +206,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
         }
         // Append the chunk data to our body
         s.cgiBody += buffer.substr(pos, length);
-        if (static_cast<off_t>(s.cgiBody.size()) > s.config.bodySize) {
+        if (static_cast<off64_t>(s.cgiBody.size()) > s.config.bodySize) {
             throw statusCodeException(413, "Request Entity Too Large");
         }
         pos = chunkEnd;
@@ -225,7 +225,7 @@ void	httpSession::Request::unchunkBody(const bstring& buffer, size_t pos) {
 void	httpSession::Request::bufferTheBody(const bstring& buffer, size_t pos) {
 	if (length) {
 		s.cgiBody += buffer.substr(pos, length);
-		if (s.cgiBody.size() >= length)
+		if (off64_t(s.cgiBody.size()) >= length)
 			length = 0;
 		else 
 			length -= s.cgiBody.size();
@@ -237,8 +237,8 @@ void	httpSession::Request::bufferTheBody(const bstring& buffer, size_t pos) {
 void	httpSession::Request::bodyFormat() {
 	if (s.cgi) {
 		if (s.headers.find("content-length") != s.headers.end()) {
-			length = w_stoi(getHeaderValue(s.headers, "content-length")) / (1024 * 1024);
-			if (length > static_cast<double>(s.config.bodySize))
+			length = w_stoi(getHeaderValue(s.headers, "content-length"));
+			if (length > s.config.bodySize)
 				throw(statusCodeException(413, "Request Entity Too Large"));
 			bodyHandlerFunc = &Request::bufferTheBody;
 		}
@@ -252,9 +252,9 @@ void	httpSession::Request::bodyFormat() {
 		if (s.headers.find("content-length") != s.headers.end() && !contentTypeValue.empty() && isMultipartFormData(contentTypeValue))
 		{
 			boundary = "--" + contentTypeValue.substr(contentTypeValue.rfind('=')+1);
-			length = w_stoi(getHeaderValue(s.headers, "content-length")) / (1024 * 1024);
+			length = w_stoi(getHeaderValue(s.headers, "content-length"));
 			bodyHandlerFunc = &Request::contentlength;
-			if (length > static_cast<double>(s.config.bodySize))
+			if (length > s.config.bodySize)
 				throw(statusCodeException(413, "Request Entity Too Large"));
 		}
 		else

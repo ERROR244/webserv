@@ -18,6 +18,8 @@ using namespace std;
 #include <netdb.h>
 #include "wrappers.h"
 
+#define OFF64_MAX 9223372036854775807LL
+
 enum  Ser1 {
 	LISTEN,		SERNAMES,
 	LIMIT_REQ,	ERROR,
@@ -50,7 +52,7 @@ struct location {
 };
 
 struct configuration {
-	off_t					bodySize;
+	off64_t					bodySize;
 	string					port;
 	string					host;
 	struct addrinfo*		addInfo;

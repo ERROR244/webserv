@@ -26,6 +26,5 @@ int     ft_socket(int __domain, int __type, int __protocol);
 int     ft_epoll_create1(int __flags);
 int     ft_listen(int __fd, int __n);
 int     ft_close(int& __fd, string why);
-int     ft_stoi(const string &__str);
-int     my_stoi(const string &str, size_t *pos = 0, int base = 10);
-void    ft_perror(const string &msg = "");
+off64_t ft_stoi(const string &__str);
+off64_t my_stoi(const string &str, size_t *pos = 0, int base = 10);
