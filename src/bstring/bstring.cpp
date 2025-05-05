@@ -15,7 +15,6 @@ bstring::bstring(const char* str, const size_t size) : stringsize(size) {
 }
 
 bstring::bstring(const bstring& other) {
-	// cerr << "bstring::copy constructer called" << endl;
 	if (other.empty() == false) {
 		stringsize = other.size();
 		__string = new char[stringsize];
@@ -29,7 +28,6 @@ bstring::bstring(const bstring& other) {
 }
 
 bstring::~bstring() {
-	// cerr << "bstring::destructor called" << endl;
 	if (__string)
 		delete []__string;
 }
@@ -45,7 +43,7 @@ const string	bstring::cppstring() const {
 	return s;
 }
 
-const char*	bstring::c_str() const {//add \0 in the end
+const char*	bstring::c_str() const {
 	return __string;
 }
 
@@ -195,21 +193,6 @@ bool	bstring::ncmp(const char* str1, const size_t n, const size_t startpos) cons
 	return str1[i] - str2[i];
 }
 
-// bool	bstring::ncmp(const bstring& str1, const size_t n, const size_t startpos) const {
-// 	int i = 0;
-
-// 	if (startpos >= stringsize)
-// 		return true;
-// 	const char* str2 = &(__string[startpos]);
-// 	size_t str2size = stringsize - startpos;
-// 	if (n > str2size)
-// 		return true;
-// 	while (i < n && i+1 < str2size && i+1 < str1.size() && str2[i] == str1[i])
-// 		++i;
-// 	return str1[i] - str2[i];
-// }
-
-
 bool	bstring::empty() const {
 	if (__string == NULL)
 		return true;
@@ -301,7 +284,6 @@ const bstring	bstring::operator+(const bstring& buff) {
 	if (buff.empty())
 		return *this;
 	char* newstring = new char[stringsize+buff.size()];
-	// char newstring[stringsize+buff.size()];
 	int	newstringpos = 0;
 	for (size_t i = 0; i < stringsize; ++i) {
 		newstring[newstringpos] = __string[i];

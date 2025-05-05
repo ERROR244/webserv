@@ -1,5 +1,6 @@
 #include "httpSession.hpp"
 #include "server.h"
+
 httpSession::Response::Response(httpSession& session) : s(session), cgiHeadersParsed(false) {}
 
 httpSession::Response::Response(const Response& other) : s(other.s), cgiHeadersParsed(false) {}
@@ -26,6 +27,7 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 				if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->wFd(), &evWritePipe) == -1) {
 					cerr << "epoll_ctl failed" << endl;
 					s.sstat = ss_cclosedcon;
+					closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
 					return;
 				}
 			}
@@ -37,13 +39,12 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 			if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->rFd(), &evReadPipe) == -1) {
 				cerr << "epoll_ctl failed" << endl;
 				s.sstat = ss_cclosedcon;
+				closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
 				return;
 			}
 			s.sstat = ss_CgiResponse;
 		} else if (s.sstat == ss_CgiResponse) 
 			sendCgiOutput(epollFd);
-        //incase of client closin the connection what will you do
-		//send kill signal to the process if the client closed the connection
 	} else {
 		if (s.sstat == ss_sHeader)
 			sendHeader();

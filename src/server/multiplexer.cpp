@@ -8,10 +8,8 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 	if (status == ss_done) {
 		map<string, string> headers = s[clientFd].getHeaders();
 		if (headers.find("connection") == headers.end() || headers["connection"] != "keep-alive") {
-			cerr << "closing the connection of -> " << clientFd << " from headers" << endl;
-			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
+			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 				cerr << "epoll_ctl failed" << endl;
-			}
 			close(clientFd);
 			if (position != monitor.end())
 				monitor.erase(position);
@@ -29,7 +27,6 @@ static void	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 		s.erase(s.find(clientFd));
 	}
 	else if (status == ss_cclosedcon) {
-		cerr << "closing the connection of -> " << clientFd << " from res" << endl;
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
 		close(clientFd);
@@ -57,7 +54,6 @@ static void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 		}
 	}
 	else if (status == ss_cclosedcon) {
-		cerr << "closing the connection of -> " << clientFd << " from req" << endl;
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			cerr <<"epoll_ctl failed" << endl;
 		close(clientFd);

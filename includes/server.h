@@ -28,6 +28,7 @@ struct epollPtr {
 typedef struct sockaddr_in t_sockaddr;
 typedef map<int, t_sockaddr>::const_iterator t_sockaddr_it;
 
+bool 				shouldStop(int i);
 vector<string>		homeEnvVariables(char ** vars = NULL);
 int					createSockets(map<string, configuration>& config, vector<int>& serverFds);
 map<int, epollPtr>&	getEpollMonitor();
@@ -36,3 +37,4 @@ void				errorResponse(const int epollFd, int clientFd, map<int, httpSession>& se
 void				multiplexerSytm(const vector<int>& serverFds, const int& epollFd, map<string, configuration>& config);
 bool				readCgiOutput(struct epoll_event ev);
 bool    			writeBodyToCgi(struct epoll_event ev);
+void				closeCgiPipes(int epollFd, int readPipe, int writePipe);

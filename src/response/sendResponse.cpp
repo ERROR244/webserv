@@ -62,6 +62,15 @@ string httpSession::Response::getSupportedeExtensions(const string& key) {
     return "Content-Type: application/octet-stream\r\n";
 }
 
+static bool ft_send(int __fd, const void *__buf, size_t __n, e_sstat& status) {
+    if (send(__fd, __buf, __n, MSG_DONTWAIT | MSG_NOSIGNAL) < 0) {
+        cerr << "send failed" << endl;
+        status = ss_cclosedcon;
+        return false;
+    }
+    return true;
+}
+
 string	httpSession::Response::contentTypeHeader() const {
     if (s.showDirFiles == true) {
         return ("Content-Type: text/html\r\n");
@@ -146,14 +155,4 @@ void	httpSession::Response::sendBody() {
 	}
     else
         s.sstat = ss_cclosedcon;
-}
-
-
-bool ft_send(int __fd, const void *__buf, size_t __n, e_sstat& status) {
-    if (send(__fd, __buf, __n, MSG_DONTWAIT | MSG_NOSIGNAL) < 0) {
-        cerr << "send failed" << endl;
-        status = ss_cclosedcon;
-        return false;
-    }
-    return true;
 }

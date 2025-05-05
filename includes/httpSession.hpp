@@ -125,7 +125,3 @@ public:
 
 	Cgi* getCgi();
 };
-
-bool ft_send(int __fd, const void *__buf, size_t __n, e_sstat& status);
-bool shouldStop(int i);
-

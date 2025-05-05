@@ -15,7 +15,6 @@ void	httpSession::Request::readfromsock() {
 	ssize_t bufferPos = 0;
 
 	if ((byteread = recv(s.clientFd, buffer, BUFFER_SIZE, MSG_DONTWAIT | MSG_NOSIGNAL)) <= 0) {
-		cout << "YEAH" << endl;
 		s.sstat = ss_cclosedcon;
 		return ;
 	}

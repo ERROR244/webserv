@@ -50,7 +50,7 @@ static bstring    tweakAndCheckHeaders(map<string, string>& headers) {
 	return bheaders;
 }
 
-void	closecgiPipes(int epollFd, int readPipe, int writePipe) {
+void	closeCgiPipes(int epollFd, int readPipe, int writePipe) {
 	epoll_ctl(epollFd, EPOLL_CTL_DEL, readPipe, NULL);
 	epoll_ctl(epollFd, EPOLL_CTL_DEL, writePipe, NULL);
 	close(readPipe);
@@ -74,7 +74,7 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 				if ((bodyStartPos = s.parseFields(cgiBuffer, 0, cgiHeaders)) < 0)
 					return;
 			} catch (...) {
-				closecgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
+				closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
 				throw(statusCodeException(500, "Internal Server Error"));
 			}
 			s.sstat = ss_CgiResponse;
@@ -86,13 +86,13 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 		chunkedResponse += cgiBuffer;
 		if (send(s.clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
 			cerr << "send failed" << endl;
-			closecgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
+			closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
 			s.sstat = ss_cclosedcon;
 			return ;
 		}
 		cgiBuffer = NULL;
 	} else if (waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
-		closecgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
+		closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
 		s.sstat = ss_done;
 	}
 }

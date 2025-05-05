@@ -2,20 +2,13 @@
 
 httpSession::httpSession(int clientFd, configuration& config)
 	: clientFd(clientFd), sstat(ss_method), config(config), rules(NULL)
-	, cgi(NULL), showDirFiles(false), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this))
-{
-	// cerr << clientFd << " http session constructor called" << endl;
-}
+	, cgi(NULL), showDirFiles(false), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {}
 
 httpSession::httpSession()
 	: clientFd(-1), sstat(ss_method), config(configuration()), rules(NULL)
-	, cgi(NULL), showDirFiles(false), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this))
-{
-	// cerr << clientFd << " http session default constructor called" << endl;
-}
+	, cgi(NULL), showDirFiles(false), statusCode(200), codeMeaning("OK"), req(Request(*this)), res(Response(*this)) {}
 
 httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd), req(Request(*this)), res(Response(*this)) {
-	// cerr << clientFd << " http session copy constructor called" << endl;
 	sstat = other.sstat;
 	method = other.method;
 	path = other.path;
@@ -32,7 +25,6 @@ httpSession::httpSession(const httpSession& other) : clientFd(other.clientFd), r
 }
 
 httpSession::~httpSession() {
-	// cerr << clientFd << " http session destructor called" << endl;
 	delete cgi;
 }
 
@@ -55,7 +47,6 @@ map<string, string>	httpSession::getHeaders() {
 void	httpSession::resetForSendingErrorPage(const string& errorPagePath) {
 	sstat = ss_sHeader;
 	method = GET;
-	cerr << "prev path -> " << path << endl;
 	path = errorPagePath;
 	query = "";
 	headers.clear();

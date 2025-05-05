@@ -1,6 +1,6 @@
 #include "httpSession.hpp"
 
-inline string  trimTrailinWs(const string& str) {
+static inline string  trimTrailinWs(const string& str) {
 	size_t  end = str.find_last_not_of(" \t\n\r\f\v");
 	return str.substr(0, end + 1);
 }
@@ -99,10 +99,6 @@ int httpSession::parseFields(const bstring& buffer, size_t pos, map<string, stri
 			}
 			case '\n': {
 				sstat = ss_sHeader;
-				// cerr << "----request headers----" << endl;
-				// for (const auto& it : headers)
-				// 	cerr << it.first << ": " << it.second << "|" <<  endl;
-				// cerr << "--------------" << endl;
 				return pos+1;
 			}
 			default: {

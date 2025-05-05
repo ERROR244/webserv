@@ -13,8 +13,6 @@
 
 using namespace std;
 
-//https://www.ibm.com/docs/en/netcoolomnibus/8.1?topic=scripts-environment-variables-in-cgi-script
-
 #define DOCUMENT_ROOT "./www/"
 
 struct cgiInfo {

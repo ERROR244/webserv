@@ -20,7 +20,6 @@ int startEpoll(const vector<int>& serverFds) {
         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverFds[fd], &event) == -1) {
             close(epollFd);
 		    throw runtime_error("epoll_ctl failed");
-            //close all the previouse sockets
         }
         cerr << "adding server fd -> " << serverFds[fd] << endl;
     }

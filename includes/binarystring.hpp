@@ -37,12 +37,9 @@ public:
 	size_t			find(const char*, const size_t startpos = 0) const;
 	size_t			find(const char, const size_t startpos = 0) const;
 	size_t			rfind(const char, size_t startpos = std::string::npos) const;
-	// bstring			trimstart() const;
 	bstring			trimend(const char* = " \t\n\r\f\v") const;
-	// bstring			trim() const;
 	bool			cmp(const char* str) const;
 	bool			ncmp(const char* str1, const size_t n, const size_t startpos = 0) const;
-	// bool			ncmp(const bstring& str1, const size_t n, const size_t startpos = 0) const;
 	bool			empty() const;
 	const char* 	operator=(const char*);
 	const bstring& 	operator=(const bstring&);

@@ -18,8 +18,6 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 }
 
 void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception) {
-	cerr << "code--> " << exception.code() << endl;
-	cerr << "reason--> " << exception.meaning() << endl;
 	struct epoll_event				ev;
 	map<int, epollPtr>&				monitor = getEpollMonitor();
 	map<int, epollPtr>::iterator	position = monitor.find(clientFd);

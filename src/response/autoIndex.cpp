@@ -1,14 +1,5 @@
 #include "httpSession.hpp"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
 #include <dirent.h>
-#include <sys/stat.h>
-#include <ctime>
-#include <cstring>
-#include <iomanip>
-#include <iomanip>  // For setw and left
 
 static void replace(string& str, const string& from, const string& to) {
     size_t start_pos;
@@ -20,7 +11,6 @@ static void replace(string& str, const string& from, const string& to) {
 static string addHrefs(string path) {
     string  hrefs;
     string  hrefsTemplate = "<a href=\"{{NAME}}\">{{NAME}}/</a>\n";
-    // "<a href=\"{{NAME}}\">{{NAME}}/</a> {{TIME}} {{bytes}}\n"
     DIR* dir = opendir(path.c_str());
     if (dir == NULL) {
         cerr << "Could not open directory: " << path << endl;

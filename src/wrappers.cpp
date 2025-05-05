@@ -143,9 +143,3 @@ int ft_epoll_create1(int __flags) {
 	}
 	return epollFd;
 }
-
-void ft_perror(const string &msg) {
-	if (!msg.empty())
-		cerr << msg << ": ";
-	cerr << strerror(errno) << endl;
-}

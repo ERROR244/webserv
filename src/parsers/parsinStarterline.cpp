@@ -1,6 +1,6 @@
 #include "httpSession.hpp"
 
-inline string methodStringRepresentation(e_methods method) {
+static inline string methodStringRepresentation(e_methods method) {
 	switch (method)
 	{
 	case GET:
@@ -15,17 +15,17 @@ inline string methodStringRepresentation(e_methods method) {
 	return "unvalid";
 }
 
-inline void	validLocation(configuration& config, location** rules, const string& location) {
+static inline void	validLocation(configuration& config, location** rules, const string& location) {
 	if (config.locations.find(location) != config.locations.end())
 		*rules = &config.locations.at(location);
 }
 
-inline void matchSubUriToConfigRules(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
+static inline void matchSubUriToConfigRules(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
 	string subUri = bbuf.substr(start, len).cppstring();
 	validLocation(config, rules, subUri);
 }
 
-inline string	extractPath(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
+static inline string	extractPath(configuration& config, location** rules, const bstring& bbuf, size_t start, size_t len) {
 	string path = bbuf.substr(start, len).cppstring();
 	validLocation(config, rules, path);
 	return path;
@@ -224,8 +224,6 @@ int	httpSession::Request::parseStarterLine(const bstring& buffer) {
 					s.path = extractPath(s.config, &s.rules, buffer, i-len, len);
 				else
 					s.query = buffer.substr(i-len, len).cppstring();
-				
-				// cerr << "uri -> " << s.path << endl;
 				if (s.rules == NULL)
 					throw(statusCodeException(404, "Not Found"));
 				s.sstat = ss_httpversion;
