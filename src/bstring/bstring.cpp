@@ -255,7 +255,8 @@ const bstring&	bstring::operator+=(const bstring& buff) {
 		newstring[newstringpos] = buff[i];
 		++newstringpos;
 	}
-	delete[] __string;
+	if (__string)
+		delete[] __string;
 	__string = newstring;
 	stringsize += buff.size();
 	return *this;

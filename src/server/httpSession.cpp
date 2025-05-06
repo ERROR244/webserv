@@ -41,7 +41,7 @@ const e_sstat& httpSession::status() const {
 	return sstat;
 }
 
-void	httpSession::setStatus() {
+void	httpSession::closeCon() {
 	sstat = ss_cclosedcon;
 }
 

@@ -8,6 +8,7 @@ bool	readCgiOutput(struct epoll_event ev) {
 
 	if ((bytesRead = read(ptr->fd, buffer, BUFFER_SIZE)) <= 0) {
 		cerr << "read failed" << endl;
+		ptr->s->closeCon();
 		return true;
 	}
 	bstring tmp(buffer, bytesRead);
@@ -22,6 +23,7 @@ bool    writeBodyToCgi(struct epoll_event ev) {
 
 	if ((byteWrite = write(ptr->fd, body.c_str(), body.size())) <= 0) {
 		cerr << "write failed" << endl;
+		ptr->s->closeCon();
 		return true;
 	}
 	body.erase(0, byteWrite);

@@ -1,4 +1,5 @@
 import socket
+import time
 
 def send_http_request(host, port, request_text):
     # Create a TCP socket
@@ -25,7 +26,7 @@ if __name__ == "__main__":
         "POST /bin/cgi/post.py HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         "Content-length: 5\r\n"
-        "Connection: keep-alive\r\n\r\n"
+        "Connection: close\r\n\r\n"
         "najib"
     )
     # request = (

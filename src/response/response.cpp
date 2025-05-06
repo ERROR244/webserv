@@ -3,7 +3,7 @@
 
 httpSession::Response::Response(httpSession& session) : s(session), cgiHeadersParsed(false) {}
 
-httpSession::Response::Response(const Response& other) : s(other.s), cgiHeadersParsed(false) {}
+httpSession::Response::Response(const Response& other) : s(other.s), cgiBuffer(other.cgiBuffer), cgiHeadersParsed(false) {}
 
 httpSession::Response::~Response() {
     inputFile.close();
@@ -46,7 +46,7 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 				return;
 			}
 			s.sstat = ss_CgiResponse;
-		} else if (s.sstat == ss_CgiResponse) 
+		} else if (s.sstat == ss_CgiResponse)
 			sendCgiOutput(epollFd);
 	} else {
 		if (s.sstat == ss_sHeader)
@@ -56,8 +56,9 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 		else if (s.sstat == ss_sBodyAutoindex) {
 			generateHtml();
 		}
-		else
+		else {
 			s.sstat = ss_done;
+		}
 	}
 }
 

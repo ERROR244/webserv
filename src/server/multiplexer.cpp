@@ -162,13 +162,12 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 				if (find(servrSocks.begin(), servrSocks.end(), fd) != servrSocks.end())
 					acceptNewClient(epollFd, fd);
 				else if (events[i].events & EPOLLIN) {
-					if (ptr->s) {
+					if (ptr->type == cgiPipe) {
 						if (readCgiOutput(events[i])) {
 							epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 							close(fd);
-							ptr->s->setStatus();
 						}
-					} else {
+					} else if (ptr->type == clientSock) {
 						if (sessions.find(fd) == sessions.end()) {
 							pair<int, httpSession> newclient(fd, httpSession(fd, config[ft_getsockname(fd)]));
 							sessions.insert(newclient);
@@ -178,13 +177,12 @@ void	multiplexerSytm(const vector<int>& servrSocks, const int& epollFd, map<stri
 					}
 				}
 				else if (events[i].events & EPOLLOUT) {
-					if (ptr->s) {
+					if (ptr->type == cgiPipe) {
 						if (writeBodyToCgi(events[i])) {
 							epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 							close(fd);
-							ptr->s->setStatus();
 						}
-					} else {
+					} else if (ptr->type == clientSock) {
 						sessions[fd].res.handelClientRes(epollFd);
 						resSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 					}

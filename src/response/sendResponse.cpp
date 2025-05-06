@@ -138,12 +138,9 @@ void	httpSession::Response::sendBody() {
 	
     inputFile.read(buff, BUFFER_SIZE);
     sizeRead =  inputFile.gcount();
-	cout << "sizeRead: " << sizeRead << endl;
     if (sizeRead > 0) {
 		ostringstream chunkSize;
 		chunkSize << hex << sizeRead << "\r\n";
-        cerr << "chunksize -> " << endl;
-        cerr << chunkSize.str() << endl;
 		if ( ft_send(s.clientFd, chunkSize.str().c_str(), chunkSize.str().size(), s.sstat) == false ||
              ft_send(s.clientFd, buff, sizeRead, s.sstat) == false ||
              ft_send(s.clientFd, "\r\n", 2, s.sstat) == false ) {

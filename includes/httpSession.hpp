@@ -22,7 +22,7 @@ using namespace std;
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
-#define T 2
+#define T 10
 
 string	getHeaderValue(map<string, vector<string> >& mp, const string& key);
 
@@ -89,10 +89,10 @@ public:
 
 	class Response {
 	private:
-		httpSession&	s;
-		ifstream		inputFile;
-		bstring			cgiBuffer;
-		bool			cgiHeadersParsed;
+		httpSession&		s;
+		ifstream			inputFile;
+		bstring				cgiBuffer;
+		bool				cgiHeadersParsed;
 
 		static string		getSupportedeExtensions(const string&);
 		void				sendCgiOutput(const int);
@@ -121,7 +121,7 @@ public:
 	configuration					clientConfiguration() const;
 	int								fd() const;
 	const e_sstat&					status() const;
-	void							setStatus();
+	void							closeCon();
 	map<string, vector<string> >	getHeaders();
 	bstring&						getCgiBody();
 
