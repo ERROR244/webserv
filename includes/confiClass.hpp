@@ -1,8 +1,6 @@
 # ifndef CONFICLASS_HPP
 # define CONFICLASS_HPP
 
-using namespace std;
-
 # include <sys/stat.h>  
 # include <iostream>
 # include <sstream>

@@ -297,7 +297,6 @@ void handleCgi(string& line, location& kv, ifstream& sFile) {
 		if (line == "}") { return ; }
 		else if (line.empty() || line[0] == '#' || line[0] == ';')
 			continue;
-		line = line;
 		index = checkKey("add-handler:", line);
 		line = trim(line.substr(index));
 		index = line.find_first_of(' ');

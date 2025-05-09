@@ -37,6 +37,21 @@ static bstring    tweakAndCheckHeaders(map<string, vector<string> >& headers) {
 
 	if (headers.find("content-type") == headers.end())
 		headers["content-type"].push_back("text/plain");
+	if (headers.find("content-length") == headers.end() && headers.find("transfer-encoding") == headers.end())
+		throw(statusCodeException(500, "Internal Server Error"));
+	if (headers.find("content-length") != headers.end()) {
+		try {
+			my_stoi(headers["content-length"][0]);
+		} catch (...) {
+			throw(statusCodeException(500, "Internal Server Error"));
+		}
+	} else if (headers.find("transfer-encoding") != headers.end()) {
+		if (headers["transfer-encoding"][0] != "chunked" && headers["transfer-encoding"][0] != "compress"
+				&& headers["transfer-encoding"][0] != "deflate" && headers["transfer-encoding"][0] != "gzip")
+		{
+			throw(statusCodeException(500, "Internal Server Error"));
+		}
+	}
 	for (map<string, vector<string> >::iterator it = headers.begin(); it != headers.end(); ++it) {
 		if (it->first == "set-cookie") {
 			for (size_t i = 0; i < it->second.size(); ++i)

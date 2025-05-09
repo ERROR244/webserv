@@ -124,6 +124,5 @@ public:
 	void							closeCon();
 	map<string, vector<string> >	getHeaders();
 	bstring&						getCgiBody();
-
 	Cgi* getCgi();
 };

@@ -3,10 +3,6 @@
 import os
 import sys
 
-# Ensure headers are sent before any content
-print("Content-Type: text/html")
-print()  # Required blank line after headers
-
 # Get the content length from the environment
 content_length = os.environ.get("CONTENT_LENGTH", 0)
 
@@ -15,16 +11,27 @@ try:
 except ValueError:
     content_length = 0
 
-# Read the raw body from stdin based on content length
+# Read the raw body from stdin
 body = sys.stdin.read(content_length) if content_length > 0 else "(No body received)"
 
-# Output response
-print(f"""
-<html>
+# Create the response body
+response_body = f"""<html>
 <head><title>CGI POST Response</title></head>
 <body>
     <h1>Received Raw Body</h1>
     <pre>{body}</pre>
 </body>
 </html>
-""")
+"""
+
+# Encode to bytes and calculate Content-Length
+response_bytes = response_body.encode("utf-8")
+content_length = len(response_bytes)
+
+# Output headers
+print("Content-Type: text/html")
+print(f"Content-Length: {content_length}")
+print()  # End of headers
+
+# Output body
+print(response_body)

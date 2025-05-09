@@ -125,6 +125,7 @@ void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions)
 			continue;
 		}
 		if (checkTimeOut(monitor, it->first, it->second, epollFd) == false) {
+			cerr << "here" << endl;
 			errorResponse(epollFd, it->first, sessions, statusCodeException(408, "Timeout"));
 			// if (sessions.find(it->first) != sessions.end())
 			// 	sessions.erase(sessions.find(it->first));

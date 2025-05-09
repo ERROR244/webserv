@@ -1,11 +1,11 @@
 NAME = webServ
-CPP = g++
+CPP = c++
 INC = -I ./includes
 SRC = $(wildcard src/*.cpp src/bstring/*.cpp src/cgi/*.cpp src/confi/*.cpp\
         src/exceptions/*.cpp src/parsers/*.cpp src/response/*.cpp src/server/*.cpp)
 H_SRC = $(wildcard includes/*.hpp includes/*.h)
 OBJ = $(SRC:.cpp=.o)
-CPPFLAGS = -g3 -Wall -Wextra -Werror -std=c++98 -fsanitize=address
+CPPFLAGS = -Wall -Wextra -Werror -std=c++98 -fsanitize=address
 
 %.o: %.cpp
 	$(CPP) $(INC) $(CPPFLAGS) -c -o $@ $<
