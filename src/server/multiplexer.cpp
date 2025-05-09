@@ -90,25 +90,23 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 
 
 bool checkTimeOut(map<int, epollPtr>& monitor, const int& fd, epollPtr client, const int& epollFd) {
-	time_t				lastActivityTime = client.timer;
+	time_t				lastTimeActive = client.timer;
 	string				msg;
 	string				body;
 	
-	if ((lastActivityTime != 0 && time(NULL) - lastActivityTime >= T)) {
-		cout << "Client " << fd << " TIMED OUT: " << time(NULL) - lastActivityTime << ".1" << endl;
+	if ((lastTimeActive != 0 && time(NULL) - lastTimeActive >= T)) {
+		cout << "Client " << fd << " TIMED OUT: " << time(NULL) - lastTimeActive << ".1" << endl;
 		if (client.cgiInfo.pid != -1) {
 			if (monitor.find(client.cgiInfo.readPipe) != monitor.end()) {
-				if (epoll_ctl(epollFd, EPOLL_CTL_DEL, client.cgiInfo.readPipe, NULL) == -1)
-					cerr <<"epoll_ctl failed" << endl;
+				epoll_ctl(epollFd, EPOLL_CTL_DEL, client.cgiInfo.readPipe, NULL);
+				close(client.cgiInfo.readPipe);
 				monitor.erase(monitor.find(client.cgiInfo.readPipe));
 			}
 			if (monitor.find(client.cgiInfo.writePipe) != monitor.end()) {
-				if (epoll_ctl(epollFd, EPOLL_CTL_DEL, client.cgiInfo.writePipe, NULL) == -1)
-					cerr <<"epoll_ctl failed" << endl;
+				epoll_ctl(epollFd, EPOLL_CTL_DEL, client.cgiInfo.writePipe, NULL);
+				close(client.cgiInfo.writePipe);
 				monitor.erase(monitor.find(client.cgiInfo.writePipe));
 			}
-			close(client.cgiInfo.readPipe);
-			close(client.cgiInfo.writePipe);
 			kill(client.cgiInfo.pid, 9);
 		}
 		return false;
@@ -118,20 +116,26 @@ bool checkTimeOut(map<int, epollPtr>& monitor, const int& fd, epollPtr client, c
 
 void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions) {
 	map<int, epollPtr>& monitor = getEpollMonitor();
-	map<int, epollPtr>::iterator			it;
+	map<int, epollPtr>::iterator				it;
+	std::vector<map<int, epollPtr>::iterator>	toErase;
 
 	for (it = monitor.begin(); it != monitor.end(); ++it) {
 		if (it->second.type == serverSock || it->second.type == cgiPipe) {
 			continue;
 		}
 		if (checkTimeOut(monitor, it->first, it->second, epollFd) == false) {
-			cerr << "here" << endl;
-			errorResponse(epollFd, it->first, sessions, statusCodeException(408, "Timeout"));
-			// if (sessions.find(it->first) != sessions.end())
-			// 	sessions.erase(sessions.find(it->first));
-			// monitor.erase(monitor.find(it->first));
-			return;
+			if (it->second.cgiInfo.responseSented == false)
+				errorResponse(epollFd, it->first, sessions, statusCodeException(408, "Timeout"));
+			else {
+				if (sessions.find(it->first) != sessions.end())
+					sessions.erase(it->first);
+				close(it->first);
+				toErase.push_back(it);
+			}
 		}
+	}
+	for (size_t i = 0; i < toErase.size(); ++i) {
+		monitor.erase(toErase[i]);
 	}
 }
 

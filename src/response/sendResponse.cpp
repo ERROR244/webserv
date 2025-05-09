@@ -1,4 +1,5 @@
 #include "httpSession.hpp"
+#include "server.h"
 
 string httpSession::Response::getSupportedeExtensions(const string& key) {
     static map<string, string> ext;
@@ -84,7 +85,8 @@ string	httpSession::Response::contentTypeHeader() const {
 }
 
 void	httpSession::Response::sendHeader() {
-	string header;
+	map<int, epollPtr>& monitor = getEpollMonitor();
+	string              header;
 
 	header += "HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n";
 	switch (s.method) {
@@ -124,6 +126,7 @@ void	httpSession::Response::sendHeader() {
 	if (ft_send(s.clientFd, header.c_str(), header.size(), s.sstat) == false) {
 		return ;
 	}
+	monitor[s.clientFd].cgiInfo.responseSented = true;
     inputFile.open(s.path.c_str(), ios::binary);
     if (inputFile.is_open() == false) {
         cerr << "open failed" << endl;

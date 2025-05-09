@@ -18,9 +18,10 @@ using namespace std;
 
 struct cgiTools {
 	pid_t	pid;
+	bool	responseSented;
 	int 	readPipe;
 	int		writePipe;
-	cgiTools() : pid(-1), readPipe(-1), writePipe(-1) {}
+	cgiTools() : pid(-1), responseSented(false), readPipe(-1), writePipe(-1) {}
 };
 
 enum fdType {

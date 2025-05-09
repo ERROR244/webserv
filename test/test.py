@@ -27,6 +27,7 @@ if __name__ == "__main__":
         f"Host: {host}\r\n"
         "Content-length: 5\r\n"
         "Connection: keep-alive\r\n\r\n"
+        # "Connection: close\r\n\r\n"
         "najib"
     )
 

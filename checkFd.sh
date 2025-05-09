@@ -22,4 +22,3 @@ fi
 
 echo "Open file descriptors for '$1' (PID: $pid):"
 ls -l "$fd_dir"
-

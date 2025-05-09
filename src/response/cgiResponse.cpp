@@ -73,13 +73,14 @@ void	closeCgiPipes(int epollFd, int readPipe, int writePipe) {
 
 
 void    httpSession::Response::sendCgiOutput(const int epollFd) {
-	int     status;
+	int     			status;
 
 	if (cgiBuffer.empty() == false) {
 		bstring         chunkedResponse;
 		ostringstream   chunkSize;
 	
 		if (cgiHeadersParsed == false) {
+			map<int, epollPtr>& 			monitor = getEpollMonitor();
 			map<string, vector<string> >	cgiHeaders;
 			ssize_t  bodyStartPos = 0;
 
@@ -96,6 +97,7 @@ void    httpSession::Response::sendCgiOutput(const int epollFd) {
 			chunkedResponse += tweakAndCheckHeaders(cgiHeaders);
 			cgiBuffer = cgiBuffer.substr(bodyStartPos);
 			cgiHeadersParsed = true;
+			monitor[s.clientFd].cgiInfo.responseSented = true;
 		}
 		chunkedResponse += cgiBuffer;
 		if (send(s.clientFd, chunkedResponse.c_str(), chunkedResponse.size(), MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
