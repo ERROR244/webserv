@@ -22,7 +22,8 @@ void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessi
 	map<int, epollPtr>&				monitor = getEpollMonitor();
 	configuration 					config = sessions[clientFd].clientConfiguration();
 
-	kill(monitor[clientFd].cgiInfo.pid, 9);
+	if (monitor[clientFd].cgiInfo.pid != -1)
+		kill(monitor[clientFd].cgiInfo.pid, 9);
 	cleanCgiRessources(epollFd, clientFd, isCgi);
 	if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
 		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()), exception.code(), exception.meaning());
