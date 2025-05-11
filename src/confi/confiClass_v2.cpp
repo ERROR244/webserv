@@ -428,3 +428,4 @@ void handleLocs(string& line, configuration& kv, ifstream& sFile) {
 	}
 	throw runtime_error("`}` is expected at the end of each rule");
 }
+

@@ -26,7 +26,12 @@ if __name__ == "__main__":
         "POST /bin/cgi/post.py HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         "Content-length: 5\r\n"
+<<<<<<< HEAD
         "Connection: close\r\n\r\n"
+=======
+        "Connection: keep-alive\r\n\r\n"
+        # "Connection: close\r\n\r\n"
+>>>>>>> 8bde9dbdcd7415b71cc1c38c50f717cadd88a4fa
         "najib"
     )
 
