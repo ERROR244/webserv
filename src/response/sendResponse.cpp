@@ -1,5 +1,4 @@
 #include "httpSession.hpp"
-#include "server.h"
 
 string httpSession::Response::getSupportedeExtensions(const string& key) {
     static map<string, string> ext;
@@ -85,8 +84,7 @@ string	httpSession::Response::contentTypeHeader() const {
 }
 
 void	httpSession::Response::sendHeader() {
-	map<int, epollPtr>& monitor = getEpollMonitor();
-	string              header;
+	string header;
 
 	header += "HTTP/1.1 " + toString(s.statusCode) + " " + s.codeMeaning + "\r\n";
 	switch (s.method) {

@@ -72,7 +72,6 @@ void    httpSession::Response::sendCgiOutput() {
 		bstring         cgiResponse;
 	
 		if (cgiHeadersParsed == false) {
-			map<int, epollPtr>& 			monitor = getEpollMonitor();
 			map<string, vector<string> >	cgiHeaders;
 			ssize_t							bodyStartPos = 0;
 			map<int, epollPtr>&				monitor = getEpollMonitor();

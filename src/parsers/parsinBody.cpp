@@ -262,4 +262,3 @@ void	httpSession::Request::bodyFormat() {
 	}
 	s.sstat = ss_body;
 }
-

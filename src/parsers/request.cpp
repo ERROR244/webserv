@@ -33,5 +33,7 @@ void	httpSession::Request::readfromsock() {
 	}
 	if (s.sstat == ss_body && static_cast<size_t>(bufferPos) < bbuffer.size())
 		(this->*bodyHandlerFunc)(bbuffer, bufferPos);
-}
+
 	
+						
+}

@@ -123,8 +123,7 @@ bool checkTimeOut(const int& fd, epollPtr client) {
 
 void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions) {
 	map<int, epollPtr>& monitor = getEpollMonitor();
-	map<int, epollPtr>::iterator				it;
-	std::vector<map<int, epollPtr>::iterator>	toErase;
+	map<int, epollPtr>::iterator			it;
 
 	for (it = monitor.begin(); it != monitor.end(); ++it) {
 		if (it->second.type == serverSock || it->second.type == cgiPipe) {
@@ -146,9 +145,6 @@ void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions)
 			}
 			return;
 		}
-	}
-	for (size_t i = 0; i < toErase.size(); ++i) {
-		monitor.erase(toErase[i]);
 	}
 }
 
