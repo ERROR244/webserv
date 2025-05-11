@@ -35,15 +35,16 @@ int main(int ac, char **av, char **envp) {
 		try {
 			//settin home envs
 			homeEnvVariables(envp);
-			//setup server
+			//handling program signals
 			disableEchoCtrl();
 			signal(SIGINT, signalHandler);
+			//setup server
 			ConfigFileParser confi(av[1]);
 			config = confi.parseFile();
 			epollFd = createSockets(config, serverFds);     
 			//multiplexer
 			while (true) {
-				multiplexerSytm(serverFds, epollFd, config);
+				multiplexerSytm(epollFd, config);
 				if (shouldStop(0) == false)
 					break;
 				epollFd = startEpoll(serverFds);

@@ -1,27 +1,31 @@
 #include "httpSession.hpp"
 #include "server.h"
 
-httpSession::Response::Response(httpSession& session) : s(session), cgiHeadersParsed(false) {}
+httpSession::Response::Response(httpSession& session) : s(session), addChunkedWhenSendingCgiBody(false), cgiHeadersParsed(false) {}
 
-httpSession::Response::Response(const Response& other) : s(other.s), cgiBuffer(other.cgiBuffer), cgiHeadersParsed(false) {}
+httpSession::Response::Response(const Response& other) : s(other.s), cgiBuffer(other.cgiBuffer), addChunkedWhenSendingCgiBody(false), cgiHeadersParsed(false) {}
 
 httpSession::Response::~Response() {
     inputFile.close();
 }
 
 void	httpSession::Response::handelClientRes(const int epollFd) {
+	map<int, epollPtr>&	monitor = getEpollMonitor();
     if(s.cgi) {
 		if (s.sstat == ss_sHeader) {
 			struct epoll_event	evWritePipe;
 			struct epoll_event	evReadPipe;
-			map<int, epollPtr>&	monitor = getEpollMonitor();
 
+			//executing the cgi script
 			s.cgi->prepearingCgiEnvVars(s.headers);
 			s.cgi->setupCGIProcess();
+
+			//loggin the script infos to the client who executed it so it can have conttol over it
 			monitor[s.clientFd].cgiInfo.pid = s.cgi->ppid();
-			monitor[s.clientFd].cgiInfo.readPipe = s.cgi->rFd();
-			monitor[s.clientFd].cgiInfo.writePipe = s.cgi->wFd();
+
+			//adding the pipes to epoll to be monitored too
 			if (s.cgiBody.empty() == false) {
+				monitor[s.clientFd].cgiInfo.writePipe = s.cgi->wFd();
 				monitor[s.cgi->wFd()].fd = s.cgi->wFd();
 				monitor[s.cgi->wFd()].s = &s;
 				monitor[s.cgi->wFd()].type = cgiPipe;
@@ -30,10 +34,11 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 				if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->wFd(), &evWritePipe) == -1) {
 					cerr << "epoll_ctl failed" << endl;
 					s.sstat = ss_cclosedcon;
-					closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
+					// closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd()); // mybe they will be closed in the resStatus when erasing the session
 					return;
 				}
 			}
+			monitor[s.clientFd].cgiInfo.readPipe = s.cgi->rFd();
 			monitor[s.cgi->rFd()].fd = s.cgi->rFd();
 			monitor[s.cgi->rFd()].s = &s;
 			monitor[s.cgi->rFd()].type = cgiPipe;
@@ -42,15 +47,17 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 			if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->rFd(), &evReadPipe) == -1) {
 				cerr << "epoll_ctl failed" << endl;
 				s.sstat = ss_cclosedcon;
-				closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd());
+				// closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd()); // mybe they will be closed in the resStatus when erasing the session
 				return;
 			}
 			s.sstat = ss_CgiResponse;
 		} else if (s.sstat == ss_CgiResponse)
-			sendCgiOutput(epollFd);
+			sendCgiOutput();
 	} else {
-		if (s.sstat == ss_sHeader)
+		if (s.sstat == ss_sHeader) {
 			sendHeader();
+			monitor[s.clientFd].wroteInsock = true;
+		}
 		else if (s.sstat == ss_sBody) 
 			sendBody();
 		else if (s.sstat == ss_sBodyAutoindex) {

@@ -121,21 +121,21 @@ void	httpSession::Response::sendHeader() {
         s.sstat = ss_done;
     }
 	header += "\r\n";
-	if (ft_send(s.clientFd, header.c_str(), header.size(), s.sstat) == false) {
-		return ;
-	}
-    inputFile.open(s.path.c_str(), ios::binary);
-    if (inputFile.is_open() == false) {
-        cerr << "open failed" << endl;
-        s.sstat = ss_cclosedcon;
-        return;
-    }
+	ft_send(s.clientFd, header.c_str(), header.size(), s.sstat);
 }
 
 void	httpSession::Response::sendBody() {
 	char        buff[BUFFER_SIZE] = {0};
     streamsize sizeRead;
 	
+    if (inputFile.is_open() == false) {
+        inputFile.open(s.path.c_str(), ios::binary);
+        if (inputFile.is_open() == false) {
+            cerr << "open failed" << endl;
+            s.sstat = ss_cclosedcon;
+            return;
+        }
+	}
     inputFile.read(buff, BUFFER_SIZE);
     sizeRead =  inputFile.gcount();
     if (sizeRead > 0) {

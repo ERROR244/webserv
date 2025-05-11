@@ -18,30 +18,28 @@ static void	sendError(const int clientFd, const int statusCode, const string cod
 
 void	errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception) {
 	struct epoll_event				ev;
+	bool							isCgi;
 	map<int, epollPtr>&				monitor = getEpollMonitor();
-	map<int, epollPtr>::iterator	position = monitor.find(clientFd);
 	configuration 					config = sessions[clientFd].clientConfiguration();
 
+	kill(monitor[clientFd].cgiInfo.pid, 9);
+	cleanCgiRessources(epollFd, clientFd, isCgi);
 	if (config.errorPages.find(exception.code()) != config.errorPages.end()) {
 		sessions[clientFd].resetForSendingErrorPage(config.errorPages.at(exception.code()), exception.code(), exception.meaning());
 		ev.events = EPOLLOUT;
-		monitor[clientFd].fd = clientFd;
 		ev.data.ptr = &monitor[clientFd];
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			perror("epoll_ctl failed");
+			sessions.erase(clientFd);
+			monitor.erase(clientFd);
 			close(clientFd);
-			sessions.erase(sessions.find(clientFd));
-			if (position != monitor.end())
-				monitor.erase(position);
 		}
 	} else {
 		sendError(clientFd, exception.code(), exception.meaning());
-		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1) {
+		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			perror("epoll_ctl failed");
-		}
+		sessions.erase(clientFd);
+		monitor.erase(clientFd);
 		close(clientFd);
-		sessions.erase(sessions.find(clientFd));
-		if (position != monitor.end())
-			monitor.erase(position);
 	}
 }

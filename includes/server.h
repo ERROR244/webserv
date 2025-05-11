@@ -34,8 +34,9 @@ struct epollPtr {
 	httpSession	*s; // if NULL sock else cgi
 	fdType		type;
 	time_t		timer;
+	bool		wroteInsock;
 	cgiTools	cgiInfo;
-	epollPtr() : fd(-1),  s(NULL), timer(0) {}
+	epollPtr() : fd(-1),  s(NULL), timer(0), wroteInsock(false) {}
 };
 
 typedef struct sockaddr_in t_sockaddr;
@@ -47,7 +48,7 @@ int					createSockets(map<string, configuration>& config, vector<int>& serverFds
 map<int, epollPtr>&	getEpollMonitor();
 int					startEpoll(const vector<int>& serverFds);
 void				errorResponse(const int epollFd, int clientFd, map<int, httpSession>& sessions, const statusCodeException& exception);
-void				multiplexerSytm(const vector<int>& serverFds, const int& epollFd, map<string, configuration>& config);
-bool				readCgiOutput(struct epoll_event ev);
-bool    			writeBodyToCgi(struct epoll_event ev);
-void				closeCgiPipes(int epollFd, int readPipe, int writePipe);
+void				multiplexerSytm(const int& epollFd, map<string, configuration>& config);
+void				readCgiOutput(epollPtr    *ptr);
+void    			writeBodyToCgi(epollPtr    *ptr);
+void				cleanCgiRessources(int epollFd, int clientFd, bool& isCgi);
