@@ -41,7 +41,6 @@ int main(int ac, char **av, char **envp) {
 			//setup server
 			ConfigFileParser confi(av[1]);
 			config = confi.parseFile();
-			confi.printprint();
 			epollFd = createSockets(config, serverFds);     
 			//multiplexer
 			while (true) {

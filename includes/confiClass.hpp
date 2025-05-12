@@ -77,7 +77,6 @@ class ConfigFileParser {
 
 		map<string, configuration>   parseFile();
 		void					handleServer(ifstream& sFile);
-		void					printprint();
 };
 
 
