@@ -134,6 +134,8 @@ void	httpSession::Request::contentlength(const bstring& buffer, size_t pos) {
 				s.sstat = ss_body;
 				outputFile.close();
 				string filePath = getFileName(getHeaderValue(contentHeaders, "content-disposition"), s.rules->uploads);
+				if (access(filePath.c_str(), F_OK) != -1)
+					throw(statusCodeException(409, "Conflict"));
 				outputFile.open(filePath.c_str());
 				if (outputFile.is_open() == false)
 					throw(statusCodeException(500, "Internal Server Error"));
