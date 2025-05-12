@@ -31,17 +31,18 @@ static bstring    tweakAndCheckHeaders(map<string, vector<string> >& headers, bo
 
 	if (headers.find("content-type") == headers.end())
 		headers["content-type"].push_back("text/plain");
+
 	if (headers.find("content-length") == headers.end() && headers.find("transfer-encoding") == headers.end()) {
 		//use transfer encoding
 		headers["transfer-encoding"].push_back("chunked");
 		useChunked = true;
-	}
-	if (headers.find("content-length") != headers.end()) {
+	} else if (headers.find("content-length") != headers.end()) {
 		try {
 			my_stoi(headers["content-length"][0]);
 		} catch (...) {
 			//remove content-length and use transfer encoding
 			headers.erase("content-length");
+			headers.erase("transfer-encoding");
 			headers["transfer-encoding"].push_back("chunked");
 			useChunked = true;
 		}
@@ -49,10 +50,12 @@ static bstring    tweakAndCheckHeaders(map<string, vector<string> >& headers, bo
 		if (headers["transfer-encoding"][0] != "chunked" && headers["transfer-encoding"][0] != "compress"
 				&& headers["transfer-encoding"][0] != "deflate" && headers["transfer-encoding"][0] != "gzip")
 		{
+			headers.erase("transfer-encoding");
 			headers["transfer-encoding"].push_back("chunked");
 			useChunked = true;
 		}
 	}
+
 	for (map<string, vector<string> >::iterator it = headers.begin(); it != headers.end(); ++it) {
 		if (it->first == "set-cookie") {
 			for (size_t i = 0; i < it->second.size(); ++i)
@@ -81,7 +84,6 @@ void    httpSession::Response::sendCgiOutput() {
 				if ((bodyStartPos = s.parseFields(cgiBuffer, 0, cgiHeaders)) < 0)
 					return;
 			} catch (...) {
-				// closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd()); // close cgi ressources properly in error function
 				throw(statusCodeException(500, "Internal Server Error"));
 			}
 			s.sstat = ss_CgiResponse;
@@ -98,10 +100,12 @@ void    httpSession::Response::sendCgiOutput() {
 		} else {
 			if (addChunkedWhenSendingCgiBody) {
 				ostringstream   chunkSize;
-				chunkSize << hex << cgiBuffer.size();
+				chunkSize << hex << cgiBuffer.size() << "\r\n";
 				cgiResponse += chunkSize.str().c_str();
 			}
 			cgiResponse += cgiBuffer;
+			if (addChunkedWhenSendingCgiBody)
+				cgiResponse += "\r\n";
 			if (send(s.clientFd, cgiResponse.c_str(), cgiResponse.size(), MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
 				cerr << "send failed" << endl;
 				s.sstat = ss_cclosedcon;
@@ -110,6 +114,13 @@ void    httpSession::Response::sendCgiOutput() {
 			cgiBuffer = NULL;
 		}
 	} else if (waitpid(s.cgi->ppid(), &status, WNOHANG) > 0) {
+		if (addChunkedWhenSendingCgiBody) {
+			if (send(s.clientFd, "0\r\n\r\n", 5, MSG_DONTWAIT | MSG_NOSIGNAL) <= 0) {
+				cerr << "send failed" << endl;
+				s.sstat = ss_cclosedcon;
+				return ;
+			}
+		}
 		s.sstat = ss_done;
 	}
 }

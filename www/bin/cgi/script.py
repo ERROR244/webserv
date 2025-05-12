@@ -22,7 +22,7 @@ content_length = len(html_content.encode())  # Encode to bytes before measuring
 
 # Print headers
 print("Content-Type: text/html")
-print(f"Content-Length: {content_length}")  # Set Content-Length
+# print(f"Content-Length: {content_length}")  # Set Content-Length
 print()  # Empty line to separate headers from body
 
 # Print content

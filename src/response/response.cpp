@@ -34,7 +34,6 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 				if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->wFd(), &evWritePipe) == -1) {
 					cerr << "epoll_ctl failed" << endl;
 					s.sstat = ss_cclosedcon;
-					// closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd()); // mybe they will be closed in the resStatus when erasing the session
 					return;
 				}
 			}
@@ -47,7 +46,6 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 			if (epoll_ctl(epollFd, EPOLL_CTL_ADD, s.cgi->rFd(), &evReadPipe) == -1) {
 				cerr << "epoll_ctl failed" << endl;
 				s.sstat = ss_cclosedcon;
-				// closeCgiPipes(epollFd, s.cgi->rFd(), s.cgi->wFd()); // mybe they will be closed in the resStatus when erasing the session
 				return;
 			}
 			s.sstat = ss_CgiResponse;

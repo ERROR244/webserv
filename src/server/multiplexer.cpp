@@ -10,12 +10,12 @@ void	cleanCgiRessources(int epollFd, int clientFd, bool& isCgi) {
 
 		if (readPipe != -1) {
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, readPipe, NULL) == -1)
-				cerr << "epoll_ctl failed1" << endl;
+				cerr << "epoll_ctl failed" << endl;
 			monitor.erase(readPipe);
 		}
 		if (writePipe != -1) {
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, writePipe, NULL) == -1)
-				cerr << "epoll_ctl failed2" << endl;
+				cerr << "epoll_ctl failed" << endl;
 			monitor.erase(writePipe);
 		}
 		close(readPipe);
@@ -50,7 +50,8 @@ static bool	resSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 		s.erase(clientFd);
 	}
 	else if (status == ss_cclosedcon) {
-		kill(monitor[clientFd].cgiInfo.pid, 9);
+		if (monitor[clientFd].cgiInfo.pid != -1)
+			kill(monitor[clientFd].cgiInfo.pid, 9);
 		cleanCgiRessources(epollFd, clientFd, isCgi);
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL) == -1)
 			perror("epoll_ctl failed");
@@ -70,17 +71,17 @@ static void	reqSessionStatus(const int& epollFd, const int& clientFd, map<int, h
 		ev.data.ptr = &monitor[clientFd];
 		if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientFd, &ev) == -1) {
 			cerr << "epoll_ctl failed" << endl;
-			close(clientFd);
 			s.erase(clientFd);
 			monitor.erase(clientFd);
+			close(clientFd);
 		}
 	}
 	else if (status == ss_cclosedcon) {
 		if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, &ev) == -1)
 			cerr <<"epoll_ctl failed" << endl;
-		close(clientFd);
 		s.erase(clientFd);
 		monitor.erase(clientFd);
+		close(clientFd);
 	}
 }
 
@@ -108,19 +109,6 @@ static void	acceptNewClient(const int& epollFd, const int& serverFd) {
 	cerr << "new client added, its fd is -> " << clientFd << endl;
 }
 
-
-bool checkTimeOut(const int& fd, epollPtr client) {
-	time_t				lastActivityTime = client.timer;
-	string				msg;
-	string				body;
-	
-	if ((lastActivityTime != 0 && time(NULL) - lastActivityTime >= T)) {
-		cout << "Client " << fd << " TIMED OUT: " << time(NULL) - lastActivityTime << ".1" << endl;
-		return false;
-	}
-	return true;
-}
-
 void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions) {
 	map<int, epollPtr>& monitor = getEpollMonitor();
 	map<int, epollPtr>::iterator			it;
@@ -129,13 +117,15 @@ void checkTimeOutForEachUsr(const int& epollFd, map<int, httpSession>& sessions)
 		if (it->second.type == serverSock || it->second.type == cgiPipe) {
 			continue;
 		}
-		if (checkTimeOut(it->first, it->second) == false) {
+		if (it->second.timer != 0 && time(NULL) - it->second.timer >= T) {
 			bool				isCgi;
 
+			cout << "Client " << it->first << " TIMED OUT" << endl;
 			if (it->second.wroteInsock == false)
 				errorResponse(epollFd, it->first, sessions, statusCodeException(408, "Timeout"));
 			else {
-				kill(it->second.cgiInfo.pid, 9);
+				if (it->second.cgiInfo.pid != -1)
+					kill(it->second.cgiInfo.pid, 9);
 				cleanCgiRessources(epollFd, it->first, isCgi);
 				if (epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL) == -1)
 					perror("epoll_ctl failed");
@@ -186,8 +176,7 @@ void	multiplexerSytm(const int& epollFd, map<string, configuration>& config) {
 						sessions[fd].req.readfromsock();
 						reqSessionStatus(epollFd, fd, sessions, sessions[fd].status());
 					}
-				}
-				else if (events[i].events & EPOLLOUT) {
+				} else if (events[i].events & EPOLLOUT) {
 					if (ptr->type == cgiPipe) {
 						writeBodyToCgi(ptr);
 					} else if (ptr->type == clientSock) {
@@ -203,5 +192,4 @@ void	multiplexerSytm(const int& epollFd, map<string, configuration>& config) {
 		}
 		checkTimeOutForEachUsr(epollFd, sessions);
 	}
-	
 }
