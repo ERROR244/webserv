@@ -135,8 +135,9 @@ void	httpSession::Request::reconstructUri() {
     	    throw(statusCodeException(404, "Not Found"));
 		if ((pos = s.path.find(s.rules->uploads)) == string::npos || pos) {
 			throw(statusCodeException(403, "Forbidden"));
-		} else if (!(fileStat.st_mode & S_IWUSR))
-			throw(statusCodeException(403, "Forbidden"));
+		}
+		// else if (!(fileStat.st_mode & S_IWUSR))
+		// 	throw(statusCodeException(403, "Forbidden"));
 		s.sstat = ss_sHeader;
 		s.statusCode = 204;
         s.codeMeaning = "No Content";

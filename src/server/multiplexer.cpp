@@ -4,6 +4,7 @@ void	cleanCgiRessources(int epollFd, int clientFd, bool& isCgi) {
 	map<int, epollPtr>&				monitor = getEpollMonitor();
 
 	if (monitor[clientFd].cgiInfo.pid != -1) {
+		cerr << "freing cgi ressources" << endl;
 		monitor[clientFd].cgiInfo.pid = -1;
 		int& readPipe = monitor[clientFd].cgiInfo.readPipe;
 		int& writePipe = monitor[clientFd].cgiInfo.writePipe;

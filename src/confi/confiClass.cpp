@@ -124,6 +124,9 @@ map<string, configuration> ConfigFileParser::parseFile() {
         if (kValue.find(key) == kValue.end()) {
             kValue[key] = kv;
             kv.addInfo = NULL;
+        } 
+        else {
+            freeaddrinfo(kv.addInfo);
         }
         kv = configuration();
     }

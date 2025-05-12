@@ -15,7 +15,8 @@ except ValueError:
 body = sys.stdin.read(content_length) if content_length > 0 else "(No body received)"
 
 # Create the response body
-response_body = f"""<html>
+response_b
+ody = f"""<html>
 <head><title>CGI POST Response</title></head>
 <body>
     <h1>Received Raw Body</h1>

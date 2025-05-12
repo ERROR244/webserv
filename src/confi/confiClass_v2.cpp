@@ -72,21 +72,6 @@ bool isValidDirectory(const char* path) {
 	return false;
 }
 
-bool isHostnameResolvable(const string& hostname) {
-    struct addrinfo hints;
-    struct addrinfo* res = NULL;
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-
-    int status = getaddrinfo(hostname.c_str(), NULL, &hints, &res);
-
-    if (res != NULL)
-        freeaddrinfo(res);
-
-    return status == 0;
-}
-
 void handleSerNames(string& line, configuration& kv, ifstream& sFile) {
 	(void)sFile;
 	string tmp;
@@ -101,8 +86,6 @@ void handleSerNames(string& line, configuration& kv, ifstream& sFile) {
 			break;
 		}
 		tmp = trim(line.substr(0, i));
-		if (!isHostnameResolvable(tmp))
-			throw runtime_error("host name `" + tmp +"` is not Resolvable");
 		kv.serNames.push_back(tmp);
 		line = line.substr(i);
 		if (line[0] == ',')
@@ -427,4 +410,62 @@ void handleLocs(string& line, configuration& kv, ifstream& sFile) {
 		}
 	}
 	throw runtime_error("`}` is expected at the end of each rule");
+}
+
+
+
+
+void ConfigFileParser::printprint() {
+	map<string, configuration>::iterator it;
+	map<int, string>::iterator it_errorPages;
+	int i = 0;
+
+	for (it = kValue.begin(); it != kValue.end(); ++it) {
+		if (it != kValue.begin())
+			cout << "\n\n                              ------------------------------------\n\n" << endl;
+		cout << "------------------SERVER-" << i << "------------------" << endl;
+		cout << "---------> listen:         " << it->second.host << ":" << it->second.port << endl;
+		cout << "---------> Server Names:   ";
+		for (size_t j = 0; j < it->second.serNames.size(); ++j) {
+			cout << " " << it->second.serNames[j];
+			if (j + 1 < it->second.serNames.size())
+				cout << ",";
+		}
+		cout << endl << "---------> Body Size:       " << it->second.bodySize << " byte";
+		cout << endl << "---------> Error Pages:" << endl;
+		for (it_errorPages = it->second.errorPages.begin(); it_errorPages != it->second.errorPages.end(); ++it_errorPages) {
+			cout << "------------------> " << it_errorPages->first << " | " << it_errorPages->second << endl;
+		}
+		cout << endl << "---------> ADDINFO:" << endl;
+		cout << "---------------------------> ai_addr:         " << it->second.addInfo->ai_addr << endl;
+		cout << "---------------------------> ai_protocol:     " << it->second.addInfo->ai_protocol << endl;
+		cout << "---------------------------> ai_flags:        " << it->second.addInfo->ai_flags << endl;
+		cout << endl << "---------> locations:" << endl;
+		map<string, location>::reverse_iterator locationIt;
+		for (locationIt = it->second.locations.rbegin(); locationIt != it->second.locations.rend(); ++locationIt) {
+			cout << "------------------> location   `" << locationIt->second.uri << "`" << endl;
+			if (locationIt->second.redirection == false)
+				cout << "---------------------------> alias:       " << locationIt->second.reconfigurer << endl;
+			else
+				cout << "---------------------------> Redirection: " << locationIt->second.reconfigurer << endl;
+			cout << "---------------------------> Methods:     ";
+			for (size_t k = 0; k < locationIt->second.methods.size(); ++k) {
+				cout << getMethods(locationIt->second.methods[k]);
+				if (k + 1 < locationIt->second.methods.size())
+					cout << ", ";
+			}
+			cout << endl;
+			cout << "---------------------------> index:       " << locationIt->second.index << endl;
+			cout << "---------------------------> uploads:     " << locationIt->second.uploads << endl;
+			cout << "---------------------------> autoIndex:   " << (locationIt->second.autoIndex ? "True" : "False") << endl;
+			if (!locationIt->second.cgis.empty())
+				cout << "---------------------------> Cgi Scripts:" << endl;
+			map<string, string>::iterator cgiIt;
+			for (cgiIt = locationIt->second.cgis.begin(); cgiIt != locationIt->second.cgis.end(); ++cgiIt) {
+				cout << "------------------------------------> add-handler: " << cgiIt->first << " | " << cgiIt->second << endl;
+			}
+			cout << endl;
+		}
+		i++;
+	}
 }

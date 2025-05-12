@@ -36,6 +36,8 @@ void	httpSession::Response::handelClientRes(const int epollFd) {
 					s.sstat = ss_cclosedcon;
 					return;
 				}
+			} else {
+				close(s.cgi->wFd());
 			}
 			monitor[s.clientFd].cgiInfo.readPipe = s.cgi->rFd();
 			monitor[s.cgi->rFd()].fd = s.cgi->rFd();

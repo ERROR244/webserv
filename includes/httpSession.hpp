@@ -22,7 +22,7 @@ using namespace std;
 #define BUFFER_SIZE 8192
 #define URI_MAXSIZE 1024
 #define HEADER_FIELD_MAXSIZE 5120
-#define T 5
+#define T 2
 
 string	getHeaderValue(map<string, vector<string> >& mp, const string& key);
 
