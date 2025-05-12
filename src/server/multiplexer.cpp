@@ -5,8 +5,8 @@ void	cleanCgiRessources(int epollFd, int clientFd, bool& isCgi) {
 
 	if (monitor[clientFd].cgiInfo.pid != -1) {
 		monitor[clientFd].cgiInfo.pid = -1;
-		int readPipe = monitor[clientFd].cgiInfo.readPipe;
-		int writePipe = monitor[clientFd].cgiInfo.writePipe;
+		int& readPipe = monitor[clientFd].cgiInfo.readPipe;
+		int& writePipe = monitor[clientFd].cgiInfo.writePipe;
 
 		if (readPipe != -1) {
 			if (epoll_ctl(epollFd, EPOLL_CTL_DEL, readPipe, NULL) == -1)
@@ -20,6 +20,9 @@ void	cleanCgiRessources(int epollFd, int clientFd, bool& isCgi) {
 		}
 		close(readPipe);
 		close(writePipe);
+		monitor[clientFd].cgiInfo.pid = -1;
+		readPipe = -1;
+		writePipe = -1;
 		isCgi = true;
 	}
 }

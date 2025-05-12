@@ -103,9 +103,7 @@ void	httpSession::Request::reconstructUri() {
 		if (s.path.find("/../") != string::npos || s.path.find("/..\0") != string::npos)
 			throw(statusCodeException(403, "Forbidden"));
 		isCGI();
-		if (s.cgi)
-			return;
-		if (fileExistence() == false)
+		if (s.cgi == NULL && fileExistence() == false)
 			return;
 	}
 	if (find(s.rules->methods.begin(), s.rules->methods.end(), s.method) == s.rules->methods.end())
@@ -117,7 +115,7 @@ void	httpSession::Request::reconstructUri() {
 		break;
 	}
 	case POST: {
-		if (!s.rules->uploads.empty() && !stat(s.rules->uploads.c_str(), &pathStat) && S_ISDIR(pathStat.st_mode)) {
+		if ((!s.rules->uploads.empty() && !stat(s.rules->uploads.c_str(), &pathStat) && S_ISDIR(pathStat.st_mode)) || s.cgi) {
 			if (s.headers.find("content-length") == s.headers.end() && s.headers.find("transfer-encoding") == s.headers.end())
 				throw(statusCodeException(400, "Bad Request"));
 			s.sstat = ss_body;
@@ -128,6 +126,8 @@ void	httpSession::Request::reconstructUri() {
 		throw(statusCodeException(403, "Forbidden"));
 	}
 	case DELETE: {
+		if (s.cgi)
+			throw(statusCodeException(501, "Not Implemented"));
 		size_t pos;
 		struct stat fileStat;
 

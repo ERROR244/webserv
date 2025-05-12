@@ -260,5 +260,4 @@ void	httpSession::Request::bodyFormat() {
 		else
 			throw(statusCodeException(501, "Not Implemented"));
 	}
-	s.sstat = ss_body;
 }
