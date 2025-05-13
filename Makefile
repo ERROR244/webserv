@@ -5,7 +5,7 @@ SRC = $(wildcard src/*.cpp src/bstring/*.cpp src/cgi/*.cpp src/confi/*.cpp\
         src/exceptions/*.cpp src/parsers/*.cpp src/response/*.cpp src/server/*.cpp)
 H_SRC = $(wildcard includes/*.hpp includes/*.h)
 OBJ = $(SRC:.cpp=.o)
-CPPFLAGS = -Wall -Wextra -Werror -std=c++98 -fsanitize=address -g3
+CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
 %.o: %.cpp
 	$(CPP) $(INC) $(CPPFLAGS) -c -o $@ $<
